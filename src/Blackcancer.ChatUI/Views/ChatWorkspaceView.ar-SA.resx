@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- SPDX-License-Identifier: MPL-2.0; ported native chat layout and localization resources. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="fileAttachmentDialog.Filter" xml:space="preserve">
+    <value>كل الملفات (*.*)|*.*</value>
+  </data>
+  <data name="fileAttachmentDialog.Title" xml:space="preserve">
+    <value>إرفاق ملفات بالرسالة التالية</value>
+  </data>
+  <data name="modelSummary.AccessibleName" xml:space="preserve">
+    <value>النموذج ومستوى الاستدلال</value>
+  </data>
+  <data name="modelSummary.Text" xml:space="preserve">
+    <value>النموذج</value>
+  </data>
+  <data name="effortPicker.AccessibleName" xml:space="preserve">
+    <value>مستوى الاستدلال</value>
+  </data>
+  <data name="configureMenuItem.Text" xml:space="preserve">
+    <value>الإعدادات…</value>
+  </data>
+  <data name="sessionTitle.Text" xml:space="preserve">
+    <value>وكيل الذكاء الاصطناعي لـ application</value>
+  </data>
+  <data name="newChatButton.AccessibleName" xml:space="preserve">
+    <value>محادثة جديدة</value>
+  </data>
+  <data name="newChatButton.Text" xml:space="preserve">
+    <value>محادثة جديدة</value>
+  </data>
+  <data name="settingsButton.AccessibleName" xml:space="preserve">
+    <value>خيارات المحادثة</value>
+  </data>
+  <data name="settingsButton.Text" xml:space="preserve">
+    <value>خيارات</value>
+  </data>
+  <data name="scopePicker.AccessibleName" xml:space="preserve">
+    <value>نطاق المحادثة</value>
+  </data>
+  <data name="historyButton.Text" xml:space="preserve">
+    <value>سجل المحادثات</value>
+  </data>
+  <data name="projectPicker.AccessibleName" xml:space="preserve">
+    <value>مشروع</value>
+  </data>
+  <data name="createProjectButton.Text" xml:space="preserve">
+    <value>إنشاء مشروع</value>
+  </data>
+  <data name="welcomeTitle.Text" xml:space="preserve">
+    <value>ماذا تريد أن تنشئ؟</value>
+  </data>
+  <data name="welcomeBody.Text" xml:space="preserve">
+    <value>ناقش نموذجك أو افحص المستند النشط أو صف عملية.
+
+اختر المزود والنموذج في الإعدادات للبدء.</value>
+  </data>
+  <data name="historyLabel.Text" xml:space="preserve">
+    <value>المحادثات</value>
+  </data>
+  <data name="historyEmptyLabel.Text" xml:space="preserve">
+    <value>لا توجد محادثات في هذا النطاق.</value>
+  </data>
+  <data name="closeHistoryButton.Text" xml:space="preserve">
+    <value>إغلاق السجل</value>
+  </data>
+  <data name="historySearchTextBox.AccessibleName" xml:space="preserve">
+    <value>البحث في المحادثات</value>
+  </data>
+  <data name="showArchivedCheckBox.AccessibleName" xml:space="preserve">
+    <value>إظهار المؤرشف</value>
+  </data>
+  <data name="showArchivedCheckBox.Text" xml:space="preserve">
+    <value>إظهار المؤرشف</value>
+  </data>
+  <data name="chatTitleEditor.AccessibleName" xml:space="preserve">
+    <value>عنوان المحادثة</value>
+  </data>
+  <data name="renameChatButton.AccessibleName" xml:space="preserve">
+    <value>إعادة تسمية</value>
+  </data>
+  <data name="renameChatButton.Text" xml:space="preserve">
+    <value>إعادة تسمية</value>
+  </data>
+  <data name="archiveChatButton.AccessibleName" xml:space="preserve">
+    <value>أرشفة</value>
+  </data>
+  <data name="archiveChatButton.Text" xml:space="preserve">
+    <value>أرشفة</value>
+  </data>
+  <data name="pinChatButton.AccessibleName" xml:space="preserve">
+    <value>تثبيت</value>
+  </data>
+  <data name="pinChatButton.Text" xml:space="preserve">
+    <value>تثبيت</value>
+  </data>
+  <data name="exportChatButton.AccessibleName" xml:space="preserve">
+    <value>تصدير</value>
+  </data>
+  <data name="exportChatButton.Text" xml:space="preserve">
+    <value>تصدير</value>
+  </data>
+  <data name="deleteChatButton.AccessibleName" xml:space="preserve">
+    <value>حذف المحادثة</value>
+  </data>
+  <data name="deleteChatButton.Text" xml:space="preserve">
+    <value>حذف المحادثة</value>
+  </data>
+  <data name="memoryToggleButton.AccessibleName" xml:space="preserve">
+    <value>ذاكرة المشروع</value>
+  </data>
+  <data name="memoryToggleButton.Text" xml:space="preserve">
+    <value>ذاكرة المشروع</value>
+  </data>
+  <data name="memoryPanel.AccessibleName" xml:space="preserve">
+    <value>ذاكرة المشروع</value>
+  </data>
+  <data name="attachMemoryCheckBox.AccessibleName" xml:space="preserve">
+    <value>إرفاق الذاكرة المحفوظة بالرسالة التالية</value>
+  </data>
+  <data name="attachMemoryCheckBox.Text" xml:space="preserve">
+    <value>إرفاق الذاكرة المحفوظة بالرسالة التالية</value>
+  </data>
+  <data name="saveMemoryButton.AccessibleName" xml:space="preserve">
+    <value>حفظ الذاكرة</value>
+  </data>
+  <data name="saveMemoryButton.Text" xml:space="preserve">
+    <value>حفظ الذاكرة</value>
+  </data>
+  <data name="memoryPanel.Text" xml:space="preserve">
+    <value>ذاكرة المشروع</value>
+  </data>
+  <data name="inputTextBox.AccessibleName" xml:space="preserve">
+    <value>رسالة</value>
+  </data>
+  <data name="attachContextButton.AccessibleName" xml:space="preserve">
+    <value>إرفاق سياق CAD</value>
+  </data>
+  <data name="attachDocumentMenuItem.Text" xml:space="preserve">
+    <value>المستند النشط</value>
+  </data>
+  <data name="attachSelectionMenuItem.Text" xml:space="preserve">
+    <value>الميزة أو المخطط المحدد</value>
+  </data>
+  <data name="attachFileButton.AccessibleName" xml:space="preserve">
+    <value>إرفاق ملفات</value>
+  </data>
+  <data name="stopButton.Text" xml:space="preserve">
+    <value>إيقاف</value>
+  </data>
+  <data name="sendButton.Text" xml:space="preserve">
+    <value>إرسال</value>
+  </data>
+  <data name="modePicker.AccessibleName" xml:space="preserve">
+    <value>وضع المحادثة</value>
+  </data>
+  <data name="approvalPicker.AccessibleName" xml:space="preserve">
+    <value>الموافقة على إجراءات CAD</value>
+  </data>
+  <data name="attachSelectionButton.AccessibleName" xml:space="preserve">
+    <value>الإشارة إلى ميزة application باستخدام #اسم</value>
+  </data>
+  <data name="contextButton.AccessibleName" xml:space="preserve">
+    <value>فحص سياق المستند النشط</value>
+  </data>
+  <data name="contextButton.Text" xml:space="preserve">
+    <value>السياق</value>
+  </data>
+  <data name="providerPicker.AccessibleName" xml:space="preserve">
+    <value>المزود</value>
+  </data>
+  <data name="modelPicker.AccessibleName" xml:space="preserve">
+    <value>النموذج</value>
+  </data>
+  <data name="latestButton.Text" xml:space="preserve">
+    <value>آخر رسالة</value>
+  </data>
+  <data name="statusLabel.AccessibleName" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="statusLabel.Text" xml:space="preserve">
+    <value>جاهز</value>
+  </data>
+  <data name="contextLabel.AccessibleName" xml:space="preserve">
+    <value>المستند النشط</value>
+  </data>
+  <data name="contextLabel.Text" xml:space="preserve">
+    <value>لا يوجد مستند نشط</value>
+  </data>
+  <data name="$this.AccessibleName" xml:space="preserve">
+    <value>محادثة Chat</value>
+  </data>
+  <data name="$this.RightToLeft" type="System.Windows.Forms.RightToLeft, System.Windows.Forms">
+    <value>Yes</value>
+  </data>
+</root>

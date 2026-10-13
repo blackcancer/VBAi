@@ -9,6 +9,99 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Counts managed entry into native RichEdit text access without changing its actual rendering behavior.</summary>
+        private sealed class ObservedActivityText : UiRichTextBox
+        {
+            internal int Reads, Writes;
+            public override string Text { get { Reads++; return base.Text; } set { Writes++; base.Text = value; } }
+        }
+
+        /// <summary>Replaces a realized detail control to verify that presentation reuse also handles control rebinding.</summary>
+        private static ObservedActivityText ObserveActivityText(ChatActivityStepView step)
+        {
+            var old = step.detail.content;
+            var parent = old.Parent;
+            var observed = new ObservedActivityText { Bounds = old.Bounds, Font = old.Font, ReadOnly = true };
+            parent.Controls.Remove(old);
+            step.detail.content = observed;
+            parent.Controls.Add(observed);
+            old.Dispose();
+            return observed;
+        }
+
+        /// <summary>Unchanged siblings do not read or rewrite RichEdit, while selection and stream rebinding remain intact.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        [DataRow(false, false)][DataRow(false, true)][DataRow(true, false)][DataRow(true, true)]
+        public void UnchangedActivityPresentationSkipsNativeTextAccess(bool newSnapshot, bool rebuildStreamIndex)
+        {
+            using (var window = Surfaces())
+            {
+                var entry = new ChatEntry { StreamId = "stable", Activity = new CodexAgentActivity
+                    { Id = "stable", Kind = "dynamicToolCall", Title = "Inspect", Detail = "same result", Status = "completed", DurationMs = 123 } };
+                using (var step = (ChatActivityStepView)Call(window, "CreateActivityStep", entry))
+                {
+                    var observed = ObserveActivityText(step);
+                    Call(window, "UpdateActivityStep", step, entry);
+                    observed.Select(1, 3);
+                    observed.Reads = observed.Writes = 0;
+                    if (rebuildStreamIndex) Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts").Clear();
+                    for (int update = 0; update < 16; update++)
+                    {
+                        if (newSnapshot) entry.Activity = new CodexAgentActivity
+                            { Id = "stable", Kind = "dynamicToolCall", Title = "Inspect", Detail = "same result", Status = "completed", DurationMs = 123 };
+                        Call(window, "UpdateActivityStep", step, entry);
+                    }
+                    Assert.AreEqual(0, observed.Reads, "Unchanged siblings must not enter RichEdit text retrieval.");
+                    Assert.AreEqual(0, observed.Writes);
+                    Assert.AreEqual("ame", observed.SelectedText);
+                    Assert.AreSame(observed, Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts")["stable"]);
+                }
+            }
+        }
+
+        /// <summary>Every presentation dependency refreshes even when the provider mutates the existing activity instance.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        [DataRow("kind")][DataRow("title")][DataRow("detail")][DataRow("status")][DataRow("duration")]
+        [DataRow("collapse")][DataRow("expand")][DataRow("culture")][DataRow("control")]
+        public void ActivityPresentationChangesRefreshTheExistingRow(string change)
+        {
+            using (var culture = new VBAi.Tests.Infrastructure.LocalizationScope("en-US"))
+            using (var window = Surfaces())
+            {
+                var entry = new ChatEntry { StreamId = "changing", Activity = new CodexAgentActivity
+                    { Id = "changing", Kind = "reasoning", Title = "Inspect", Detail = "same result", Status = "inProgress" } };
+                if (change == "expand") Get<HashSet<ChatEntry>>(window, "collapsedActivitySteps").Add(entry);
+                using (var step = (ChatActivityStepView)Call(window, "CreateActivityStep", entry))
+                {
+                    var observed = ObserveActivityText(step);
+                    Call(window, "UpdateActivityStep", step, entry);
+                    observed.Reads = observed.Writes = 0;
+                    switch (change)
+                    {
+                        case "kind": entry.Activity.Kind = "commandExecution"; break;
+                        case "title": entry.Activity.Title = "Updated"; break;
+                        case "detail": entry.Activity.Detail = "changed result"; break;
+                        case "status": entry.Activity.Status = "failed"; break;
+                        case "duration": entry.Activity.DurationMs = 1500; break;
+                        case "collapse": Get<HashSet<ChatEntry>>(window, "collapsedActivitySteps").Add(entry); break;
+                        case "expand": Get<HashSet<ChatEntry>>(window, "expandedActivitySteps").Add(entry); break;
+                        case "culture": VBAi.Tests.Infrastructure.LocalizationScope.Set("fr-FR"); break;
+                        case "control": observed = ObserveActivityText(step); break;
+                    }
+                    Call(window, "UpdateActivityStep", step, entry);
+                    Assert.IsTrue(observed.Reads + observed.Writes > 0, "The changed row must refresh its native presentation.");
+                    Assert.AreEqual(entry.Activity.DisplayTitle(), step.section.Title);
+                    Assert.AreEqual(entry.Activity.DisplayDetail(), observed.Text);
+                    Assert.AreSame(observed, Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts")["changing"]);
+                    Assert.AreEqual(change != "kind" && change != "status" && change != "collapse", step.section.Expanded);
+                    if (change == "status") StringAssert.StartsWith(step.state.Text, UiText.Get("Failed"));
+                    if (change == "duration") StringAssert.Contains(step.state.Text, "1.5 s");
+                    if (change == "culture") StringAssert.StartsWith(step.state.Text, UiText.Get("In progress"));
+                    if (change == "kind") Assert.AreEqual("Consolas", observed.Font.FontFamily.Name);
+                }
+            }
+        }
+
         [STATestMethod, TestCategory("Unit")]
         public void PreExpandedPublishedSummaryStaysCompactThroughActualWpfHostingAndNativeCreation()
         {
@@ -273,6 +366,11 @@ namespace VBAi.Tests.Unit
                         if (changed == "disposed") texts["stream"].Dispose();
                         int changes = 0; Get<ObservableCollection<object>>(window, "visibleEntries").CollectionChanged += (s, e) => changes++;
                         Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = changed == "kind" ? "reasoning" : "commandExecution", Title = changed == "title" ? "Updated" : "Run", Detail = " next", Append = true, Status = changed == "status" ? "completed" : "inProgress", DurationMs = changed == "duration" ? (long?)75 : null });
+                        if (changed == "missing" || changed == "disposed")
+                        {
+                            Assert.AreEqual(0, changes, "Missing native controls must defer text-only changes to the UI frame.");
+                            Call(window, "FlushStreamText");
+                        }
                         Assert.AreEqual(2, changes, changed); Assert.AreEqual("first next", entry.Activity.Detail);
                     }
                 }
@@ -330,6 +428,85 @@ namespace VBAi.Tests.Unit
                     Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Title = "Reasoning", Detail = original.Text, Status = "completed" });
                     Assert.AreEqual(2, changes); Assert.AreEqual("completed", entries[1].Activity.Status);
                 }
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void UnrealizedActivityBurstsRefreshOneGroupOncePerFrame()
+        {
+            using (var window = Surfaces())
+            {
+                foreach (var id in new[] { "first", "second" })
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = id, Kind = "reasoning", Title = "Thinking", Detail = "initial", Status = "inProgress" });
+                var visible = Get<ObservableCollection<object>>(window, "visibleEntries");
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(1, visible.Count);
+                Assert.AreEqual(0, Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts").Count);
+                int changes = 0;
+                visible.CollectionChanged += (sender, args) => changes++;
+                foreach (var id in new[] { "first", "second" })
+                    for (int part = 0; part < 300; part++)
+                        Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = id, Kind = "reasoning", Detail = ".", Append = true, Status = "inProgress" });
+                Assert.AreEqual(0, changes, "Streaming to virtualized rows must not repeatedly remove and insert their group.");
+                Assert.AreEqual(2, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
+                Assert.IsTrue(entries.All(entry => entry.Activity.Detail == "initial" + new string('.', 300)));
+                Call(window, "FlushStreamText");
+                Assert.AreEqual(2, changes, "Both rows share one group and therefore one remove/insert publication.");
+                Assert.AreSame(entries[0], visible.Single());
+                Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
+                Assert.IsFalse(Get<System.Windows.Threading.DispatcherTimer>(window, "streamRenderTimer").IsEnabled);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void UnrealizedActivityFinalizationUsesItsFinalSnapshotBeforeTheFrame()
+        {
+            using (var window = Surfaces())
+            {
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Title = "Thinking", Detail = "initial", Status = "inProgress" });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = " pending", Append = true, Status = "inProgress" });
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "stream", Kind = "reasoning", Detail = "authoritative final", Status = "completed" });
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
+                Call(window, "FlushStreamText");
+                Assert.AreEqual("authoritative final", entries.Single().Activity.Detail);
+                Assert.AreEqual("completed", entries.Single().Activity.Status);
+                Assert.AreSame(entries.Single(), Get<ObservableCollection<object>>(window, "visibleEntries").Single());
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void ActivityFrameCannotReinsertRowsAfterItsScopeIsInvalidated()
+        {
+            using (var window = Surfaces())
+            {
+                foreach (var id in new[] { "old-first", "old-second" })
+                {
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = id, Kind = "reasoning", Title = "Old", Detail = "initial", Status = "inProgress" });
+                    Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = id, Kind = "reasoning", Detail = " pending", Append = true, Status = "inProgress" });
+                }
+                var old = Get<List<ChatEntry>>(window, "transcriptEntries").ToArray();
+                var visible = Get<ObservableCollection<object>>(window, "visibleEntries");
+                bool switched = false;
+                visible.CollectionChanged += (sender, args) =>
+                {
+                    if (switched) return;
+                    switched = true;
+                    // Invalidate ownership without recursively mutating WPF's bound collection.
+                    // ObservableCollection explicitly forbids a nested Clear during this notification.
+                    Get<List<ChatEntry>>(window, "transcriptEntries").Clear();
+                    Get<HashSet<ChatEntry>>(window, "pendingActivityText").Clear();
+                };
+                Call(window, "FlushStreamText");
+                Assert.IsTrue(switched);
+                Assert.AreEqual(0, visible.Count, "An invalidated owner must not be inserted after its removal.");
+                Call(window, "ClearTranscript");
+                Call(window, "ReceiveAgentActivity", new CodexAgentActivity { Id = "new", Kind = "reasoning", Title = "New", Detail = "new session", Status = "inProgress" });
+                var current = Get<List<ChatEntry>>(window, "transcriptEntries").Single();
+                Assert.AreEqual("new", current.StreamId);
+                Assert.AreSame(current, visible.Single());
+                Assert.IsFalse(old.Any(entry => visible.Contains(entry)));
+                Assert.AreEqual(0, Get<HashSet<ChatEntry>>(window, "pendingActivityText").Count);
             }
         }
 

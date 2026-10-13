@@ -58,6 +58,7 @@ internal static class OwnedTeardownTraceHelper
         string command = Console.ReadLine();
         if (command == "STOP") { Console.WriteLine("STOPPED"); return; }
         if (command == "FIRSTCHANCEAV") { HandledFirstChanceAv(); return; }
+        if (command == "FIRSTCHANCEAVBURST") { for (int index = 0; index < 6; index++) HandledFirstChanceAv(); return; }
         if (command != "FAILFAST" && command != "SECONDCHANCEAV") throw new InvalidOperationException("Only one owned STOP or named synthetic exception is allowed.");
         IntPtr allocation = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Context64)) + 15);
         try

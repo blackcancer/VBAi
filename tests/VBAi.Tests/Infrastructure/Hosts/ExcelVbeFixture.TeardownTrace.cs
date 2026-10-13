@@ -11,8 +11,15 @@ namespace VBAi.Tests.Integration
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool CheckRemoteDebuggerPresent(IntPtr process, out bool present);
 
-        /// <summary>Opts in only the two declared value tests, using retained startup/loaded identities without another COM call.</summary>
+        /// <summary>Preserves the procedure-value fixture entry point for its existing diagnostic callers.</summary>
         internal void EnableProcedureValuesTeardownTrace(string scenario)
+        {
+            EnableOwnedTeardownTrace(scenario);
+        }
+
+        /// <summary>Opts in only named qualification scenarios using retained startup/loaded identities without another COM call.</summary>
+        /// <param name="scenario">Exact allowlisted native test method name.</param>
+        internal void EnableOwnedTeardownTrace(string scenario)
         {
             if (Environment.GetEnvironmentVariable(NativeTeardownTraceGate.EnvironmentName) != "1") return;
             PreserveForDiagnosticRecovery = true;
@@ -20,7 +27,7 @@ namespace VBAi.Tests.Integration
             if (!owned || ownedProcess == null || !retainEvidence || !NativeTeardownTraceGate.AllowedScenario(scenario) ||
                 Thread.CurrentThread.GetApartmentState() != ApartmentState.STA ||
                 Convert.ToString(startupEvidence["Phase"]) != "Ready")
-                throw new InvalidOperationException("Diagnostic cleanup requires durable, ready, exact owned procedure-value startup.");
+                throw new InvalidOperationException("Diagnostic cleanup requires durable, ready, exact owned qualification startup.");
             var loaded = VbeBridgeClient.Object(VbeBridgeClient.Object(startupEvidence["BridgeStatus"])["Data"]);
             if (Convert.ToInt32(loaded["HostProcessId"]) != ProcessId ||
                 Convert.ToString(loaded["AssemblyModuleVersionId"]) != typeof(VbeSession).Module.ModuleVersionId.ToString("D"))

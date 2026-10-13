@@ -12,7 +12,7 @@ namespace VBAi.Tests.Unit
     using VBAi.Tests.Infrastructure;
 
     /// <summary>Vérifie le client app-server Codex avec un transport RPC simulé et sans processus externe.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed partial class CodexAppServerClientTests
     {

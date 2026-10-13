@@ -2871,4 +2871,25 @@ Git Credential Manager でサインインします。コミットの作成者情
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>このモデルはツール呼び出しに対応していません。</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>プロバイダーが {0} 秒以内に応答を完了しませんでした。操作の自動再実行は行われていません。</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>モデルの既定の推論設定を使用します。</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>この会話では推論を無効にします。</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>モデルの既定値</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>推論を無効化</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>このモデルは、選択した推論設定に対応していません。</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>現在の会話に添付するファイルを選択します。</value>
+  </data>
 </root>

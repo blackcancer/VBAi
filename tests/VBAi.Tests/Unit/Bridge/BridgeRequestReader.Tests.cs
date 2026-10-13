@@ -10,7 +10,7 @@ namespace VBAi.Tests.Unit
     using System.Web.Script.Serialization;
     using System.Windows.Forms;
 
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed class BridgeRequestBudgetTests
     {
@@ -31,7 +31,7 @@ namespace VBAi.Tests.Unit
                 await Assert.ThrowsExceptionAsync<EndOfStreamException>(() => BridgeRequestReader.ReadAsync(stream, 4, TimeSpan.FromSeconds(1)));
         }
 
-        [DataTestMethod]
+        [WinFormsTestMethod]
         [DataRow("silent")]
         [DataRow("partial")]
         [DataRow("interrupted")]

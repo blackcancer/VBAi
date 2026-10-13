@@ -8,7 +8,19 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class ChatWindowStateTests
     {
-        [TestMethod]
+        /// <summary>Captures the actual fake-session source revision when a workflow selects a module.</summary>
+        private static VbeChatReference PinnedModuleReference(ChatWindow window, string project, string module)
+        {
+            var response = Get<VbeChatReferences>(window, "referenceIndex").Execute(
+                new Request { Command = "read_module", Project = project, Module = module });
+            Assert.IsTrue(response.Ok, response.Error);
+            var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+            var data = (IDictionary<string, object>)json.DeserializeObject(json.Serialize(response.Data));
+            string revision = System.Convert.ToString(data["Sha256"]);
+            Assert.IsFalse(string.IsNullOrEmpty(revision));
+            return new VbeChatReference { Project = project, Module = module, Sha256 = revision };
+        }
+
         [STATestMethod]
         public void ForkKeepsOnlySelectedConversationPrefixAndBuildsResumeContext()
         {
@@ -47,7 +59,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void WorkflowRejectsStaleModuleAttachmentBeforeProviderCall()
         {
@@ -69,7 +80,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void VerificationReportsUnverifiedWhenNoProjectIsConnected()
         {
@@ -141,7 +151,7 @@ namespace VBAi.Tests.Unit
                 runtime.Host = r => Response.Success(r.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : r.Command == "debug_state" ? new { SelectedProject = "P", ActiveModule = "M", Selection = new { StartLine = 1 } } : r.Command == "code_panes" ? (object)new { ActiveCodePane = new { Properties = new { Project = "P", Module = "M", Selection = new { StartLine = 1, EndLine = 1, StartColumn = 1, EndColumn = 1 } } } } : new { Code = "new", Sha256 = "sha" });
                 using (var window = LoadedWindow(runtime.Session))
                 {
-                    var references = Get<List<VbeChatReference>>(window, "selectedReferences"); references.Add(new VbeChatReference { Project = "P", Module = "M" }); var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", "#P.M"); Assert.AreEqual(1, attachments.Length); StringAssert.Contains(attachments[0].Text, "new"); Call(window, "CaptureSelection"); Assert.AreEqual(1, Get<List<ChatAttachment>>(window, "draftAttachments").Count);
+                    var references = Get<List<VbeChatReference>>(window, "selectedReferences"); references.Add(PinnedModuleReference(window, "P", "M")); var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", "#P.M"); Assert.AreEqual(1, attachments.Length); StringAssert.Contains(attachments[0].Text, "new"); Call(window, "CaptureSelection"); Assert.AreEqual(1, Get<List<ChatAttachment>>(window, "draftAttachments").Count);
                     ChatWindow.InvokeTool = (t, n, a) => Task.FromResult(new JavaScriptSerializer().Serialize(Response.Success(new { Diagnostic = "no compiled field" }))); CompleteOnSta((Task)Call(window, "VerifyProjectAsync")); Assert.IsNotNull(Get<List<ChatEntry>>(window, "transcriptEntries").Last().Attachments); var existingHost = runtime.Host; runtime.Host = r => r.Command == "debug_state" ? Response.Success(new { SelectedProject = "P", ActiveModule = "M", Selection = new { StartLine = (object)null } }) : existingHost(r); CompleteOnSta((Task)Call(window, "VerifyProjectAsync")); Assert.AreEqual(0, Get<List<ChatEntry>>(window, "transcriptEntries").Last().Attachments[0].StartLine); runtime.Host = existingHost;
                     Call(window, "AddEntry", new ChatEntry { Speaker = "Vous", Text = "request" }); var final = new ChatEntry { Speaker = "Assistant", Text = "answer" }; Call(window, "AddEntry", final); Call(window, "ForkChat", final); StringAssert.Contains(Get<ChatSessionState>(window, "currentSession").MessagesJson, "request");
                     var host = runtime.Host; runtime.Host = r => { throw new InvalidOperationException("host disconnected"); }; Call(window, "NavigateAttachment", new ChatAttachment { Project = "P", Module = "M" }); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "host disconnected"); Call(window, "RollbackIntervention", new CodeChange { Project = "P", Module = "M" }, null, false); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "host disconnected");
@@ -193,7 +203,7 @@ namespace VBAi.Tests.Unit
                 runtime.Host = request => Response.Success(request.Command == "list_projects" ? (object)new[] { new { Name = "P", FileName = "" } } : new { Code = "new", Sha256 = "sha" });
                 using (var window = LoadedWindow(runtime.Session))
                 {
-                    Set(window, "tools", null); Get<List<VbeChatReference>>(window, "selectedReferences").Add(new VbeChatReference { Project = "P", Module = "M" });
+                    Set(window, "tools", null); Get<List<VbeChatReference>>(window, "selectedReferences").Add(PinnedModuleReference(window, "P", "M"));
                     var attachments = (ChatAttachment[])Call(window, "PrepareAttachments", "#P.M"); Assert.AreEqual(1, attachments.Length); StringAssert.Contains(attachments[0].Text, "new");
                 }
             }

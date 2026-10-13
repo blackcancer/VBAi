@@ -6,6 +6,54 @@ namespace VBAi.Tests.Unit
 {
     public sealed partial class VbeDebugTests
     {
+        [STATestMethod]
+        public void OwnedExcelReturnedTargetBalancesGetterLeasesOnValidationAndSuccessfulDispatch()
+        {
+            using (var fixture = new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture())
+            {
+                var released = new System.Collections.Generic.List<object>(); fixture.Host.ReleaseAcquired = released.Add;
+                var target = (VbeDebug.NativeProcedureValuesHost.OwnedTarget)fixture.Resolve();
+                Assert.AreEqual(1, released.Count);
+                Assert.AreSame(fixture.Project, released[0], "The temporary VBProject getter is balanced immediately; its caller's lease is borrowed.");
+                fixture.Host.Invoke(target, "Module1", "TryMe", new object[0]);
+                Assert.IsTrue(target.Closed);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Workbook)).Count);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Application.Workbooks)).Count);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Application)).Count);
+                int count = released.Count; target.Dispose();
+                Assert.AreEqual(count, released.Count);
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Host.Invoke(target, "Module1", "TryMe", new object[0]));
+                Assert.AreEqual(1, fixture.Application.Invocations);
+                var validation = (VbeDebug.NativeProcedureValuesHost.OwnedTarget)fixture.Resolve();
+                validation.Dispose();
+                Assert.AreEqual(2, released.FindAll(value => ReferenceEquals(value, fixture.Application)).Count);
+            }
+        }
+
+        [STATestMethod]
+        public void ExcelReturnedTargetKnownPathRefusalReleasesWithoutInvocationWhileUnknownCallRetains()
+        {
+            foreach (bool uncertain in new[] { false, true })
+            using (var fixture = new VBAi.Tests.Infrastructure.NativeProcedureValuesFixture())
+            {
+                var released = new System.Collections.Generic.List<object>(); fixture.Host.ReleaseAcquired = released.Add;
+                var target = (VbeDebug.NativeProcedureValuesHost.OwnedTarget)fixture.Resolve();
+                if (uncertain) fixture.Application.ThrowOnRun = true;
+                else fixture.Workbook.FullName = @"C:\Temp\Other.xlsm";
+                Assert.ThrowsException<Exception>(() =>
+                {
+                    try { fixture.Host.Invoke(target, "Module1", "TryMe", new object[0]); }
+                    catch (Exception error) { throw new Exception(error.Message, error); }
+                });
+                int count = released.Count;
+                target.Dispose();
+                Assert.AreEqual(count, released.Count);
+                Assert.AreEqual(uncertain ? 0 : 1, released.FindAll(value => ReferenceEquals(value, fixture.Application)).Count);
+                Assert.AreEqual(uncertain ? 1 : 0, fixture.Application.Invocations);
+                Assert.IsTrue(target.Closed);
+            }
+        }
+
         /// <summary>Toute signature non déterministe de la matrice refuse la mise en file native.</summary>
         [TestMethod]
         public void ValuesSignatureMatrixRefusesByRefObjectsTypedArraysConditionalAndUnknownBinding()

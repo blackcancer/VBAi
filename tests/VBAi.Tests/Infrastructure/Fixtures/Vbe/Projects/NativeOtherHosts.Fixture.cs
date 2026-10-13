@@ -51,9 +51,13 @@ namespace VBAi.Tests.Infrastructure
         public sealed class ApplicationContract
         {
             public long HWND { get; set; }
-            public List<WindowContract> Windows { get; } = new List<WindowContract>();
-            public List<object> Documents { get; } = new List<object>();
-            public List<object> Presentations { get; } = new List<object>();
+            public OfficeList<WindowContract> Windows { get; } = new OfficeList<WindowContract>();
+            public OfficeList<object> Documents { get; } = new OfficeList<object>();
+            public OfficeList<object> Presentations { get; } = new OfficeList<object>();
+        }
+        public sealed class OfficeList<T> : List<T>
+        {
+            public T Item(int index) => this[index - 1];
         }
         public sealed class DocumentContract
         {

@@ -140,7 +140,7 @@ namespace VBAi.Tests.Unit
         {
             public PathWindow ActiveWindow { get; } = new PathWindow(); public int hWndAccessApp() => 77;
             public object CurrentProject { get; set; }
-            public System.Collections.Generic.List<object> Documents { get; } = new System.Collections.Generic.List<object>();
+            public VBAi.Tests.Infrastructure.NativeOtherHostsFixture.OfficeList<object> Documents { get; } = new VBAi.Tests.Infrastructure.NativeOtherHostsFixture.OfficeList<object>();
             public object CurrentDb() => new PathDatabase();
         }
         public sealed class PathDocument

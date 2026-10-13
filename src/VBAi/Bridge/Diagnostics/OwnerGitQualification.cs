@@ -314,7 +314,15 @@ namespace VBAi
                 attached.Observe(module.Component, guard);
             }
             catch (Exception error) { primary = error; throw; }
-            finally { FormFontRestoration.ReleaseOwnedReferences(new[] { module.Component, module.Project }, ReleaseDiagnosticReference, primary); }
+            finally
+            {
+                try { module.Dispose(); }
+                catch (Exception releaseFailure)
+                {
+                    if (primary != null) throw new AggregateException(primary, releaseFailure);
+                    throw;
+                }
+            }
         }
 
         private static void ReleaseDiagnosticReference(object value)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -100,6 +101,9 @@ namespace VBAi
 
             /// <summary>First observer or publication failure; once set, later events are suppressed.</summary>
             internal Exception Error;
+
+            /// <summary>Excludes exceptions raised by the observer's own formatting and publication from first-chance observations.</summary>
+            internal bool Recording;
 
             /// <summary>Nested cleanup invocations still active, ordered outermost to innermost.</summary>
             internal readonly List<AddInShutdownDiagnostic> Active = new List<AddInShutdownDiagnostic>();
@@ -294,6 +298,19 @@ namespace VBAi
             Record("ManagedReferenceCleared", field, null);
         }
 
+        /// <summary>Records a thrown exception without claiming that it escaped or interrupted the active operation.</summary>
+        /// <param name="error">The exception observed before the runtime searches for its handler.</param>
+        internal void ExceptionObserved(Exception error)
+        {
+            if (DiagnosticFailed || terminal || session.Recording || error == null ||
+                session.Active.Count == 0 || !ReferenceEquals(session.Active.Last(), this)) return;
+            Record("ExceptionObserved", activeStage, error);
+        }
+
+        /// <summary>Disables diagnostic publication after an observer failure without changing the original cleanup.</summary>
+        /// <param name="error">The observer's own subscription or retirement failure.</param>
+        internal void ObserverFailed(Exception error) { if (error != null) Fail(error); }
+
         /// <summary>Records propagated failure; the caller rethrows the same original exception.</summary>
         /// <param name="error">Exception describing the error failure.</param>
         internal void Fault(Exception error)
@@ -333,6 +350,8 @@ namespace VBAi
         private void Record(string phase, string stage, Exception error, bool caught = false)
         {
             if (DiagnosticFailed) return;
+            bool previousRecording = session.Recording;
+            session.Recording = true;
             try
             {
                 ThreadIdentity thread = session.ObserveThread();
@@ -354,12 +373,24 @@ namespace VBAi
                     Thread = thread,
                     Utc = DateTime.UtcNow.ToString("o"),
                     session.Clock.ElapsedTicks,
-                    Error = phase == "Fault" ? (error == null ? "Caught exception; managed detail unavailable." : error.ToString()) : null,
+                    Error = phase == "ExceptionObserved" ? FirstChanceDetail(error) :
+                        phase == "Fault" ? (error == null ? "Caught exception; managed detail unavailable." : error.ToString()) : null,
                     FaultCaught = phase == "Fault" ? (bool?)caught : null,
-                    ErrorIsComException = phase == "Fault" ? (bool?)(error is COMException) : null
-                }, stage == null && phase != "Entry");
+                    ErrorIsComException = phase == "Fault" || phase == "ExceptionObserved" ? (bool?)(error is COMException) : null
+                }, stage == null && (phase == "Returned" || phase == "Fault"));
             }
             catch (Exception publication) { Fail(publication); }
+            finally { session.Recording = previousRecording; }
+        }
+
+        /// <summary>Bounds the original exception and current callback stack within the existing receipt size limit.</summary>
+        /// <param name="error">The original first-chance exception.</param>
+        /// <returns>Diagnostic text only; it makes no assertion about eventual exception handling.</returns>
+        private static string FirstChanceDetail(Exception error)
+        {
+            string detail = error.ToString(), stack = Environment.StackTrace;
+            return detail.Substring(0, Math.Min(detail.Length, 2048)) + "\nObserved callback stack:\n" +
+                stack.Substring(0, Math.Min(stack.Length, 2048));
         }
 
         /// <summary>Accepts only the bounded canonical serializer format; duplicated properties cannot survive canonical equality.</summary>
@@ -436,7 +467,35 @@ namespace VBAi
         /// <summary>Rejects existing linked components, including a linked request file, before reads or publication.</summary>
         /// <param name="path">File or directory path whose existing components must contain no reparse points.</param>
         internal static void RequireNoReparse(string path)
-        { RequireNoReparse(path, File.GetAttributes); }
+        { RequireNoReparse(path, ReadExistingAttributes); }
+
+        /// <summary>Reads existing attributes without throwing for the absent files used during atomic publication.</summary>
+        /// <param name="path">Canonical diagnostic path component; no file contents are opened.</param>
+        /// <returns>Existing attributes, or zero for a missing file or directory component.</returns>
+        private static FileAttributes ReadExistingAttributes(string path)
+        {
+            uint attributes = GetFileAttributesW(path);
+            int error = Marshal.GetLastWin32Error();
+            return InterpretNativeAttributes(attributes, error);
+        }
+
+        /// <summary>Tolerates only missing components; inaccessible or otherwise unreadable paths remain failures.</summary>
+        /// <param name="attributes">Win32 attribute mask, or the failure sentinel.</param>
+        /// <param name="error">Last error captured immediately after the native call; ignored on success.</param>
+        /// <returns>Existing attributes, or zero for ERROR_FILE_NOT_FOUND and ERROR_PATH_NOT_FOUND.</returns>
+        /// <exception cref="Win32Exception">The attribute read failed for a reason other than a missing component.</exception>
+        internal static FileAttributes InterpretNativeAttributes(uint attributes, int error)
+        {
+            if (attributes != uint.MaxValue) return (FileAttributes)attributes;
+            if (error == 2 || error == 3) return 0;
+            throw new Win32Exception(error);
+        }
+
+        /// <summary>Reads attributes without opening a diagnostic file or generating managed missing-path exceptions.</summary>
+        /// <param name="path">Local diagnostic path component.</param>
+        /// <returns>Attribute mask, or the failure sentinel; last error must be captured immediately.</returns>
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        private static extern uint GetFileAttributesW(string path);
 
         /// <summary>Pure path-component observation seam; production reads actual Windows attributes.</summary>
         /// <param name="path">Path whose existing components are inspected up to the filesystem root.</param>
@@ -473,15 +532,14 @@ namespace VBAi
             if (terminal) using (var ready = new FileStream(path + ".ready", FileMode.CreateNew, FileAccess.Write, FileShare.None)) { }
         }
 
-        /// <summary>Captures the current Excel process generation, loaded VBAi image identity, hash, and native thread.</summary>
+        /// <summary>Captures the allowed qualification host's process generation, loaded VBAi image identity, hash, and native thread.</summary>
         /// <returns>Exact identity used to bind the request to this process and loaded assembly.</returns>
-        /// <exception cref="InvalidOperationException">The current process is not Excel.</exception>
+        /// <exception cref="InvalidOperationException">The current process is not an allowed qualification host.</exception>
         private static Identity CaptureIdentity()
         {
             using (var process = Process.GetCurrentProcess())
             {
-                if (!string.Equals(process.ProcessName, "EXCEL", StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException("This observation is restricted to the explicitly owned Excel qualification.");
+                RequireObservedHostProcessName(process.ProcessName);
                 string product = typeof(AddIn).Assembly.Location, hash;
                 using (var file = new FileStream(product, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(file)).Replace("-", "");
@@ -496,6 +554,20 @@ namespace VBAi
                     ThreadId = GetCurrentThreadId()
                 };
             }
+        }
+
+        /// <summary>Limits opt-in cleanup tracing to owned Office and SOLIDWORKS qualifications; exact request identity remains mandatory.</summary>
+        /// <param name="processName">Independently observed process name without its executable extension.</param>
+        internal static void RequireObservedHostProcessName(string processName)
+        {
+            if (!string.Equals(processName, "EXCEL", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(processName, "WINWORD", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(processName, "POWERPNT", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(processName, "MSACCESS", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(processName, "MSPUB", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(processName, "OUTLOOK", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(processName, "SLDWORKS", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("This observation is restricted to explicitly owned Office or SOLIDWORKS qualifications.");
         }
 
         /// <summary>Captures managed and native thread IDs and the apartment state at the observation point.</summary>

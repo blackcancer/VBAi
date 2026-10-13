@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
@@ -36,16 +37,73 @@ namespace VBAi.Tests.Unit
             private bool events = true;
             public bool EnableEvents { get => events; set { OnEventsWrite?.Invoke(value); if (!IgnoreEventsWrite) events = value; } }
         }
-        public sealed class Books : List<Book>
+        public sealed class Books : List<Book>, IEnumerable
         {
+            public bool NativeIndexing, RejectEnumeration;
+            public int EnumeratorRequests;
+            public readonly List<int> IndexedReads = new List<int>();
+            public new Book this[int index]
+            {
+                get { IndexedReads.Add(index); return base[NativeIndexing ? index - 1 : index]; }
+            }
+            public Book RawItem(int index) => base[index];
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                EnumeratorRequests++;
+                if (RejectEnumeration) throw new InvalidOperationException("An opaque native enumeration adapter must not be created.");
+                return base.GetEnumerator();
+            }
             public Func<string, Book> OnOpen;
             public int Opens;
             public Book Open(string path, int UpdateLinks, bool ReadOnly, bool AddToMru)
             {
                 Assert.AreEqual(0, UpdateLinks); Assert.IsFalse(ReadOnly); Assert.IsFalse(AddToMru);
                 Opens++;
-                var book = OnOpen == null ? new Book { FullName = path, Application = this[0].Application } : OnOpen(path);
+                var book = OnOpen == null ? new Book { FullName = path, Application = base[0].Application } : OnOpen(path);
                 Add(book); return book;
+            }
+        }
+        [TestMethod]
+        public void RepeatedIndexedCopiesNeverAcquireAHiddenEnumeratorAndCloseOnlyTheirOwnedWorkbook()
+        {
+            using (var fixture = new Fixture())
+            {
+                var books = fixture.Application.Workbooks;
+                books.NativeIndexing = true; books.RejectEnumeration = true;
+                fixture.Boundary.IndexedCollection = _ => true;
+                var releases = new List<object>(); fixture.Boundary.ReleaseAcquired = releases.Add;
+                for (int cycle = 0; cycle < 3; cycle++)
+                {
+                    var clone = VbaTestCoverageClone.CreateOwned(fixture.Source.VBProject, fixture.Source.FullName,
+                        Path.Combine(fixture.Folder, "Indexed-" + cycle), fixture.Boundary);
+                    var copy = books.RawItem(1);
+                    clone.Dispose(); clone.Dispose();
+                    Assert.AreEqual(1, books.Count); Assert.AreSame(fixture.Source, books.RawItem(0));
+                    Assert.AreEqual(1, copy.Closes); Assert.AreEqual(0, fixture.Source.Closes);
+                    Assert.AreEqual(1, releases.FindAll(value => ReferenceEquals(value, copy.VBProject)).Count);
+                }
+                Assert.AreEqual(0, books.EnumeratorRequests);
+                CollectionAssert.AreEqual(new[] { 1, 1, 1, 1, 1, 1 }, books.IndexedReads);
+                Assert.IsTrue(fixture.Application.EnableEvents);
+            }
+        }
+
+        [TestMethod]
+        public void UncertainIndexedCloseRetainsTheCopyAndNeverFallsBackOrClosesAgain()
+        {
+            using (var fixture = new Fixture())
+            {
+                var books = fixture.Application.Workbooks;
+                books.NativeIndexing = true; books.RejectEnumeration = true;
+                fixture.Boundary.IndexedCollection = _ => true;
+                var releases = new List<object>(); fixture.Boundary.ReleaseAcquired = releases.Add;
+                var clone = fixture.Create(); var copy = books.RawItem(1); copy.CancelClose = true;
+                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                clone.Dispose();
+                Assert.AreEqual(1, copy.Closes); Assert.AreEqual(0, fixture.Source.Closes);
+                Assert.IsFalse(releases.Contains(copy)); Assert.IsFalse(releases.Contains(fixture.Application));
+                Assert.AreEqual(0, books.EnumeratorRequests); Assert.AreEqual(2, books.Count);
+                Assert.IsTrue(fixture.Application.EnableEvents);
             }
         }
         public sealed class Book
@@ -100,6 +158,116 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => VbaTestWordCoverageClone.CreateWord(null, null, null));
             Assert.ThrowsException<InvalidOperationException>(() => VbaTestPowerPointCoverageClone.CreatePowerPoint(null, null, null));
             Assert.AreEqual(0u, boundary.ReadWindowOwner(IntPtr.Zero));
+        }
+
+        [TestMethod]
+        public void VerifiedCloseBalancesOwnedInterfacesAndDoesNotFinalReleaseTheBorrowedProject()
+        {
+            using (var fixture=new Fixture())
+            {
+                var releases=new Dictionary<object,int>();
+                fixture.Boundary.ReleaseAcquired=value => { releases[value]=releases.TryGetValue(value,out int count) ? count+1 : 1; };
+                var clone=fixture.Create(); var copy=fixture.Application.Workbooks[1];
+                Assert.AreEqual(1,releases[fixture.Source.VBProject], "Only the source getter acquisition is released; the caller's project is borrowed.");
+                Assert.IsFalse(releases.ContainsKey(copy.VBProject)); Assert.IsFalse(releases.ContainsKey(copy));
+                clone.Dispose();
+                Assert.AreEqual(1,releases[copy.VBProject]); Assert.AreEqual(1,releases[copy]);
+                Assert.AreEqual(1,releases[fixture.Application]); Assert.AreEqual(1,releases[fixture.Application.Workbooks]);
+                Assert.AreEqual(2,releases[fixture.Source], "Initial enumeration and post-close absence check each acquire one source interface.");
+                Assert.AreEqual(1,copy.Closes); Assert.AreEqual(0,fixture.Source.Closes);
+                int releaseEntries=releases.Count; clone.Dispose(); Assert.AreEqual(releaseEntries,releases.Count);
+            }
+        }
+
+        [DataTestMethod,DataRow("Owner"),DataRow("Path"),DataRow("Cancel"),DataRow("Close")]
+        public void UncertainCopyCloseRetainsInterfacesAndNeverClosesAChangedTargetTwice(string fault)
+        {
+            using (var fixture=new Fixture())
+            {
+                var releases=new List<object>(); fixture.Boundary.ReleaseAcquired=releases.Add;
+                var clone=fixture.Create(); var copy=fixture.Application.Workbooks[1];
+                if (fault=="Owner") fixture.Boundary.ReadWindowOwner=_ => 777;
+                if (fault=="Path") copy.FullName=fixture.Source.FullName;
+                if (fault=="Cancel") copy.CancelClose=true;
+                if (fault=="Close") copy.OnClose=() => { throw new InvalidOperationException("unknown native close"); };
+                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                clone.Dispose();
+                Assert.AreEqual(fault=="Owner" || fault=="Path" ? 0 : 1,copy.Closes);
+                Assert.AreEqual(0,fixture.Source.Closes);
+                Assert.IsFalse(releases.Contains(copy));
+                Assert.AreEqual(fault=="Owner" || fault=="Path" ? 0 : 1,
+                    releases.FindAll(value => ReferenceEquals(value, copy.VBProject)).Count,
+                    "The project acquisition is released only after owner/path preflight, before the single close attempt.");
+                Assert.IsFalse(releases.Contains(fixture.Application)); Assert.IsTrue(fixture.Application.EnableEvents);
+            }
+        }
+
+        [TestMethod]
+        public void CopyProjectAcquisitionIsReleasedBeforeCloseAndNeverReleasedTwice()
+        {
+            using (var fixture = new Fixture())
+            {
+                var releases = new List<object>(); fixture.Boundary.ReleaseAcquired = releases.Add;
+                var clone = fixture.Create(); var copy = fixture.Application.Workbooks[1];
+                copy.OnClose = () =>
+                {
+                    Assert.AreEqual(1, releases.FindAll(value => ReferenceEquals(value, copy.VBProject)).Count);
+                    Assert.IsFalse(releases.Contains(copy), "The workbook remains owned throughout Close.");
+                    Assert.IsFalse(releases.Contains(fixture.Application));
+                };
+                clone.Dispose(); clone.Dispose();
+                Assert.AreEqual(1, copy.Closes);
+                Assert.AreEqual(1, releases.FindAll(value => ReferenceEquals(value, copy.VBProject)).Count);
+                Assert.AreEqual(0, fixture.Source.Closes);
+            }
+        }
+
+        [TestMethod]
+        public void UncertainProjectReleaseCannotDispatchCloseOrRetryItsAcquisition()
+        {
+            using (var fixture = new Fixture())
+            {
+                var releases = new List<object>(); object copyProject = null;
+                fixture.Boundary.ReleaseAcquired = value =>
+                {
+                    releases.Add(value);
+                    if (ReferenceEquals(value, copyProject)) throw new InvalidOperationException("Uncertain COM release.");
+                };
+                var clone = fixture.Create(); var copy = fixture.Application.Workbooks[1]; copyProject = copy.VBProject;
+                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose()).Uncertain);
+                clone.Dispose();
+                Assert.AreEqual(1, releases.FindAll(value => ReferenceEquals(value, copyProject)).Count);
+                Assert.AreEqual(0, copy.Closes); Assert.AreEqual(0, fixture.Source.Closes);
+                Assert.IsFalse(releases.Contains(copy)); Assert.IsFalse(releases.Contains(fixture.Application));
+                Assert.IsTrue(fixture.Application.EnableEvents);
+            }
+        }
+
+        [TestMethod]
+        public void KnownPreflightFailureReleasesAcquisitionsWithoutSaveWhileUnknownOpenRetainsThem()
+        {
+            using (var fixture=new Fixture())
+            {
+                var releases=new List<object>(); fixture.Boundary.ReleaseAcquired=releases.Add;
+                fixture.Boundary.ReadWindowOwner=_ => 777;
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Create());
+                CollectionAssert.AreEqual(new object[] {fixture.Application},releases);
+                Assert.AreEqual(0,fixture.Source.Saves); Assert.AreEqual(0,fixture.Application.Workbooks.Opens);
+            }
+            using (var fixture=new Fixture())
+            {
+                var releases=new List<object>(); fixture.Boundary.ReleaseAcquired=releases.Add;
+                fixture.Application.Workbooks.OnOpen=_ => { throw new IOException("unknown open completion"); };
+                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => fixture.Create()).Uncertain);
+                Assert.AreEqual(2,releases.Count);
+                Assert.AreSame(fixture.Source.VBProject,releases[0]);
+                Assert.IsInstanceOfType(releases[1],typeof(System.Collections.IEnumerator));
+                Assert.IsFalse(releases.Contains(fixture.Source));
+                Assert.IsFalse(releases.Contains(fixture.Application.Workbooks));
+                Assert.IsFalse(releases.Contains(fixture.Application));
+                Assert.AreEqual(1,fixture.Source.Saves);
+                Assert.AreEqual(1,fixture.Application.Workbooks.Opens); Assert.AreEqual(0,fixture.Source.Closes);
+            }
         }
 
         [TestMethod]

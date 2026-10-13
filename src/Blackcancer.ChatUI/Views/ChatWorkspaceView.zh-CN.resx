@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- SPDX-License-Identifier: MPL-2.0; ported native chat layout and localization resources. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="fileAttachmentDialog.Filter" xml:space="preserve">
+    <value>所有文件 (*.*)|*.*</value>
+  </data>
+  <data name="fileAttachmentDialog.Title" xml:space="preserve">
+    <value>将文件附加到下一条消息</value>
+  </data>
+  <data name="modelSummary.AccessibleName" xml:space="preserve">
+    <value>模型和推理强度</value>
+  </data>
+  <data name="modelSummary.Text" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="effortPicker.AccessibleName" xml:space="preserve">
+    <value>推理强度</value>
+  </data>
+  <data name="configureMenuItem.Text" xml:space="preserve">
+    <value>设置…</value>
+  </data>
+  <data name="sessionTitle.Text" xml:space="preserve">
+    <value>您的 application AI 助手</value>
+  </data>
+  <data name="newChatButton.AccessibleName" xml:space="preserve">
+    <value>新对话</value>
+  </data>
+  <data name="newChatButton.Text" xml:space="preserve">
+    <value>新对话</value>
+  </data>
+  <data name="settingsButton.AccessibleName" xml:space="preserve">
+    <value>对话选项</value>
+  </data>
+  <data name="settingsButton.Text" xml:space="preserve">
+    <value>选项</value>
+  </data>
+  <data name="scopePicker.AccessibleName" xml:space="preserve">
+    <value>对话范围</value>
+  </data>
+  <data name="historyButton.Text" xml:space="preserve">
+    <value>对话历史</value>
+  </data>
+  <data name="projectPicker.AccessibleName" xml:space="preserve">
+    <value>项目</value>
+  </data>
+  <data name="createProjectButton.Text" xml:space="preserve">
+    <value>创建项目</value>
+  </data>
+  <data name="welcomeTitle.Text" xml:space="preserve">
+    <value>您想创建什么？</value>
+  </data>
+  <data name="welcomeBody.Text" xml:space="preserve">
+    <value>讨论模型、检查活动文档或描述操作。
+
+在设置中选择提供商和模型即可开始。</value>
+  </data>
+  <data name="historyLabel.Text" xml:space="preserve">
+    <value>对话</value>
+  </data>
+  <data name="historyEmptyLabel.Text" xml:space="preserve">
+    <value>此范围内没有对话。</value>
+  </data>
+  <data name="closeHistoryButton.Text" xml:space="preserve">
+    <value>关闭历史</value>
+  </data>
+  <data name="historySearchTextBox.AccessibleName" xml:space="preserve">
+    <value>搜索对话</value>
+  </data>
+  <data name="showArchivedCheckBox.AccessibleName" xml:space="preserve">
+    <value>显示已归档</value>
+  </data>
+  <data name="showArchivedCheckBox.Text" xml:space="preserve">
+    <value>显示已归档</value>
+  </data>
+  <data name="chatTitleEditor.AccessibleName" xml:space="preserve">
+    <value>对话标题</value>
+  </data>
+  <data name="renameChatButton.AccessibleName" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="renameChatButton.Text" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="archiveChatButton.AccessibleName" xml:space="preserve">
+    <value>归档</value>
+  </data>
+  <data name="archiveChatButton.Text" xml:space="preserve">
+    <value>归档</value>
+  </data>
+  <data name="pinChatButton.AccessibleName" xml:space="preserve">
+    <value>置顶</value>
+  </data>
+  <data name="pinChatButton.Text" xml:space="preserve">
+    <value>置顶</value>
+  </data>
+  <data name="exportChatButton.AccessibleName" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="exportChatButton.Text" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="deleteChatButton.AccessibleName" xml:space="preserve">
+    <value>删除对话</value>
+  </data>
+  <data name="deleteChatButton.Text" xml:space="preserve">
+    <value>删除对话</value>
+  </data>
+  <data name="memoryToggleButton.AccessibleName" xml:space="preserve">
+    <value>项目记忆</value>
+  </data>
+  <data name="memoryToggleButton.Text" xml:space="preserve">
+    <value>项目记忆</value>
+  </data>
+  <data name="memoryPanel.AccessibleName" xml:space="preserve">
+    <value>项目记忆</value>
+  </data>
+  <data name="attachMemoryCheckBox.AccessibleName" xml:space="preserve">
+    <value>将已保存的记忆附加到下一条消息</value>
+  </data>
+  <data name="attachMemoryCheckBox.Text" xml:space="preserve">
+    <value>将已保存的记忆附加到下一条消息</value>
+  </data>
+  <data name="saveMemoryButton.AccessibleName" xml:space="preserve">
+    <value>保存记忆</value>
+  </data>
+  <data name="saveMemoryButton.Text" xml:space="preserve">
+    <value>保存记忆</value>
+  </data>
+  <data name="memoryPanel.Text" xml:space="preserve">
+    <value>项目记忆</value>
+  </data>
+  <data name="inputTextBox.AccessibleName" xml:space="preserve">
+    <value>消息</value>
+  </data>
+  <data name="attachContextButton.AccessibleName" xml:space="preserve">
+    <value>附加 CAD 上下文</value>
+  </data>
+  <data name="attachDocumentMenuItem.Text" xml:space="preserve">
+    <value>活动文档</value>
+  </data>
+  <data name="attachSelectionMenuItem.Text" xml:space="preserve">
+    <value>所选特征或草图</value>
+  </data>
+  <data name="attachFileButton.AccessibleName" xml:space="preserve">
+    <value>附加文件</value>
+  </data>
+  <data name="stopButton.Text" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="sendButton.Text" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="modePicker.AccessibleName" xml:space="preserve">
+    <value>对话模式</value>
+  </data>
+  <data name="approvalPicker.AccessibleName" xml:space="preserve">
+    <value>CAD 操作批准</value>
+  </data>
+  <data name="attachSelectionButton.AccessibleName" xml:space="preserve">
+    <value>用 #名称 引用 application 特征</value>
+  </data>
+  <data name="contextButton.AccessibleName" xml:space="preserve">
+    <value>检查活动文档上下文</value>
+  </data>
+  <data name="contextButton.Text" xml:space="preserve">
+    <value>上下文</value>
+  </data>
+  <data name="providerPicker.AccessibleName" xml:space="preserve">
+    <value>提供商</value>
+  </data>
+  <data name="modelPicker.AccessibleName" xml:space="preserve">
+    <value>模型</value>
+  </data>
+  <data name="latestButton.Text" xml:space="preserve">
+    <value>最新消息</value>
+  </data>
+  <data name="statusLabel.AccessibleName" xml:space="preserve">
+    <value>状态</value>
+  </data>
+  <data name="statusLabel.Text" xml:space="preserve">
+    <value>就绪</value>
+  </data>
+  <data name="contextLabel.AccessibleName" xml:space="preserve">
+    <value>活动文档</value>
+  </data>
+  <data name="contextLabel.Text" xml:space="preserve">
+    <value>没有活动文档</value>
+  </data>
+  <data name="$this.AccessibleName" xml:space="preserve">
+    <value>Chat 对话</value>
+  </data>
+</root>

@@ -85,15 +85,9 @@ namespace VBAi
             {
                 if (inline is LiteralInline literal)
                 {
-                    foreach (string part in Regex.Split(literal.Content.ToString(), "([#@][\\p{L}\\p{N}_.:]+)"))
-                    {
-                        int start = view.content.TextLength;
-                        bool link = refs != null && refs.TryGetValue(part, out var _);
-                        view.Append(part, "Segoe UI", size, style | (link ? FontStyle.Underline : FontStyle.Regular), link ? (Color?)Color.RoyalBlue : null);
-                        if (link) { var reference = refs[part]; view.actions.Add(new ChatTextContentView.TextAction { Start = start, Length = part.Length, Invoke = () => navigate(reference) }); }
-                    }
+                    ReferenceText(view, literal.Content.ToString(), refs, navigate, style, size, "Segoe UI");
                 }
-                else if (inline is CodeInline code) view.Append(code.Content, "Consolas", size, style);
+                else if (inline is CodeInline code) ReferenceText(view, code.Content, refs, navigate, style, size, "Consolas");
                 else if (inline is EmphasisInline emphasis) Inlines(view, emphasis, refs, navigate, error, style | (emphasis.DelimiterChar == '~' ? FontStyle.Strikeout : emphasis.DelimiterCount >= 2 ? FontStyle.Bold : FontStyle.Italic), size);
                 else if (inline is LinkInline link)
                 {
@@ -109,6 +103,30 @@ namespace VBAi
                 else if (inline is TaskList task) view.Append(task.Checked ? "☑ " : "☐ ");
                 else if (inline is HtmlInline html) view.Append(html.Tag);
                 else if (inline is ContainerInline nested) Inlines(view, nested, refs, navigate, error, style, size);
+            }
+        }
+
+        /// <summary>Renders literal or inline-code tokens with the captured destination and original font.</summary>
+        /// <param name="view">Owning native text view.</param>
+        /// <param name="text">Literal text, without interpreting it as another Markdown document.</param>
+        /// <param name="refs">Unambiguous references captured for this transcript entry.</param>
+        /// <param name="navigate">Navigation callback; live permission and revision checks remain in that route.</param>
+        /// <param name="style">Inherited emphasis.</param>
+        /// <param name="size">Inherited font size.</param>
+        /// <param name="family">Prose or code font family.</param>
+        private static void ReferenceText(ChatTextContentView view, string text, IDictionary<string, VbeChatReference> refs,
+            Action<VbeChatReference> navigate, FontStyle style, float size, string family)
+        {
+            foreach (string part in Regex.Split(text, "([#@][\\p{L}\\p{N}_.:]+)"))
+            {
+                int start = view.content.TextLength;
+                bool link = refs != null && refs.TryGetValue(part, out var _);
+                view.Append(part, family, size, style | (link ? FontStyle.Underline : FontStyle.Regular), link ? (Color?)Color.RoyalBlue : null);
+                if (link)
+                {
+                    var reference = refs[part];
+                    view.actions.Add(new ChatTextContentView.TextAction { Start = start, Length = part.Length, Invoke = () => navigate(reference) });
+                }
             }
         }
     }

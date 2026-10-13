@@ -11,7 +11,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class GitWindowStateTests
     {
         /// <summary>Refuse les actions sans projet lié et laisse désactivés les contrôles de dépôt.</summary>
-        [TestMethod]
         [STATestMethod]
         public void UnboundWindowRejectsActionsAndKeepsRepositoryControlsDisabled()
         {
@@ -33,7 +32,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Empêche la fermeture et désactive les interactions pendant une opération en cours.</summary>
-        [TestMethod]
         [STATestMethod]
         public void RunningWindowRejectsCloseAndDisablesInteractiveCommands()
         {
@@ -55,7 +53,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Restaure les contrôles après succès et affiche l’erreur lorsqu’une action échoue.</summary>
-        [TestMethod]
         [STATestMethod]
         public void PerformRestoresControlsAfterSuccessAndReportsActionFailure()
         {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -690,7 +690,10 @@ namespace VBAi
                                 if (kind == ControlType.ComboBox && element.Current.NativeWindowHandle != 0 &&
                                     ClassName(new IntPtr(element.Current.NativeWindowHandle)) == "ComboBox")
                                 {
-                                    ReadOptionsCombo(new IntPtr(element.Current.NativeWindowHandle), control);
+                                    var comboHandle = new IntPtr(element.Current.NativeWindowHandle);
+                                    GuardOptionsOwnedWindow(dialog, comboHandle, "ComboBox");
+                                    control.Enabled = control.Enabled && OptionsWindowEnabled(comboHandle);
+                                    ReadOptionsCombo(comboHandle, control);
                                     controls.Add(control); continue;
                                 }
                                 if (kind == ControlType.ComboBox)
@@ -2425,11 +2428,29 @@ namespace VBAi
             var condition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Document);
             // Some providers expose the document on the pane itself, without a child fragment.
             AutomationElementCollection documents = root.FindAll(TreeScope.Element | TreeScope.Descendants, condition);
-            if (documents.Count != 1)
+            if (documents.Count > 1)
                 throw new InvalidOperationException("Expected one Immediate document; found " + documents.Count + ".");
-            if (!documents[0].TryGetCurrentPattern(TextPattern.Pattern, out _))
-                throw new InvalidOperationException("The Immediate document does not expose TextPattern.");
-            return documents[0];
+            if (documents.Count == 1 && documents[0].TryGetCurrentPattern(TextPattern.Pattern, out _))
+                return documents[0];
+
+            // Legacy hosts can expose the same text surface as Edit, Custom or Pane.
+            // Inspect capabilities within the already resolved Immediate HWND only;
+            // never choose a provider by its text or by screen position.
+            var elements = root.FindAll(TreeScope.Element | TreeScope.Descendants, Condition.TrueCondition);
+            if (elements.Count > 4096)
+                throw new InvalidOperationException("The Immediate accessibility tree exceeds the inspection limit.");
+            var providers = new List<AutomationElement>();
+            var kinds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (AutomationElement element in elements)
+            {
+                kinds.Add(element.Current.ControlType.ProgrammaticName);
+                if (element.TryGetCurrentPattern(TextPattern.Pattern, out _)) providers.Add(element);
+            }
+            if (providers.Count != 1)
+                throw new InvalidOperationException("Expected one Immediate text provider; found " + providers.Count +
+                    ". Document elements: " + documents.Count + ". Control types: " +
+                    string.Join(", ", kinds.OrderBy(value => value, StringComparer.Ordinal).Take(8)) + ".");
+            return providers[0];
         }
 
         /// <summary>Lit le texte complet de l’élément document du volet Immediate.</summary>

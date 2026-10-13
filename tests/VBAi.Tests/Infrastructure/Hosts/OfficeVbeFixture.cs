@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -246,6 +246,17 @@ namespace VBAi.Tests.Integration
         internal void BindStartupProject(IDictionary<string, object>[] projects)
         {
             if (Kind == "Publisher") { BindPublisherStartupProject(projects); return; }
+            if (Kind == "Word")
+            {
+                // Word's FileName may be an inaccessible VBA backing file. Only the
+                // document identity supplied by the host adapter selects our source;
+                // neither Normal nor the generated template is a fallback candidate.
+                var owned = projects.Where(p => p.TryGetValue("HostPath", out object path) &&
+                    string.Equals(path as string, DocumentPath, StringComparison.OrdinalIgnoreCase)).ToArray();
+                Assert.AreEqual(1, owned.Length, "No unique canonical Word document project; no mutation is permitted.");
+                Project = DocumentPath;
+                return;
+            }
             var matched = projects.Where(p => string.Equals(p["FileName"] as string, DocumentPath, StringComparison.OrdinalIgnoreCase)).ToArray();
             if (matched.Length == 1) Project = DocumentPath;
             else
@@ -685,6 +696,12 @@ namespace VBAi.Tests.Integration
                     ? new AggregateException("The original Office dispatch and its cleanup refusal are both retained.", commandContainment.Failure, error)
                     : error;
             }
+            try { ObserveWordShutdownTrace(); }
+            catch (Exception traceError)
+            {
+                cleanupFailure = cleanupFailure == null ? traceError :
+                    new AggregateException("The original Office cleanup verdict and its shutdown observation failure are both retained.", cleanupFailure, traceError);
+            }
             try
             {
                 if (Root != null) File.WriteAllText(Path.Combine(Root, "qualification.json"), new JavaScriptSerializer { MaxJsonLength = 20 * 1024 * 1024 }.Serialize(new
@@ -718,7 +735,14 @@ namespace VBAi.Tests.Integration
             try
             {
                 collection = Kind == "Word" ? (object)((dynamic)application).Documents : (object)((dynamic)application).Presentations;
-                if (Kind == "Word") return reopen ? ((dynamic)collection).Open(DocumentPath) : ((dynamic)collection).Add();
+                if (Kind == "Word")
+                {
+                    if (reopen) return ((dynamic)collection).Open(DocumentPath);
+                    string template = (Environment.GetEnvironmentVariable("VBAi_RUN_WORD_LIFECYCLE_CALIBRATION") == "1" ||
+                        Environment.GetEnvironmentVariable("VBAi_RUN_WORD_COVERAGE_EVENT_SCOPE") == "1")
+                        ? PrepareWordLifecycleTemplate() : null;
+                    return template == null ? ((dynamic)collection).Add() : ((dynamic)collection).Add(Template: template);
+                }
                 return reopen ? ((dynamic)collection).Open(DocumentPath, 0, 0, -1) : ((dynamic)collection).Add(-1);
             }
             finally { Release(collection); }
@@ -888,7 +912,7 @@ namespace VBAi.Tests.Integration
                         else StopOwnedDialogHandler();
                     }
                     if (Kind == "Word") { if (document != null) ((dynamic)document).Close(0); }
-                    else if (Kind == "PowerPoint") { if (document != null) { ((dynamic)document).Saved = -1; ((dynamic)document).Close(); } }
+                    else if (Kind == "PowerPoint") QuitSoleOwnedPowerPoint();
                     else if (Kind == "Access")
                     {
                         if (adapterOnly) CloseAccessDatabaseDiscarding();
@@ -917,7 +941,7 @@ namespace VBAi.Tests.Integration
             bool externalReferencesReleased = true;
             try { Release(document); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
             document = null;
-            if (owned && nativeIdentityVerified && Kind != "Access" && Kind != "Publisher")
+            if (owned && nativeIdentityVerified && Kind != "Access" && Kind != "Publisher" && Kind != "PowerPoint")
                 try { QuitOwnedOnce(() => { if (mainWordDesktop) ObserveMainWord(IntPtr.Zero, false, false); if (Kind == "Word") ((dynamic)application).Quit(0); else ((dynamic)application).Quit(); }); }
                 catch (Exception error) { RetainUncertainOffice(); RecordCleanupFailure(error.Message); return; }
             try { Release(application); } catch (Exception error) { externalReferencesReleased = false; RecordCleanupFailure(error.Message); }
@@ -1098,15 +1122,6 @@ namespace VBAi.Tests.Integration
                 }
             }
             finally { Release(commands); Release(current); }
-        }
-        private void Release(object item)
-        {
-            if (commandContainment.Pending || commandContainment.Uncertain)
-            {
-                if (item != null) retainedDiagnosticReferences.Add(item);
-                return;
-            }
-            if (item != null && Marshal.IsComObject(item)) Marshal.FinalReleaseComObject(item);
         }
     }
 }

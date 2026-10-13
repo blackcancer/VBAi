@@ -9,11 +9,14 @@ namespace VBAi.Tests.Unit
     using VBAi;
 
     /// <summary>Vérifie les préconditions, opérations et récupérations du coordinateur Git VBA.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     [DoNotParallelize]
     public sealed partial class MacroGitOperationsTests
     {
+        /// <summary>Retains original refusal and snapshot evidence from the managed Git authority scenarios.</summary>
+        public TestContext TestContext { get; set; }
+
         [TestMethod]
         public void RevisionUsesLogicalFormDataWithoutLosingRepositoryStateOrTransportBytes()
         {

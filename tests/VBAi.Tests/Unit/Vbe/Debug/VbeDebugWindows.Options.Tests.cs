@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Web.Script.Serialization;
 using System.Windows.Automation;
 
@@ -986,6 +986,26 @@ namespace VBAi.Tests.Unit
                 Assert.ThrowsException<InvalidOperationException>(() => categories.FormatCategories(fixture.Host.Handle, 0));
                 Assert.AreEqual("Comment", fixture.CurrentCategory, "Native palette read failure restores the initial category.");
                 Assert.IsFalse(fixture.Palettes[0].Password);
+            }
+        }
+
+        [TestMethod]
+        public void DisabledNativePaletteCannotBeAdvertisedAsWritableByAnEnabledUiaProvider()
+        {
+            using (var fixture = new OwnedNativeOptionsControls())
+            {
+                var probe = Native<VbeDebugWindows.IOptionsProbe>("NativeOptionsProbe");
+                probe.Tabs(fixture.Host.Handle);
+                var categories = (VbeDebugWindows.IFormatCategoriesOptionsProbe)probe;
+                // The owner disables the native indicator for Keyword. Simulate
+                // a stale provider still claiming it is enabled.
+                fixture.OnCategoryNotification = name => fixture.Palettes[2].Enabled = true;
+                var snapshot = categories.FormatCategories(fixture.Host.Handle, 0);
+                Assert.IsFalse(snapshot.Single(x => x.Category == "Keyword").Palettes.Single(x => x.Name == "Indicator").Enabled);
+                Assert.AreEqual("Normal", fixture.CurrentCategory);
+                categories.SelectFormatCategory(fixture.Host.Handle, 0, "Keyword");
+                Assert.IsFalse(probe.Controls(fixture.Host.Handle, 0).Single(x => x.Name == "Indicator").Enabled);
+                Assert.IsTrue(fixture.Palettes[2].Enabled, "The provider remains stale; neither read writes a preference.");
             }
         }
 

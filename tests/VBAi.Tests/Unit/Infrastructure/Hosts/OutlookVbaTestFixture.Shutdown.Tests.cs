@@ -12,7 +12,7 @@ namespace VBAi.Tests.Unit
 {
     /// <summary>Uses managed fake COM objects and a testhost query handle; never activates or closes Outlook.</summary>
     [TestClass, TestCategory("Unit"), DoNotParallelize]
-    public sealed class OutlookVbaTestFixtureShutdownTests
+    public sealed partial class OutlookVbaTestFixtureShutdownTests
     {
         [TestMethod]
         public void PendingNativeRunRetainsAllReferencesAndOtmWithoutAnyCleanupOrRetry()
@@ -143,6 +143,7 @@ namespace VBAi.Tests.Unit
             SetField(fixture, "process", process); SetField(fixture, "application", application); SetField(fixture, "inspector", inspector);
             SetField(fixture, "item", new object()); SetField(fixture, "commandBars", new object());
             fixture.VerifyOwnedProcess = () => { }; // All application operations below target only these managed fakes.
+            fixture.WaitForOwnedShutdownExit = timeout => false;
             try { action(fixture, application, inspector, process, root); }
             finally
             {

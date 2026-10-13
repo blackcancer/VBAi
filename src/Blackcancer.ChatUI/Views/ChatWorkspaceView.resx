@@ -1,0 +1,2408 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="transcriptPanel.AutoScroll" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="transcriptPanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="transcriptPanel.FlowDirection" type="System.Windows.Forms.FlowDirection, System.Windows.Forms">
+    <value>TopDown</value>
+  </data>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="transcriptPanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="transcriptPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 380</value>
+  </data>
+  <data name="transcriptPanel.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="transcriptPanel.WrapContents" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;transcriptPanel.Name" xml:space="preserve">
+    <value>transcriptPanel</value>
+  </data>
+  <data name="&gt;&gt;transcriptPanel.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatTranscriptView, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;transcriptPanel.Parent" xml:space="preserve">
+    <value>TranscriptHost</value>
+  </data>
+  <data name="&gt;&gt;transcriptPanel.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="TranscriptHost.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="TranscriptHost.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="TranscriptHost.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="TranscriptHost.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 380</value>
+  </data>
+  <data name="TranscriptHost.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;TranscriptHost.Name" xml:space="preserve">
+    <value>TranscriptHost</value>
+  </data>
+  <data name="&gt;&gt;TranscriptHost.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;TranscriptHost.Parent" xml:space="preserve">
+    <value>conversationPanel</value>
+  </data>
+  <data name="&gt;&gt;TranscriptHost.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="AdditionalContextHost.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="AdditionalContextHost.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="AdditionalContextHost.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 74</value>
+  </data>
+  <data name="AdditionalContextHost.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="AdditionalContextHost.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 1</value>
+  </data>
+  <data name="AdditionalContextHost.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="AdditionalContextHost.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;AdditionalContextHost.Name" xml:space="preserve">
+    <value>AdditionalContextHost</value>
+  </data>
+  <data name="&gt;&gt;AdditionalContextHost.Type" xml:space="preserve">
+    <value>System.Windows.Forms.FlowLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;AdditionalContextHost.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;AdditionalContextHost.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="PendingMessagesHost.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="PendingMessagesHost.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="PendingMessagesHost.FlowDirection" type="System.Windows.Forms.FlowDirection, System.Windows.Forms">
+    <value>TopDown</value>
+  </data>
+  <data name="PendingMessagesHost.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 110</value>
+  </data>
+  <data name="PendingMessagesHost.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="PendingMessagesHost.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 1</value>
+  </data>
+  <data name="PendingMessagesHost.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="PendingMessagesHost.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="PendingMessagesHost.WrapContents" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;PendingMessagesHost.Name" xml:space="preserve">
+    <value>PendingMessagesHost</value>
+  </data>
+  <data name="&gt;&gt;PendingMessagesHost.Type" xml:space="preserve">
+    <value>System.Windows.Forms.FlowLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;PendingMessagesHost.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;PendingMessagesHost.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="HeaderActionsHost.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="HeaderActionsHost.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="HeaderActionsHost.Location" type="System.Drawing.Point, System.Drawing">
+    <value>580, 0</value>
+  </data>
+  <data name="HeaderActionsHost.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="HeaderActionsHost.Size" type="System.Drawing.Size, System.Drawing">
+    <value>1, 36</value>
+  </data>
+  <data name="HeaderActionsHost.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="HeaderActionsHost.WrapContents" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;HeaderActionsHost.Name" xml:space="preserve">
+    <value>HeaderActionsHost</value>
+  </data>
+  <data name="&gt;&gt;HeaderActionsHost.Type" xml:space="preserve">
+    <value>System.Windows.Forms.FlowLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;HeaderActionsHost.Parent" xml:space="preserve">
+    <value>headingLayout</value>
+  </data>
+  <data name="&gt;&gt;HeaderActionsHost.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <metadata name="fileAttachmentDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <data name="fileAttachmentDialog.Filter" xml:space="preserve">
+    <value>All files (*.*)|*.*</value>
+  </data>
+  <data name="fileAttachmentDialog.Title" xml:space="preserve">
+    <value>Attach files to the next message</value>
+  </data>
+  <metadata name="toolTips.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>329, 17</value>
+  </metadata>
+  <data name="modelSummary.AccessibleName" xml:space="preserve">
+    <value>Model and reasoning effort</value>
+  </data>
+  <data name="modelSummary.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="modelSummary.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="modelSummary.Location" type="System.Drawing.Point, System.Drawing">
+    <value>75, 3</value>
+  </data>
+  <data name="modelSummary.Size" type="System.Drawing.Size, System.Drawing">
+    <value>448, 24</value>
+  </data>
+  <data name="modelSummary.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="modelSummary.Text" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="&gt;&gt;modelSummary.Name" xml:space="preserve">
+    <value>modelSummary</value>
+  </data>
+  <data name="&gt;&gt;modelSummary.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;modelSummary.Parent" xml:space="preserve">
+    <value>actionsLayout</value>
+  </data>
+  <data name="&gt;&gt;modelSummary.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="effortPicker.AccessibleName" xml:space="preserve">
+    <value>Reasoning effort</value>
+  </data>
+  <data name="effortPicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="effortPicker.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="effortPicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="effortPicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>420, 3</value>
+  </data>
+  <data name="effortPicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>157, 23</value>
+  </data>
+  <data name="effortPicker.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;effortPicker.Name" xml:space="preserve">
+    <value>effortPicker</value>
+  </data>
+  <data name="&gt;&gt;effortPicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;effortPicker.Parent" xml:space="preserve">
+    <value>providerLayout</value>
+  </data>
+  <data name="&gt;&gt;effortPicker.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <metadata name="optionsMenu.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>426, 17</value>
+  </metadata>
+  <data name="configureMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>125, 22</value>
+  </data>
+  <data name="configureMenuItem.Text" xml:space="preserve">
+    <value>Settings…</value>
+  </data>
+  <data name="optionsMenu.Size" type="System.Drawing.Size, System.Drawing">
+    <value>126, 26</value>
+  </data>
+  <data name="&gt;&gt;optionsMenu.Name" xml:space="preserve">
+    <value>optionsMenu</value>
+  </data>
+  <data name="&gt;&gt;optionsMenu.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ContextMenuStrip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="rootLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="headingLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="titleLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="sessionTitle.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="sessionTitle.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Segoe UI Semibold, 9pt</value>
+  </data>
+  <data name="sessionTitle.Location" type="System.Drawing.Point, System.Drawing">
+    <value>4, 0</value>
+  </data>
+  <data name="sessionTitle.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 0, 4, 0</value>
+  </data>
+  <data name="sessionTitle.Size" type="System.Drawing.Size, System.Drawing">
+    <value>500, 36</value>
+  </data>
+  <data name="sessionTitle.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="sessionTitle.Text" xml:space="preserve">
+    <value>Your AI agent for application</value>
+  </data>
+  <data name="&gt;&gt;sessionTitle.Name" xml:space="preserve">
+    <value>sessionTitle</value>
+  </data>
+  <data name="&gt;&gt;sessionTitle.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;sessionTitle.Parent" xml:space="preserve">
+    <value>titleLayout</value>
+  </data>
+  <data name="&gt;&gt;sessionTitle.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="titleLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="titleLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="titleLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="titleLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="titleLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>508, 36</value>
+  </data>
+  <data name="titleLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;titleLayout.Name" xml:space="preserve">
+    <value>titleLayout</value>
+  </data>
+  <data name="&gt;&gt;titleLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;titleLayout.Parent" xml:space="preserve">
+    <value>headingLayout</value>
+  </data>
+  <data name="&gt;&gt;titleLayout.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="titleLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="sessionTitle" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100" /&gt;&lt;Rows Styles="Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="newChatButton.AccessibleName" xml:space="preserve">
+    <value>New chat</value>
+  </data>
+  <data name="newChatButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="newChatButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>511, 3</value>
+  </data>
+  <data name="newChatButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 30</value>
+  </data>
+  <data name="newChatButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="newChatButton.Text" xml:space="preserve">
+    <value>New chat</value>
+  </data>
+  <data name="&gt;&gt;newChatButton.Name" xml:space="preserve">
+    <value>newChatButton</value>
+  </data>
+  <data name="&gt;&gt;newChatButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;newChatButton.Parent" xml:space="preserve">
+    <value>headingLayout</value>
+  </data>
+  <data name="&gt;&gt;newChatButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="settingsButton.AccessibleName" xml:space="preserve">
+    <value>Conversation options</value>
+  </data>
+  <data name="settingsButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="settingsButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>547, 3</value>
+  </data>
+  <data name="settingsButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 30</value>
+  </data>
+  <data name="settingsButton.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="settingsButton.Text" xml:space="preserve">
+    <value>Options</value>
+  </data>
+  <data name="&gt;&gt;settingsButton.Name" xml:space="preserve">
+    <value>settingsButton</value>
+  </data>
+  <data name="&gt;&gt;settingsButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;settingsButton.Parent" xml:space="preserve">
+    <value>headingLayout</value>
+  </data>
+  <data name="&gt;&gt;settingsButton.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="headingLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="headingLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 6</value>
+  </data>
+  <data name="headingLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="headingLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="headingLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 36</value>
+  </data>
+  <data name="headingLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;headingLayout.Name" xml:space="preserve">
+    <value>headingLayout</value>
+  </data>
+  <data name="&gt;&gt;headingLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;headingLayout.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;headingLayout.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="headingLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="titleLayout" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="newChatButton" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;Control Name="settingsButton" Row="0" RowSpan="1" Column="2" ColumnSpan="1" /&gt;&lt;Control Name="HeaderActionsHost" Row="0" RowSpan="1" Column="3" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100,Absolute,36,Absolute,36,AutoSize,0" /&gt;&lt;Rows Styles="Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="scopeLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="scopePicker.AccessibleName" xml:space="preserve">
+    <value>Conversation scope</value>
+  </data>
+  <data name="scopePicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="scopePicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="scopePicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>39, 3</value>
+  </data>
+  <data name="scopePicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>538, 23</value>
+  </data>
+  <data name="scopePicker.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;scopePicker.Name" xml:space="preserve">
+    <value>scopePicker</value>
+  </data>
+  <data name="&gt;&gt;scopePicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;scopePicker.Parent" xml:space="preserve">
+    <value>scopeLayout</value>
+  </data>
+  <data name="&gt;&gt;scopePicker.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="historyButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="historyButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="historyButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 26</value>
+  </data>
+  <data name="historyButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="historyButton.Text" xml:space="preserve">
+    <value>Conversation history</value>
+  </data>
+  <data name="&gt;&gt;historyButton.Name" xml:space="preserve">
+    <value>historyButton</value>
+  </data>
+  <data name="&gt;&gt;historyButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;historyButton.Parent" xml:space="preserve">
+    <value>scopeLayout</value>
+  </data>
+  <data name="&gt;&gt;historyButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="scopeLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="scopeLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 42</value>
+  </data>
+  <data name="scopeLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="scopeLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="scopeLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 32</value>
+  </data>
+  <data name="scopeLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;scopeLayout.Name" xml:space="preserve">
+    <value>scopeLayout</value>
+  </data>
+  <data name="&gt;&gt;scopeLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;scopeLayout.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;scopeLayout.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="scopeLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="scopePicker" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;Control Name="historyButton" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Absolute,36,Percent,100" /&gt;&lt;Rows Styles="Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="projectLayout.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="projectLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="projectPicker.AccessibleName" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="projectPicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="projectPicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="projectPicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="projectPicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>536, 23</value>
+  </data>
+  <data name="projectPicker.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;projectPicker.Name" xml:space="preserve">
+    <value>projectPicker</value>
+  </data>
+  <data name="&gt;&gt;projectPicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;projectPicker.Parent" xml:space="preserve">
+    <value>projectLayout</value>
+  </data>
+  <data name="&gt;&gt;projectPicker.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="createProjectButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="createProjectButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>545, 3</value>
+  </data>
+  <data name="createProjectButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 30</value>
+  </data>
+  <data name="createProjectButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="createProjectButton.Text" xml:space="preserve">
+    <value>Create project</value>
+  </data>
+  <data name="&gt;&gt;createProjectButton.Name" xml:space="preserve">
+    <value>createProjectButton</value>
+  </data>
+  <data name="&gt;&gt;createProjectButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;createProjectButton.Parent" xml:space="preserve">
+    <value>projectLayout</value>
+  </data>
+  <data name="&gt;&gt;createProjectButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="projectLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="projectLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 74</value>
+  </data>
+  <data name="projectLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="projectLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="projectLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 36</value>
+  </data>
+  <data name="projectLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="projectLayout.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;projectLayout.Name" xml:space="preserve">
+    <value>projectLayout</value>
+  </data>
+  <data name="&gt;&gt;projectLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;projectLayout.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;projectLayout.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="projectLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="projectPicker" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="createProjectButton" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100,AutoSize,0" /&gt;&lt;Rows Styles="" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="welcomePanel.ColumnCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="welcomeTitle.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="welcomeTitle.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="welcomeTitle.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Segoe UI, 14pt, style=Bold</value>
+  </data>
+  <data name="welcomeTitle.Location" type="System.Drawing.Point, System.Drawing">
+    <value>19, 24</value>
+  </data>
+  <data name="welcomeTitle.Size" type="System.Drawing.Size, System.Drawing">
+    <value>542, 25</value>
+  </data>
+  <data name="welcomeTitle.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="welcomeTitle.Text" xml:space="preserve">
+    <value>What would you like to build?</value>
+  </data>
+  <data name="&gt;&gt;welcomeTitle.Name" xml:space="preserve">
+    <value>welcomeTitle</value>
+  </data>
+  <data name="&gt;&gt;welcomeTitle.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;welcomeTitle.Parent" xml:space="preserve">
+    <value>welcomePanel</value>
+  </data>
+  <data name="&gt;&gt;welcomeTitle.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="welcomeBody.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="welcomeBody.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="welcomeBody.Location" type="System.Drawing.Point, System.Drawing">
+    <value>19, 49</value>
+  </data>
+  <data name="welcomeBody.Size" type="System.Drawing.Size, System.Drawing">
+    <value>542, 45</value>
+  </data>
+  <data name="welcomeBody.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="welcomeBody.Text" xml:space="preserve">
+    <value>Discuss your model, inspect the active document, or describe an operation.
+
+Choose your provider and model in Settings to get started.</value>
+  </data>
+  <data name="&gt;&gt;welcomeBody.Name" xml:space="preserve">
+    <value>welcomeBody</value>
+  </data>
+  <data name="&gt;&gt;welcomeBody.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;welcomeBody.Parent" xml:space="preserve">
+    <value>welcomePanel</value>
+  </data>
+  <data name="&gt;&gt;welcomeBody.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="welcomePanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="welcomePanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="welcomePanel.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>16, 24, 16, 16</value>
+  </data>
+  <data name="welcomePanel.RowCount" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="welcomePanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 380</value>
+  </data>
+  <data name="welcomePanel.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="welcomePanel.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;welcomePanel.Name" xml:space="preserve">
+    <value>welcomePanel</value>
+  </data>
+  <data name="&gt;&gt;welcomePanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;welcomePanel.Parent" xml:space="preserve">
+    <value>conversationPanel</value>
+  </data>
+  <data name="&gt;&gt;welcomePanel.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="welcomePanel.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="welcomeTitle" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="welcomeBody" Row="1" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100" /&gt;&lt;Rows Styles="AutoSize,0,AutoSize,0,Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="historyLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="historyLabel.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="historyLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="historyLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 4</value>
+  </data>
+  <data name="historyLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>530, 32</value>
+  </data>
+  <data name="historyLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="historyLabel.Text" xml:space="preserve">
+    <value>Conversations</value>
+  </data>
+  <data name="&gt;&gt;historyLabel.Name" xml:space="preserve">
+    <value>historyLabel</value>
+  </data>
+  <data name="&gt;&gt;historyLabel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;historyLabel.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;historyLabel.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="historyEmptyLabel.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="historyEmptyLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="historyEmptyLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 93</value>
+  </data>
+  <data name="historyEmptyLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 15</value>
+  </data>
+  <data name="historyEmptyLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="historyEmptyLabel.Text" xml:space="preserve">
+    <value>No conversations in this scope.</value>
+  </data>
+  <data name="&gt;&gt;historyEmptyLabel.Name" xml:space="preserve">
+    <value>historyEmptyLabel</value>
+  </data>
+  <data name="&gt;&gt;historyEmptyLabel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;historyEmptyLabel.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;historyEmptyLabel.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sessionList.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="sessionList.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="sessionList.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 111</value>
+  </data>
+  <data name="sessionList.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 154</value>
+  </data>
+  <data name="sessionList.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;sessionList.Name" xml:space="preserve">
+    <value>sessionList</value>
+  </data>
+  <data name="&gt;&gt;sessionList.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ListBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;sessionList.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;sessionList.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="closeHistoryButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="closeHistoryButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>543, 7</value>
+  </data>
+  <data name="closeHistoryButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 26</value>
+  </data>
+  <data name="closeHistoryButton.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="closeHistoryButton.Text" xml:space="preserve">
+    <value>Close history</value>
+  </data>
+  <data name="&gt;&gt;closeHistoryButton.Name" xml:space="preserve">
+    <value>closeHistoryButton</value>
+  </data>
+  <data name="&gt;&gt;closeHistoryButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;closeHistoryButton.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;closeHistoryButton.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="historySearchTextBox.AccessibleName" xml:space="preserve">
+    <value>Search conversations</value>
+  </data>
+  <data name="historySearchTextBox.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="historySearchTextBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 39</value>
+  </data>
+  <data name="historySearchTextBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 23</value>
+  </data>
+  <data name="historySearchTextBox.TabIndex" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;historySearchTextBox.Name" xml:space="preserve">
+    <value>historySearchTextBox</value>
+  </data>
+  <data name="&gt;&gt;historySearchTextBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;historySearchTextBox.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;historySearchTextBox.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="showArchivedCheckBox.AccessibleName" xml:space="preserve">
+    <value>Show archived</value>
+  </data>
+  <data name="showArchivedCheckBox.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="showArchivedCheckBox.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="showArchivedCheckBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 71</value>
+  </data>
+  <data name="showArchivedCheckBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 19</value>
+  </data>
+  <data name="showArchivedCheckBox.TabIndex" type="System.Int32, mscorlib">
+    <value>5</value>
+  </data>
+  <data name="showArchivedCheckBox.Text" xml:space="preserve">
+    <value>Show archived</value>
+  </data>
+  <data name="&gt;&gt;showArchivedCheckBox.Name" xml:space="preserve">
+    <value>showArchivedCheckBox</value>
+  </data>
+  <data name="&gt;&gt;showArchivedCheckBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;showArchivedCheckBox.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;showArchivedCheckBox.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="chatTitleEditor.AccessibleName" xml:space="preserve">
+    <value>Conversation title</value>
+  </data>
+  <data name="chatTitleEditor.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="chatTitleEditor.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 271</value>
+  </data>
+  <data name="chatTitleEditor.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 23</value>
+  </data>
+  <data name="chatTitleEditor.TabIndex" type="System.Int32, mscorlib">
+    <value>6</value>
+  </data>
+  <data name="&gt;&gt;chatTitleEditor.Name" xml:space="preserve">
+    <value>chatTitleEditor</value>
+  </data>
+  <data name="&gt;&gt;chatTitleEditor.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;chatTitleEditor.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;chatTitleEditor.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="historyActions.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="historyActions.AutoSizeMode" type="System.Windows.Forms.AutoSizeMode, System.Windows.Forms">
+    <value>GrowAndShrink</value>
+  </data>
+  <data name="renameChatButton.AccessibleName" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="renameChatButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="renameChatButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="renameChatButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 30</value>
+  </data>
+  <data name="renameChatButton.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="renameChatButton.Text" xml:space="preserve">
+    <value>Rename</value>
+  </data>
+  <data name="&gt;&gt;renameChatButton.Name" xml:space="preserve">
+    <value>renameChatButton</value>
+  </data>
+  <data name="&gt;&gt;renameChatButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;renameChatButton.Parent" xml:space="preserve">
+    <value>historyActions</value>
+  </data>
+  <data name="&gt;&gt;renameChatButton.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="archiveChatButton.AccessibleName" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="archiveChatButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="archiveChatButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>41, 3</value>
+  </data>
+  <data name="archiveChatButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 30</value>
+  </data>
+  <data name="archiveChatButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="archiveChatButton.Text" xml:space="preserve">
+    <value>Archive</value>
+  </data>
+  <data name="&gt;&gt;archiveChatButton.Name" xml:space="preserve">
+    <value>archiveChatButton</value>
+  </data>
+  <data name="&gt;&gt;archiveChatButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;archiveChatButton.Parent" xml:space="preserve">
+    <value>historyActions</value>
+  </data>
+  <data name="&gt;&gt;archiveChatButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="pinChatButton.AccessibleName" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="pinChatButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="pinChatButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>79, 3</value>
+  </data>
+  <data name="pinChatButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 30</value>
+  </data>
+  <data name="pinChatButton.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="pinChatButton.Text" xml:space="preserve">
+    <value>Pin</value>
+  </data>
+  <data name="&gt;&gt;pinChatButton.Name" xml:space="preserve">
+    <value>pinChatButton</value>
+  </data>
+  <data name="&gt;&gt;pinChatButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;pinChatButton.Parent" xml:space="preserve">
+    <value>historyActions</value>
+  </data>
+  <data name="&gt;&gt;pinChatButton.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="exportChatButton.AccessibleName" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="exportChatButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="exportChatButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>117, 3</value>
+  </data>
+  <data name="exportChatButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 30</value>
+  </data>
+  <data name="exportChatButton.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="exportChatButton.Text" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="&gt;&gt;exportChatButton.Name" xml:space="preserve">
+    <value>exportChatButton</value>
+  </data>
+  <data name="&gt;&gt;exportChatButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;exportChatButton.Parent" xml:space="preserve">
+    <value>historyActions</value>
+  </data>
+  <data name="&gt;&gt;exportChatButton.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="deleteChatButton.AccessibleName" xml:space="preserve">
+    <value>Delete conversation</value>
+  </data>
+  <data name="deleteChatButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="deleteChatButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>155, 3</value>
+  </data>
+  <data name="deleteChatButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 30</value>
+  </data>
+  <data name="deleteChatButton.TabIndex" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="deleteChatButton.Text" xml:space="preserve">
+    <value>Delete conversation</value>
+  </data>
+  <data name="&gt;&gt;deleteChatButton.Name" xml:space="preserve">
+    <value>deleteChatButton</value>
+  </data>
+  <data name="&gt;&gt;deleteChatButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;deleteChatButton.Parent" xml:space="preserve">
+    <value>historyActions</value>
+  </data>
+  <data name="&gt;&gt;deleteChatButton.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="historyActions.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="historyActions.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 303</value>
+  </data>
+  <data name="historyActions.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 36</value>
+  </data>
+  <data name="historyActions.TabIndex" type="System.Int32, mscorlib">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;historyActions.Name" xml:space="preserve">
+    <value>historyActions</value>
+  </data>
+  <data name="&gt;&gt;historyActions.Type" xml:space="preserve">
+    <value>System.Windows.Forms.FlowLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;historyActions.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;historyActions.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="memoryToggleButton.AccessibleName" xml:space="preserve">
+    <value>Project memory</value>
+  </data>
+  <data name="memoryToggleButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="memoryToggleButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="memoryToggleButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 345</value>
+  </data>
+  <data name="memoryToggleButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 28</value>
+  </data>
+  <data name="memoryToggleButton.TabIndex" type="System.Int32, mscorlib">
+    <value>8</value>
+  </data>
+  <data name="memoryToggleButton.Text" xml:space="preserve">
+    <value>Project memory</value>
+  </data>
+  <data name="&gt;&gt;memoryToggleButton.Name" xml:space="preserve">
+    <value>memoryToggleButton</value>
+  </data>
+  <data name="&gt;&gt;memoryToggleButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;memoryToggleButton.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;memoryToggleButton.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="memoryPanel.AccessibleName" xml:space="preserve">
+    <value>Project memory</value>
+  </data>
+  <data name="memoryLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="memoryEditor.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="memoryEditor.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="memoryEditor.Multiline" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="memoryEditor.ScrollBars" type="System.Windows.Forms.ScrollBars, System.Windows.Forms">
+    <value>Vertical</value>
+  </data>
+  <data name="memoryEditor.Size" type="System.Drawing.Size, System.Drawing">
+    <value>554, 1</value>
+  </data>
+  <data name="memoryEditor.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;memoryEditor.Name" xml:space="preserve">
+    <value>memoryEditor</value>
+  </data>
+  <data name="&gt;&gt;memoryEditor.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;memoryEditor.Parent" xml:space="preserve">
+    <value>memoryLayout</value>
+  </data>
+  <data name="&gt;&gt;memoryEditor.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="attachMemoryCheckBox.AccessibleName" xml:space="preserve">
+    <value>Attach saved memory to the next message</value>
+  </data>
+  <data name="attachMemoryCheckBox.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="attachMemoryCheckBox.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="attachMemoryCheckBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, -55</value>
+  </data>
+  <data name="attachMemoryCheckBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>554, 19</value>
+  </data>
+  <data name="attachMemoryCheckBox.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="attachMemoryCheckBox.Text" xml:space="preserve">
+    <value>Attach saved memory to the next message</value>
+  </data>
+  <data name="&gt;&gt;attachMemoryCheckBox.Name" xml:space="preserve">
+    <value>attachMemoryCheckBox</value>
+  </data>
+  <data name="&gt;&gt;attachMemoryCheckBox.Type" xml:space="preserve">
+    <value>System.Windows.Forms.CheckBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;attachMemoryCheckBox.Parent" xml:space="preserve">
+    <value>memoryLayout</value>
+  </data>
+  <data name="&gt;&gt;attachMemoryCheckBox.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="saveMemoryButton.AccessibleName" xml:space="preserve">
+    <value>Save memory</value>
+  </data>
+  <data name="saveMemoryButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="saveMemoryButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="saveMemoryButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, -30</value>
+  </data>
+  <data name="saveMemoryButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>554, 28</value>
+  </data>
+  <data name="saveMemoryButton.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="saveMemoryButton.Text" xml:space="preserve">
+    <value>Save memory</value>
+  </data>
+  <data name="&gt;&gt;saveMemoryButton.Name" xml:space="preserve">
+    <value>saveMemoryButton</value>
+  </data>
+  <data name="&gt;&gt;saveMemoryButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;saveMemoryButton.Parent" xml:space="preserve">
+    <value>memoryLayout</value>
+  </data>
+  <data name="&gt;&gt;saveMemoryButton.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="memoryLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="memoryLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 19</value>
+  </data>
+  <data name="memoryLayout.RowCount" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="memoryLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>560, 0</value>
+  </data>
+  <data name="memoryLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;memoryLayout.Name" xml:space="preserve">
+    <value>memoryLayout</value>
+  </data>
+  <data name="&gt;&gt;memoryLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;memoryLayout.Parent" xml:space="preserve">
+    <value>memoryPanel</value>
+  </data>
+  <data name="&gt;&gt;memoryLayout.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="memoryLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="memoryEditor" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="attachMemoryCheckBox" Row="1" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="saveMemoryButton" Row="2" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100" /&gt;&lt;Rows Styles="Percent,100,AutoSize,0,Absolute,34" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="memoryPanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="memoryPanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>7, 379</value>
+  </data>
+  <data name="memoryPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>566, 1</value>
+  </data>
+  <data name="memoryPanel.TabIndex" type="System.Int32, mscorlib">
+    <value>9</value>
+  </data>
+  <data name="memoryPanel.Text" xml:space="preserve">
+    <value>Project memory</value>
+  </data>
+  <data name="memoryPanel.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;memoryPanel.Name" xml:space="preserve">
+    <value>memoryPanel</value>
+  </data>
+  <data name="&gt;&gt;memoryPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.GroupBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;memoryPanel.Parent" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;memoryPanel.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="historyLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="historyLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="historyLayout.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>4, 4, 4, 4</value>
+  </data>
+  <data name="historyLayout.RowCount" type="System.Int32, mscorlib">
+    <value>9</value>
+  </data>
+  <data name="historyLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 380</value>
+  </data>
+  <data name="historyLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;historyLayout.Name" xml:space="preserve">
+    <value>historyLayout</value>
+  </data>
+  <data name="&gt;&gt;historyLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;historyLayout.Parent" xml:space="preserve">
+    <value>historyPanel</value>
+  </data>
+  <data name="&gt;&gt;historyLayout.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="historyLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="historyLabel" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="historyEmptyLabel" Row="3" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="sessionList" Row="4" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="closeHistoryButton" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;Control Name="historySearchTextBox" Row="1" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="showArchivedCheckBox" Row="2" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="chatTitleEditor" Row="5" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="historyActions" Row="6" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="memoryToggleButton" Row="7" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;Control Name="memoryPanel" Row="8" RowSpan="1" Column="0" ColumnSpan="2" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100,Absolute,36" /&gt;&lt;Rows Styles="Absolute,32,Absolute,32,AutoSize,0,AutoSize,0,Percent,100,Absolute,32,AutoSize,0,Absolute,34,Absolute,0" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="historyPanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="historyPanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="historyPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 380</value>
+  </data>
+  <data name="historyPanel.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="historyPanel.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;historyPanel.Name" xml:space="preserve">
+    <value>historyPanel</value>
+  </data>
+  <data name="&gt;&gt;historyPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;historyPanel.Parent" xml:space="preserve">
+    <value>conversationPanel</value>
+  </data>
+  <data name="&gt;&gt;historyPanel.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="conversationPanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="conversationPanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 114</value>
+  </data>
+  <data name="conversationPanel.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 4, 0, 4</value>
+  </data>
+  <data name="conversationPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 380</value>
+  </data>
+  <data name="conversationPanel.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;conversationPanel.Name" xml:space="preserve">
+    <value>conversationPanel</value>
+  </data>
+  <data name="&gt;&gt;conversationPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;conversationPanel.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;conversationPanel.ZOrder" xml:space="preserve">
+    <value>5</value>
+  </data>
+  <data name="composerLayout.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="composerLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="contextChips.AutoScroll" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="contextChips.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="contextChips.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="contextChips.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 6</value>
+  </data>
+  <data name="contextChips.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="contextChips.MaximumSize" type="System.Drawing.Size, System.Drawing">
+    <value>0, 76</value>
+  </data>
+  <data name="contextChips.Size" type="System.Drawing.Size, System.Drawing">
+    <value>568, 1</value>
+  </data>
+  <data name="contextChips.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="contextChips.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;contextChips.Name" xml:space="preserve">
+    <value>contextChips</value>
+  </data>
+  <data name="&gt;&gt;contextChips.Type" xml:space="preserve">
+    <value>System.Windows.Forms.FlowLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;contextChips.Parent" xml:space="preserve">
+    <value>composerLayout</value>
+  </data>
+  <data name="&gt;&gt;contextChips.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="inputTextBox.AccessibleName" xml:space="preserve">
+    <value>Message</value>
+  </data>
+  <data name="inputTextBox.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="inputTextBox.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Segoe UI, 10.5pt</value>
+  </data>
+  <data name="inputTextBox.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 6</value>
+  </data>
+  <data name="inputTextBox.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="inputTextBox.Size" type="System.Drawing.Size, System.Drawing">
+    <value>568, 80</value>
+  </data>
+  <data name="inputTextBox.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;inputTextBox.Name" xml:space="preserve">
+    <value>inputTextBox</value>
+  </data>
+  <data name="&gt;&gt;inputTextBox.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatInputView, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;inputTextBox.Parent" xml:space="preserve">
+    <value>composerLayout</value>
+  </data>
+  <data name="&gt;&gt;inputTextBox.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="actionsLayout.AutoSize" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="actionsLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="attachContextButton.AccessibleName" xml:space="preserve">
+    <value>Attach CAD context</value>
+  </data>
+  <metadata name="cadContextMenu.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>184, 17</value>
+  </metadata>
+  <data name="attachDocumentMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>209, 22</value>
+  </data>
+  <data name="attachDocumentMenuItem.Text" xml:space="preserve">
+    <value>Active document</value>
+  </data>
+  <data name="attachSelectionMenuItem.Size" type="System.Drawing.Size, System.Drawing">
+    <value>209, 22</value>
+  </data>
+  <data name="attachSelectionMenuItem.Text" xml:space="preserve">
+    <value>Selected feature or sketch</value>
+  </data>
+  <data name="cadContextMenu.Size" type="System.Drawing.Size, System.Drawing">
+    <value>210, 48</value>
+  </data>
+  <data name="&gt;&gt;cadContextMenu.Name" xml:space="preserve">
+    <value>cadContextMenu</value>
+  </data>
+  <data name="&gt;&gt;cadContextMenu.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ContextMenuStrip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="attachContextButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="attachContextButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="attachContextButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="attachContextButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 24</value>
+  </data>
+  <data name="attachContextButton.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;attachContextButton.Name" xml:space="preserve">
+    <value>attachContextButton</value>
+  </data>
+  <data name="&gt;&gt;attachContextButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;attachContextButton.Parent" xml:space="preserve">
+    <value>actionsLayout</value>
+  </data>
+  <data name="&gt;&gt;attachContextButton.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="attachFileButton.AccessibleName" xml:space="preserve">
+    <value>Attach files</value>
+  </data>
+  <data name="attachFileButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="attachFileButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="attachFileButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>39, 3</value>
+  </data>
+  <data name="attachFileButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 24</value>
+  </data>
+  <data name="attachFileButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;attachFileButton.Name" xml:space="preserve">
+    <value>attachFileButton</value>
+  </data>
+  <data name="&gt;&gt;attachFileButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;attachFileButton.Parent" xml:space="preserve">
+    <value>actionsLayout</value>
+  </data>
+  <data name="&gt;&gt;attachFileButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="stopButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="stopButton.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="stopButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="stopButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="stopButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 24</value>
+  </data>
+  <data name="stopButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="stopButton.Text" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="stopButton.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;stopButton.Name" xml:space="preserve">
+    <value>stopButton</value>
+  </data>
+  <data name="&gt;&gt;stopButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;stopButton.Parent" xml:space="preserve">
+    <value>sendActionsPanel</value>
+  </data>
+  <data name="&gt;&gt;stopButton.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="sendButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="sendButton.Enabled" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="sendButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="sendButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="sendButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 24</value>
+  </data>
+  <data name="sendButton.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="sendButton.Text" xml:space="preserve">
+    <value>Send</value>
+  </data>
+  <data name="&gt;&gt;sendButton.Name" xml:space="preserve">
+    <value>sendButton</value>
+  </data>
+  <data name="&gt;&gt;sendButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;sendButton.Parent" xml:space="preserve">
+    <value>sendActionsPanel</value>
+  </data>
+  <data name="&gt;&gt;sendButton.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="sendActionsPanel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="sendActionsPanel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>529, 3</value>
+  </data>
+  <data name="sendActionsPanel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 24</value>
+  </data>
+  <data name="sendActionsPanel.TabIndex" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="&gt;&gt;sendActionsPanel.Name" xml:space="preserve">
+    <value>sendActionsPanel</value>
+  </data>
+  <data name="&gt;&gt;sendActionsPanel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Panel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;sendActionsPanel.Parent" xml:space="preserve">
+    <value>actionsLayout</value>
+  </data>
+  <data name="&gt;&gt;sendActionsPanel.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="actionsLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="actionsLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>9, 89</value>
+  </data>
+  <data name="actionsLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="actionsLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>562, 30</value>
+  </data>
+  <data name="actionsLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;actionsLayout.Name" xml:space="preserve">
+    <value>actionsLayout</value>
+  </data>
+  <data name="&gt;&gt;actionsLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;actionsLayout.Parent" xml:space="preserve">
+    <value>composerLayout</value>
+  </data>
+  <data name="&gt;&gt;actionsLayout.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="actionsLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="attachContextButton" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="attachFileButton" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;Control Name="modelSummary" Row="0" RowSpan="1" Column="2" ColumnSpan="1" /&gt;&lt;Control Name="sendActionsPanel" Row="0" RowSpan="1" Column="3" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Absolute,36,Absolute,36,Percent,100,Absolute,36" /&gt;&lt;Rows Styles="Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="workflowLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="modePicker.AccessibleName" xml:space="preserve">
+    <value>Conversation mode</value>
+  </data>
+  <data name="modePicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="modePicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="modePicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="modePicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>92, 23</value>
+  </data>
+  <data name="modePicker.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;modePicker.Name" xml:space="preserve">
+    <value>modePicker</value>
+  </data>
+  <data name="&gt;&gt;modePicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;modePicker.Parent" xml:space="preserve">
+    <value>workflowLayout</value>
+  </data>
+  <data name="&gt;&gt;modePicker.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="approvalPicker.AccessibleName" xml:space="preserve">
+    <value>CAD action approval</value>
+  </data>
+  <data name="approvalPicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="approvalPicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="approvalPicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>101, 3</value>
+  </data>
+  <data name="approvalPicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>392, 23</value>
+  </data>
+  <data name="approvalPicker.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;approvalPicker.Name" xml:space="preserve">
+    <value>approvalPicker</value>
+  </data>
+  <data name="&gt;&gt;approvalPicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;approvalPicker.Parent" xml:space="preserve">
+    <value>workflowLayout</value>
+  </data>
+  <data name="&gt;&gt;approvalPicker.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="attachSelectionButton.AccessibleName" xml:space="preserve">
+    <value>Reference a application feature with #name</value>
+  </data>
+  <data name="attachSelectionButton.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="attachSelectionButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="attachSelectionButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>499, 3</value>
+  </data>
+  <data name="attachSelectionButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 28</value>
+  </data>
+  <data name="attachSelectionButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;attachSelectionButton.Name" xml:space="preserve">
+    <value>attachSelectionButton</value>
+  </data>
+  <data name="&gt;&gt;attachSelectionButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;attachSelectionButton.Parent" xml:space="preserve">
+    <value>workflowLayout</value>
+  </data>
+  <data name="&gt;&gt;attachSelectionButton.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="contextButton.AccessibleName" xml:space="preserve">
+    <value>Inspect active document context</value>
+  </data>
+  <data name="contextButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="contextButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>535, 3</value>
+  </data>
+  <data name="contextButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>30, 28</value>
+  </data>
+  <data name="contextButton.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="contextButton.Text" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="&gt;&gt;contextButton.Name" xml:space="preserve">
+    <value>contextButton</value>
+  </data>
+  <data name="&gt;&gt;contextButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;contextButton.Parent" xml:space="preserve">
+    <value>workflowLayout</value>
+  </data>
+  <data name="&gt;&gt;contextButton.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="workflowLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="workflowLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>6, 122</value>
+  </data>
+  <data name="workflowLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="workflowLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="workflowLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>568, 34</value>
+  </data>
+  <data name="workflowLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="&gt;&gt;workflowLayout.Name" xml:space="preserve">
+    <value>workflowLayout</value>
+  </data>
+  <data name="&gt;&gt;workflowLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;workflowLayout.Parent" xml:space="preserve">
+    <value>composerLayout</value>
+  </data>
+  <data name="&gt;&gt;workflowLayout.ZOrder" xml:space="preserve">
+    <value>3</value>
+  </data>
+  <data name="workflowLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="modePicker" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="approvalPicker" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;Control Name="attachSelectionButton" Row="0" RowSpan="1" Column="2" ColumnSpan="1" /&gt;&lt;Control Name="contextButton" Row="0" RowSpan="1" Column="3" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Absolute,98,Percent,100,Absolute,36,Absolute,36" /&gt;&lt;Rows Styles="Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="contextPreview.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="contextPreview.Location" type="System.Drawing.Point, System.Drawing">
+    <value>9, 159</value>
+  </data>
+  <data name="contextPreview.Multiline" type="System.Boolean, mscorlib">
+    <value>True</value>
+  </data>
+  <data name="contextPreview.ScrollBars" type="System.Windows.Forms.ScrollBars, System.Windows.Forms">
+    <value>Vertical</value>
+  </data>
+  <data name="contextPreview.Size" type="System.Drawing.Size, System.Drawing">
+    <value>562, 96</value>
+  </data>
+  <data name="contextPreview.TabIndex" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="contextPreview.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;contextPreview.Name" xml:space="preserve">
+    <value>contextPreview</value>
+  </data>
+  <data name="&gt;&gt;contextPreview.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TextBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;contextPreview.Parent" xml:space="preserve">
+    <value>composerLayout</value>
+  </data>
+  <data name="&gt;&gt;contextPreview.ZOrder" xml:space="preserve">
+    <value>4</value>
+  </data>
+  <data name="composerLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="composerLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 498</value>
+  </data>
+  <data name="composerLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="composerLayout.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>6, 6, 6, 6</value>
+  </data>
+  <data name="composerLayout.RowCount" type="System.Int32, mscorlib">
+    <value>6</value>
+  </data>
+  <data name="composerLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 264</value>
+  </data>
+  <data name="composerLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>4</value>
+  </data>
+  <data name="&gt;&gt;composerLayout.Name" xml:space="preserve">
+    <value>composerLayout</value>
+  </data>
+  <data name="&gt;&gt;composerLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;composerLayout.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;composerLayout.ZOrder" xml:space="preserve">
+    <value>6</value>
+  </data>
+  <data name="composerLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="contextChips" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="inputTextBox" Row="2" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="actionsLayout" Row="3" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="workflowLayout" Row="4" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="contextPreview" Row="5" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100" /&gt;&lt;Rows Styles="AutoSize,0,AutoSize,0,Absolute,80,Absolute,36,Absolute,34,AutoSize,0" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="providerLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>3</value>
+  </data>
+  <data name="providerPicker.AccessibleName" xml:space="preserve">
+    <value>Provider</value>
+  </data>
+  <data name="providerPicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="providerPicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="providerPicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>3, 3</value>
+  </data>
+  <data name="providerPicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>156, 23</value>
+  </data>
+  <data name="providerPicker.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;providerPicker.Name" xml:space="preserve">
+    <value>providerPicker</value>
+  </data>
+  <data name="&gt;&gt;providerPicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;providerPicker.Parent" xml:space="preserve">
+    <value>providerLayout</value>
+  </data>
+  <data name="&gt;&gt;providerPicker.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="modelPicker.AccessibleName" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="modelPicker.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="modelPicker.ItemHeight" type="System.Int32, mscorlib">
+    <value>15</value>
+  </data>
+  <data name="modelPicker.Location" type="System.Drawing.Point, System.Drawing">
+    <value>165, 3</value>
+  </data>
+  <data name="modelPicker.Size" type="System.Drawing.Size, System.Drawing">
+    <value>249, 23</value>
+  </data>
+  <data name="modelPicker.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="&gt;&gt;modelPicker.Name" xml:space="preserve">
+    <value>modelPicker</value>
+  </data>
+  <data name="&gt;&gt;modelPicker.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ComboBox, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;modelPicker.Parent" xml:space="preserve">
+    <value>providerLayout</value>
+  </data>
+  <data name="&gt;&gt;modelPicker.ZOrder" xml:space="preserve">
+    <value>2</value>
+  </data>
+  <data name="providerLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="providerLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 762</value>
+  </data>
+  <data name="providerLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="providerLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="providerLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 1</value>
+  </data>
+  <data name="providerLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>5</value>
+  </data>
+  <data name="providerLayout.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;providerLayout.Name" xml:space="preserve">
+    <value>providerLayout</value>
+  </data>
+  <data name="&gt;&gt;providerLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;providerLayout.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;providerLayout.ZOrder" xml:space="preserve">
+    <value>7</value>
+  </data>
+  <data name="providerLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="effortPicker" Row="0" RowSpan="1" Column="2" ColumnSpan="1" /&gt;&lt;Control Name="providerPicker" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="modelPicker" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,28,Percent,44,Percent,28" /&gt;&lt;Rows Styles="" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="latestButton.FlatStyle" type="System.Windows.Forms.FlatStyle, System.Windows.Forms">
+    <value>Flat</value>
+  </data>
+  <data name="latestButton.Location" type="System.Drawing.Point, System.Drawing">
+    <value>13, 765</value>
+  </data>
+  <data name="latestButton.Size" type="System.Drawing.Size, System.Drawing">
+    <value>32, 24</value>
+  </data>
+  <data name="latestButton.TabIndex" type="System.Int32, mscorlib">
+    <value>6</value>
+  </data>
+  <data name="latestButton.Text" xml:space="preserve">
+    <value>Latest message</value>
+  </data>
+  <data name="&gt;&gt;latestButton.Name" xml:space="preserve">
+    <value>latestButton</value>
+  </data>
+  <data name="&gt;&gt;latestButton.Type" xml:space="preserve">
+    <value>Blackcancer.ChatUI.Views.ChatActionButton, Blackcancer.ChatUI, Version=0.1.0.0, Culture=neutral, PublicKeyToken=null</value>
+  </data>
+  <data name="&gt;&gt;latestButton.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;latestButton.ZOrder" xml:space="preserve">
+    <value>8</value>
+  </data>
+  <data name="footerLayout.ColumnCount" type="System.Int32, mscorlib">
+    <value>2</value>
+  </data>
+  <data name="statusLabel.AccessibleName" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="statusLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="statusLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="statusLabel.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="statusLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>516, 22</value>
+  </data>
+  <data name="statusLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="statusLabel.Text" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="statusLabel.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleLeft</value>
+  </data>
+  <data name="&gt;&gt;statusLabel.Name" xml:space="preserve">
+    <value>statusLabel</value>
+  </data>
+  <data name="&gt;&gt;statusLabel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;statusLabel.Parent" xml:space="preserve">
+    <value>footerLayout</value>
+  </data>
+  <data name="&gt;&gt;statusLabel.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="activityBar.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="activityBar.Location" type="System.Drawing.Point, System.Drawing">
+    <value>519, 3</value>
+  </data>
+  <data name="activityBar.Size" type="System.Drawing.Size, System.Drawing">
+    <value>58, 16</value>
+  </data>
+  <data name="activityBar.TabIndex" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="activityBar.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;activityBar.Name" xml:space="preserve">
+    <value>activityBar</value>
+  </data>
+  <data name="&gt;&gt;activityBar.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ProgressBar, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;activityBar.Parent" xml:space="preserve">
+    <value>footerLayout</value>
+  </data>
+  <data name="&gt;&gt;activityBar.ZOrder" xml:space="preserve">
+    <value>1</value>
+  </data>
+  <data name="footerLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="footerLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>10, 792</value>
+  </data>
+  <data name="footerLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="footerLayout.RowCount" type="System.Int32, mscorlib">
+    <value>1</value>
+  </data>
+  <data name="footerLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>580, 22</value>
+  </data>
+  <data name="footerLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>7</value>
+  </data>
+  <data name="&gt;&gt;footerLayout.Name" xml:space="preserve">
+    <value>footerLayout</value>
+  </data>
+  <data name="&gt;&gt;footerLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;footerLayout.Parent" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;footerLayout.ZOrder" xml:space="preserve">
+    <value>9</value>
+  </data>
+  <data name="footerLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="statusLabel" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="activityBar" Row="0" RowSpan="1" Column="1" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100,Absolute,64" /&gt;&lt;Rows Styles="Percent,100" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="rootLayout.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="rootLayout.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="rootLayout.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="rootLayout.Padding" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>10, 6, 10, 6</value>
+  </data>
+  <data name="rootLayout.RowCount" type="System.Int32, mscorlib">
+    <value>10</value>
+  </data>
+  <data name="rootLayout.Size" type="System.Drawing.Size, System.Drawing">
+    <value>600, 820</value>
+  </data>
+  <data name="rootLayout.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="&gt;&gt;rootLayout.Name" xml:space="preserve">
+    <value>rootLayout</value>
+  </data>
+  <data name="&gt;&gt;rootLayout.Type" xml:space="preserve">
+    <value>System.Windows.Forms.TableLayoutPanel, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;rootLayout.Parent" xml:space="preserve">
+    <value>$this</value>
+  </data>
+  <data name="&gt;&gt;rootLayout.ZOrder" xml:space="preserve">
+    <value>0</value>
+  </data>
+  <data name="rootLayout.LayoutSettings" type="System.Windows.Forms.TableLayoutSettings, System.Windows.Forms">
+    <value>&lt;?xml version="1.0" encoding="utf-16"?&gt;&lt;TableLayoutSettings&gt;&lt;Controls&gt;&lt;Control Name="headingLayout" Row="0" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="scopeLayout" Row="1" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="AdditionalContextHost" Row="2" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="projectLayout" Row="3" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="PendingMessagesHost" Row="4" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="conversationPanel" Row="5" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="composerLayout" Row="6" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="providerLayout" Row="7" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="latestButton" Row="8" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;Control Name="footerLayout" Row="9" RowSpan="1" Column="0" ColumnSpan="1" /&gt;&lt;/Controls&gt;&lt;Columns Styles="Percent,100" /&gt;&lt;Rows Styles="Absolute,36,Absolute,32,Absolute,0,AutoSize,0,Absolute,0,Percent,100,AutoSize,0,Absolute,0,Absolute,30,Absolute,22" /&gt;&lt;/TableLayoutSettings&gt;</value>
+  </data>
+  <data name="appTitle.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="appTitle.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Segoe UI, 12pt, style=Bold</value>
+  </data>
+  <data name="appTitle.Location" type="System.Drawing.Point, System.Drawing">
+    <value>0, 0</value>
+  </data>
+  <data name="appTitle.Margin" type="System.Windows.Forms.Padding, System.Windows.Forms">
+    <value>0, 0, 0, 0</value>
+  </data>
+  <data name="appTitle.Size" type="System.Drawing.Size, System.Drawing">
+    <value>264, 55</value>
+  </data>
+  <data name="appTitle.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="appTitle.Text" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="appTitle.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleLeft</value>
+  </data>
+  <data name="appTitle.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;appTitle.Name" xml:space="preserve">
+    <value>appTitle</value>
+  </data>
+  <data name="&gt;&gt;appTitle.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="contextLabel.AccessibleName" xml:space="preserve">
+    <value>Active document</value>
+  </data>
+  <data name="contextLabel.Dock" type="System.Windows.Forms.DockStyle, System.Windows.Forms">
+    <value>Fill</value>
+  </data>
+  <data name="contextLabel.Location" type="System.Drawing.Point, System.Drawing">
+    <value>107, 0</value>
+  </data>
+  <data name="contextLabel.Size" type="System.Drawing.Size, System.Drawing">
+    <value>192, 36</value>
+  </data>
+  <data name="contextLabel.TabIndex" type="System.Int32, mscorlib">
+    <value>0</value>
+  </data>
+  <data name="contextLabel.Text" xml:space="preserve">
+    <value>No active document</value>
+  </data>
+  <data name="contextLabel.TextAlign" type="System.Drawing.ContentAlignment, System.Drawing">
+    <value>MiddleLeft</value>
+  </data>
+  <data name="contextLabel.Visible" type="System.Boolean, mscorlib">
+    <value>False</value>
+  </data>
+  <data name="&gt;&gt;contextLabel.Name" xml:space="preserve">
+    <value>contextLabel</value>
+  </data>
+  <data name="&gt;&gt;contextLabel.Type" xml:space="preserve">
+    <value>System.Windows.Forms.Label, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <metadata name="$this.Localizable" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <data name="$this.AccessibleName" xml:space="preserve">
+    <value>Chat</value>
+  </data>
+  <data name="$this.AutoScaleDimensions" type="System.Drawing.SizeF, System.Drawing">
+    <value>7, 15</value>
+  </data>
+  <data name="$this.Font" type="System.Drawing.Font, System.Drawing">
+    <value>Segoe UI, 9pt</value>
+  </data>
+  <data name="$this.MinimumSize" type="System.Drawing.Size, System.Drawing">
+    <value>0, 560</value>
+  </data>
+  <data name="$this.Size" type="System.Drawing.Size, System.Drawing">
+    <value>600, 820</value>
+  </data>
+  <data name="&gt;&gt;fileAttachmentDialog.Name" xml:space="preserve">
+    <value>fileAttachmentDialog</value>
+  </data>
+  <data name="&gt;&gt;fileAttachmentDialog.Type" xml:space="preserve">
+    <value>System.Windows.Forms.OpenFileDialog, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;toolTips.Name" xml:space="preserve">
+    <value>toolTips</value>
+  </data>
+  <data name="&gt;&gt;toolTips.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolTip, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;configureMenuItem.Name" xml:space="preserve">
+    <value>configureMenuItem</value>
+  </data>
+  <data name="&gt;&gt;configureMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;attachDocumentMenuItem.Name" xml:space="preserve">
+    <value>attachDocumentMenuItem</value>
+  </data>
+  <data name="&gt;&gt;attachDocumentMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;attachSelectionMenuItem.Name" xml:space="preserve">
+    <value>attachSelectionMenuItem</value>
+  </data>
+  <data name="&gt;&gt;attachSelectionMenuItem.Type" xml:space="preserve">
+    <value>System.Windows.Forms.ToolStripMenuItem, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="&gt;&gt;$this.Name" xml:space="preserve">
+    <value>ChatWorkspaceView</value>
+  </data>
+  <data name="&gt;&gt;$this.Type" xml:space="preserve">
+    <value>System.Windows.Forms.UserControl, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+</root>

@@ -113,19 +113,28 @@ namespace VBAi.Tests.Unit
                     var stream = entries.Last();
                     using (var live = (ChatDesignerHost)Call(window, "RenderEntry", stream))
                     {
-                        int collections = 0, textChanges = 0;
+                        int collections = 0, blockPublications = 0;
                         var visible = Get<ObservableCollection<object>>(window, "visibleEntries");
                         visible.CollectionChanged += (s, e) => collections++;
-                        var text = Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts")["performance-stream"];
-                        var handle = text.Handle;
-                        text.TextChanged += (s, e) => textChanges++;
+                        var markdown = Get<Dictionary<string, Blackcancer.ChatUI.Views.ChatMarkdownView>>(window, "liveMarkdownViews")["performance-stream"];
+                        markdown.ContentPanel.ControlAdded += (s, e) => blockPublications++;
                         timer.Restart();
                         for (int i = 0; i < 2000; i++) Call(window, "ReceiveChatUpdate", "final", "performance-stream", "x", false);
-                        Assert.AreEqual(0, textChanges);
+                        Assert.AreEqual("", markdown.SourceText);
+                        Assert.AreEqual(0, blockPublications);
+                        Assert.AreEqual(1, Get<Dictionary<ChatEntry, System.Text.StringBuilder>>(window, "pendingStreamText").Count);
                         Call(window, "FlushStreamText");
                         double streamMs = timer.Elapsed.TotalMilliseconds;
+                        Assert.AreEqual(new string('x', 2000), markdown.SourceText);
+                        Assert.AreEqual(1, blockPublications, "All 2000 fragments must publish one rendered paragraph after the flush.");
+                        var text = markdown.ContentPanel.Controls.OfType<Blackcancer.ChatUI.Views.ChatTextView>().Single().Content;
                         Assert.AreEqual(new string('x', 2000), text.Text);
-                        Assert.AreEqual(1, textChanges);
+                        var handle = text.Handle;
+                        int noOpChanges = 0; text.TextChanged += (s, e) => noOpChanges++;
+                        Call(window, "FlushStreamText");
+                        Assert.AreEqual(0, noOpChanges);
+                        Assert.AreEqual(handle, text.Handle);
+                        Assert.AreEqual(1, blockPublications);
                         Assert.AreEqual(0, collections, "Streaming must not rebuild the visible collection.");
                         Assert.AreSame(previous, Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews")[earlier]);
                         Assert.AreEqual("History entry " + (historyCount - 1), earlier.Text);

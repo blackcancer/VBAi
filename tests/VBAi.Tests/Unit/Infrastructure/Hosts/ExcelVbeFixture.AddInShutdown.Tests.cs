@@ -15,6 +15,74 @@ namespace VBAi.Tests.Unit
         private static ExcelVbeFixture Fixture() { return (ExcelVbeFixture)Activator.CreateInstance(typeof(ExcelVbeFixture), true); }
         private static void Set(ExcelVbeFixture fixture, string name, object value) { typeof(ExcelVbeFixture).GetField(name, Private).SetValue(fixture, value); }
 
+        /// <summary>Checks all classic admission boundaries without activating Excel or reading another process.</summary>
+        /// <param name="variation">Identity, opt-in or retained-image boundary under test.</param>
+        [DataTestMethod]
+        [DataRow("Disabled")]
+        [DataRow("Whitespace")]
+        [DataRow("Unowned")]
+        [DataRow("NonDurable")]
+        [DataRow("MissingFixturePid")]
+        [DataRow("WrongRetainedPid")]
+        [DataRow("MissingOwnerThread")]
+        [DataRow("MissingLoadedStatus")]
+        [DataRow("MissingLoadedPid")]
+        [DataRow("WrongLoadedPid")]
+        [DataRow("StringLoadedPid")]
+        [DataRow("MissingImageReader")]
+        [DataRow("InvalidRoot")]
+        [DataRow("RelativeImage")]
+        [DataRow("WrongImage")]
+        [DataRow("MissingImage")]
+        [DataRow("ImageReadFailure")]
+        [DataRow("Valid")]
+        public void ClassicObservationRequiresOwnedDurableMatchingHostBeforeImageRead(string variation)
+        {
+            using (var directory = new ShutdownDiagnosticTestData.DirectoryScope())
+            {
+                string configured = variation == "Disabled" ? null : variation == "Whitespace" ? " " :
+                    variation == "InvalidRoot" ? @"C:\OutsideScope" : directory.Root;
+                IDictionary<string, object> loaded = new Dictionary<string, object> { ["HostProcessId"] = 424242 };
+                if (variation == "MissingLoadedStatus") loaded = null;
+                if (variation == "MissingLoadedPid") loaded.Clear();
+                if (variation == "WrongLoadedPid") loaded["HostProcessId"] = 424243;
+                if (variation == "StringLoadedPid") loaded["HostProcessId"] = "424242";
+                int reads = 0;
+                var originalReadFailure = new IOException("Original retained image read failed.");
+                Func<string> readImage = () =>
+                {
+                    reads++;
+                    if (variation == "ImageReadFailure") throw originalReadFailure;
+                    return variation == "RelativeImage" ? "EXCEL.EXE" : variation == "WrongImage" ? @"C:\Owned\WINWORD.EXE" :
+                        variation == "MissingImage" ? null : @"C:\Owned\EXCEL.EXE";
+                };
+                if (variation == "MissingImageReader") readImage = null;
+                Func<string> capture = () => ExcelVbeFixture.CaptureClassicShutdownImage(configured,
+                    variation != "Unowned", variation != "NonDurable", variation == "MissingFixturePid" ? 0 : 424242,
+                    variation == "WrongRetainedPid" ? 424243 : 424242, variation == "MissingOwnerThread" ? 0u : 19u,
+                    loaded, readImage);
+                if (variation == "Disabled" || variation == "Whitespace")
+                {
+                    Assert.IsNull(capture()); Assert.AreEqual(0, reads);
+                }
+                else if (variation == "Valid")
+                {
+                    Assert.AreEqual(@"C:\Owned\EXCEL.EXE", capture()); Assert.AreEqual(1, reads);
+                }
+                else
+                {
+                    Exception failure = null;
+                    try { capture(); } catch (Exception error) { failure = error; }
+                    Assert.IsNotNull(failure, "An invalid classic observation was admitted.");
+                    if (variation == "ImageReadFailure") Assert.AreSame(originalReadFailure, failure);
+                    else Assert.IsTrue(failure is InvalidOperationException || failure is ArgumentException,
+                        "The original admission failure must be preserved: " + failure.GetType().FullName);
+                    Assert.AreEqual(variation == "RelativeImage" || variation == "WrongImage" || variation == "MissingImage" ||
+                        variation == "ImageReadFailure" ? 1 : 0, reads, "Rejected identity/root must not read the process image.");
+                }
+            }
+        }
+
         [TestMethod]
         public void ManifestPublicationIsCanonicalAndRefusesASecondWriteWithoutReplacingTheFirst()
         {

@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace VBAi.Tests.Unit
 {
@@ -283,12 +284,163 @@ namespace VBAi.Tests.Unit
                 }
         }
 
+        [TestMethod]
+        public void VerifiedCopyCloseBalancesAcquisitionsAndNeverReleasesTheBorrowedSourceAgain()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                fixture.Host.ReleaseAcquired = released.Add;
+                int initialCollections = fixture.Application.PresentationsReads;
+                object sourceProject = fixture.Source.VBProject;
+                int sourceProjectReads = 0, copyProjectReads = 0;
+                fixture.Source.OnProjectRead = () => sourceProjectReads++;
+                fixture.Application.PresentationsIdentity.OnOpen = path => new Presentation
+                {
+                    FullName = path,
+                    OnProjectRead = () => copyProjectReads++
+                };
+                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                var clone = provider.Create(sourceProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
+                var copy = fixture.Application.PresentationsIdentity[1];
+                object copyProject = clone.Project;
+                clone.Dispose();
+                Assert.AreEqual(fixture.ApplicationReads, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                Assert.AreEqual(sourceProjectReads, released.Count(value => ReferenceEquals(value, sourceProject)));
+                Assert.AreEqual(copyProjectReads, released.Count(value => ReferenceEquals(value, copyProject)));
+                Assert.AreEqual(fixture.Application.PresentationsReads - initialCollections, released.Count(value => ReferenceEquals(value, fixture.Application.PresentationsIdentity)));
+                Assert.AreEqual(1, fixture.Application.PresentationsIdentity.Count);
+                Assert.AreEqual(1, copy.CloseCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls + fixture.Source.SavedWrites);
+                int count = released.Count;
+                clone.Dispose();
+                Assert.AreEqual(count, released.Count);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("extension")]
+        [DataRow("folder")]
+        [DataRow("file")]
+        [DataRow("open")]
+        [DataRow("revalidation")]
+        public void KnownCopyPreflightRefusalReleasesEveryApplicationWithoutSaving(string fault)
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                fixture.Host.ReleaseAcquired = released.Add;
+                string folder = Path.Combine(fixture.Folder, "Copy");
+                if (fault == "extension") fixture.Source.FullName = Path.Combine(fixture.Folder, "Original.ppam");
+                if (fault == "folder") folder = "relative";
+                if (fault == "file") { Directory.CreateDirectory(folder); File.WriteAllText(Path.Combine(folder, "coverage.pptm"), "Existing"); }
+                if (fault == "open") fixture.Application.Presentations.Add(new Presentation { FullName = Path.Combine(folder, "coverage.pptm") });
+                if (fault == "revalidation") fixture.Host.ReadActiveApplication = _ =>
+                {
+                    if (++fixture.ApplicationReads == 2) fixture.Source.FullName = Path.Combine(fixture.Folder, "Renamed.pptm");
+                    return fixture.Application;
+                };
+                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                Assert.ThrowsException<InvalidOperationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, folder));
+                Assert.AreEqual(fixture.ApplicationReads, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                Assert.AreEqual(0, fixture.Source.SaveCopyCalls + fixture.Source.CloseCalls);
+                Assert.AreEqual(0, fixture.Application.Presentations.OpenCalls);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("save")]
+        [DataRow("open")]
+        public void UncertainPreparationRetainsItsSourceAcquisitionAndDoesNotRetry(string phase)
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                fixture.Host.ReleaseAcquired = released.Add;
+                if (phase == "save") fixture.Source.OnSaveCopy = () => { throw new InvalidOperationException("Unknown save"); };
+                else fixture.Application.Presentations.OnOpen = _ => { throw new InvalidOperationException("Unknown open"); };
+                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy")));
+                Assert.IsTrue(error.Uncertain);
+                Assert.AreEqual(fixture.ApplicationReads - 1, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                Assert.AreEqual(1, fixture.Source.SaveCopyCalls);
+                Assert.AreEqual(phase == "open" ? 1 : 0, fixture.Application.Presentations.OpenCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls + fixture.Source.SavedWrites);
+            }
+        }
+
+        [TestMethod]
+        public void CollectionReleaseFailureAfterOpenRetainsTheReturnedCopyWithoutClosingIt()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                bool opened = false;
+                Presentation copy = null;
+                fixture.Application.PresentationsIdentity.OnOpen = path =>
+                {
+                    opened = true;
+                    return copy = new Presentation { FullName = path };
+                };
+                fixture.Host.ReleaseAcquired = value =>
+                {
+                    released.Add(value);
+                    if (opened && ReferenceEquals(value, fixture.Application.PresentationsIdentity))
+                        throw new InvalidOperationException("Collection release failed after Open");
+                };
+                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy")));
+                Assert.IsTrue(error.Uncertain);
+                StringAssert.Contains(error.Message, "Collection release failed");
+                Assert.IsNotNull(copy);
+                Assert.AreEqual(0, released.Count(value => ReferenceEquals(value, copy)));
+                Assert.AreEqual(fixture.ApplicationReads - 1, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                Assert.AreEqual(1, fixture.Application.PresentationsIdentity.OpenCalls);
+                Assert.AreEqual(0, copy.CloseCalls + copy.SavedWrites + fixture.Source.CloseCalls);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("close")]
+        [DataRow("absence")]
+        [DataRow("release")]
+        public void UnverifiedCloseOrReleaseRetainsTheTargetReferencesWithoutAnotherClose(string fault)
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                bool failRelease = false;
+                fixture.Host.ReleaseAcquired = value =>
+                {
+                    released.Add(value);
+                    if (failRelease && ReferenceEquals(value, fixture.Application)) throw new InvalidOperationException("Release failed");
+                };
+                var provider = new VbaTestPowerPointCoverageClone { Host = fixture.Host };
+                var clone = provider.Create(fixture.Source.VBProject, fixture.Source.FullName, Path.Combine(fixture.Folder, "Copy"));
+                var copy = fixture.Application.Presentations[1];
+                copy.OnClose = () =>
+                {
+                    if (fault == "close") throw new InvalidOperationException("Unknown close");
+                    if (fault == "release") { fixture.Application.Presentations.Remove(copy); failRelease = true; }
+                };
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => clone.Dispose());
+                Assert.IsTrue(error.Uncertain);
+                Assert.AreEqual(fixture.ApplicationReads - 2 + (fault == "release" ? 1 : 0), released.Count(value => ReferenceEquals(value, fixture.Application)));
+                int count = released.Count;
+                clone.Dispose();
+                Assert.AreEqual(count, released.Count);
+                Assert.AreEqual(1, copy.CloseCalls);
+                Assert.AreEqual(0, fixture.Source.CloseCalls + fixture.Source.SavedWrites);
+            }
+        }
+
         private sealed class Fixture : IDisposable
         {
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-PowerPoint-Coverage-" + Guid.NewGuid().ToString("N"));
             internal readonly Application Application = new Application();
             internal readonly Presentation Source;
             internal readonly VbaTestPowerPointValuesHost Host = new VbaTestPowerPointValuesHost();
+            internal int ApplicationReads;
             internal Fixture()
             {
                 Source = new Presentation { FullName = Path.Combine(Folder, "Original.pptm") };
@@ -297,7 +449,7 @@ namespace VBAi.Tests.Unit
                 Host.ReadProcessId = () => 123;
                 Host.ReadApplicationWindow = application => { Assert.AreSame(Application, application); return new IntPtr(99); };
                 Host.ReadWindowOwner = hwnd => { Assert.AreEqual(new IntPtr(99), hwnd); return 123; };
-                Host.ReadActiveApplication = progId => { Assert.AreEqual("PowerPoint.Application", progId); return Application; };
+                Host.ReadActiveApplication = progId => { ApplicationReads++; Assert.AreEqual("PowerPoint.Application", progId); return Application; };
             }
             public void Dispose() { if (Directory.Exists(Folder)) Directory.Delete(Folder, true); }
         }
@@ -305,7 +457,9 @@ namespace VBAi.Tests.Unit
         public sealed class Application
         {
             public int AutomationSecurity = 2; // msoAutomationSecurityByUI; native policy is never changed by the clone.
-            public Presentations Presentations { get; } = new Presentations();
+            public readonly Presentations PresentationsIdentity = new Presentations();
+            public int PresentationsReads;
+            public Presentations Presentations { get { PresentationsReads++; return PresentationsIdentity; } }
         }
 
         public sealed class Presentations : List<Presentation>

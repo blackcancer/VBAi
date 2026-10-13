@@ -32,7 +32,7 @@ namespace VBAi.Tests
 
         private static string FindSource()
         {
-            string candidate = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tests", "VBAi.Tests", "Infrastructure", "Diagnostics", "NativeExportTrace.Tests.mjs");
+            string candidate = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tests", "VBAi.Tests", "Infrastructure", "Diagnostics", "NativeExportTrace.Tests.mjs");
             if (File.Exists(candidate)) return candidate;
             throw new FileNotFoundException("The matching debugger script regression fixture must be packaged beside this test assembly.", candidate);
         }

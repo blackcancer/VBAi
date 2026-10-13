@@ -262,7 +262,7 @@ namespace VBAi.Tests.Unit
         public void NativeOleImageLoadAndInvalidNativeResultsMatrix()
         {
             foreach (string path in new[] { null, " ", "relative.bmp" }) Assert.ThrowsException<ArgumentException>(() => OlePictureLoader.Load(path));
-            string file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ole-picture-" + Guid.NewGuid().ToString("N") + ".bmp");
+            string file = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "ole-picture-" + Guid.NewGuid().ToString("N") + ".bmp");
             Assert.ThrowsException<FileNotFoundException>(() => OlePictureLoader.Load(file));
             var previous = OlePictureLoader.ReadPicture;
             try

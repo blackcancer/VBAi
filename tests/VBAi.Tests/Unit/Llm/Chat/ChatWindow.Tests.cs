@@ -4,12 +4,77 @@ namespace VBAi.Tests.Unit
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading.Tasks;
     using System.Windows.Forms;
     using VBAi;
 
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Uses one detached context for provider dispatch and history despite reentrant source reads.</summary>
+        [STATestMethod]
+        public void SendingCapturesContextBeforeReentrantReadsAndRefusesStaleRevisions()
+        {
+            foreach (bool queued in new[] { false, true })
+                foreach (bool stale in new[] { false, true })
+                    using (var runtime = new RuntimeScope())
+                    using (var window = LoadedWindow(runtime.Session))
+                    {
+                        var state = Get<ChatSessionState>(window, "currentSession");
+                        var reference = new VbeChatReference { Project = @"C:\Temp\P.xlsm", Module = "M", Sha256 = "selected" };
+                        var draft = new ChatAttachment { Label = "Original attachment", Text = "original draft text" };
+                        string question = "Explain " + reference.Token;
+                        var pending = new QueuedChatMessage { Text = question, References = new[] { reference }, Attachments = new[] { draft } };
+                        if (queued) state.PendingMessages.Add(pending);
+                        else
+                        {
+                            Get<List<VbeChatReference>>(window, "selectedReferences").Add(reference);
+                            Get<List<ChatAttachment>>(window, "draftAttachments").Add(draft);
+                        }
+                        Question(window, queued ? "Keep this unsent draft" : question);
+                        Get<VbeChatReferences>(window, "referenceIndex").Execute = request =>
+                        {
+                            Assert.AreEqual("read_module", request.Command);
+                            Assert.AreEqual("M", request.Module);
+                            reference.Module = "LaterModule";
+                            reference.Sha256 = "later revision";
+                            draft.Label = "Later attachment";
+                            draft.Text = "later draft text";
+                            return Response.Success(new { Code = "original module text", Sha256 = stale ? "changed" : "selected" });
+                        };
+                        string dispatched = null;
+                        window.CodexTurnOverride = (text, model, effort) => { dispatched = text; return Task.FromResult("Done"); };
+                        CompleteOnSta((Task)Call(window, "SendRequestAsync", queued ? pending : null));
+                        var entry = state.Entries.LastOrDefault(item => item.Speaker == "Vous" && item.Text == question);
+                        if (stale)
+                        {
+                            Assert.IsNull(dispatched, "Stale context must be refused before provider dispatch.");
+                            Assert.IsNull(entry, "Refused context must not become a sent message.");
+                            if (queued) Assert.IsTrue(state.PendingMessages.Contains(pending));
+                        }
+                        else
+                        {
+                            Assert.IsNotNull(entry);
+                            StringAssert.Contains(dispatched, "original module text");
+                            StringAssert.Contains(dispatched, "original draft text");
+                            Assert.IsFalse(dispatched.Contains("later draft text"));
+                            Assert.AreEqual("M", entry.References.Single().Module);
+                            Assert.AreEqual("selected", entry.References.Single().Sha256);
+                            Assert.AreNotSame(reference, entry.References.Single());
+                            Assert.AreEqual("Original attachment", entry.Attachments.Last().Label);
+                            Assert.AreEqual("original draft text", entry.Attachments.Last().Text);
+                            Assert.AreNotSame(draft, entry.Attachments.Last());
+                            if (queued)
+                            {
+                                Assert.IsFalse(state.PendingMessages.Contains(pending));
+                                Assert.AreEqual("Keep this unsent draft", Get<System.Windows.Controls.TextBox>(window, "prompt").Text);
+                            }
+                        }
+                        Assert.IsFalse(Get<bool>(window, "busy"));
+                        Set(window, "currentSession", null);
+                    }
+        }
+
         /// <summary>Restores each approval policy without saving and rolls user edits back when persistence fails.</summary>
         [STATestMethod]
         public void ApprovalSelectionRestoresUnknownPoliciesAndRollsBackFailedEdits()
@@ -56,7 +121,8 @@ namespace VBAi.Tests.Unit
                 using (var larger = new System.Drawing.Font("Segoe UI", 13f * scale))
                 {
                     window.Scale(new System.Drawing.SizeF(scale, scale)); window.Font = font;
-                    var row = Get<TableLayoutPanel>(window, "rootLayout").RowStyles[6];
+                    var layout = Get<TableLayoutPanel>(window, "rootLayout");
+                    var row = layout.RowStyles[layout.GetRow(Get<TableLayoutPanel>(window, "providerLayout"))];
                     var provider = Get<TableLayoutPanel>(window, "providerLayout");
                     for (int cycle = 0; cycle < 3; cycle++)
                     {
@@ -88,15 +154,14 @@ namespace VBAi.Tests.Unit
                 Call(window, "VerifyChanges_CheckedChanged", null, EventArgs.Empty);
                 Set(window, "verifyAfterEdit", existing);
                 var layout = Get<TableLayoutPanel>(window, "rootLayout");
-                float before = layout.RowStyles[6].Height;
+                float before = layout.RowStyles[layout.GetRow(Get<TableLayoutPanel>(window, "providerLayout"))].Height;
                 Set(window, "busy", true);
                 Call(window, "ModelSummary_Click", null, EventArgs.Empty);
-                Assert.AreEqual(before, layout.RowStyles[6].Height);
+                Assert.AreEqual(before, layout.RowStyles[layout.GetRow(Get<TableLayoutPanel>(window, "providerLayout"))].Height);
                 Set(window, "busy", false);
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void ProviderEffortChoicesFollowModelAndBusyState()
         {
@@ -122,7 +187,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void CodexSendRecordsQuestionAnswerAndStructuredRequestWithoutNetwork()
         {
@@ -156,7 +220,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void FailedCodexSendRestoresDraftAndContextForRetry()
         {
@@ -180,7 +243,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void StopCodexSendRecordsInterruptionAndDoesNotRestoreDraft()
         {
@@ -209,7 +271,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void StopFailureReenablesControlForAnotherAttempt()
         {
@@ -226,7 +287,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void SendPreflightRejectsMissingModelAndOversizedContext()
         {
@@ -254,7 +314,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void ModelCatalogueSelectsSavedModelAndRejectsLateStaleResult()
         {
@@ -275,7 +334,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void ModelCatalogueFailureLeavesRefreshAvailable()
         {
@@ -290,7 +348,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void HttpProviderCompletesToolCallAndAnswerWithoutNetwork()
         {
@@ -315,7 +372,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void HttpProviderFailureRepairsConversationHistoryForRetry()
         {
@@ -375,6 +431,37 @@ namespace VBAi.Tests.Unit
                 var handle = window.Handle; var thread = new Thread(() => Call(window, "SetStatus", "worker update")); thread.Start(); Assert.IsTrue(thread.Join(5000)); Application.DoEvents(); Assert.AreEqual("worker update", Get<Label>(window, "status").Text); Set(window, "storageFailed", true); Call(window, "SetStatus", "storage"); StringAssert.Contains(Get<Label>(window, "status").Text, UiText.Get("History not saved"));
             }
             using (var runtime = new RuntimeScope()) { ChatWindow.ReadSettings = () => { throw new InvalidOperationException("settings load failed"); }; runtime.Host = r => Response.Success(new object[0]); using (var window = LoadedWindow(runtime.Session)) { Assert.AreEqual(0, Get<ComboBox>(window, "providerPicker").SelectedIndex); } }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void OllamaReasoningEventsPersistDefaultsAndRetainConversationOverrides()
+        {
+            using (var runtime = new RuntimeScope())
+            {
+                var provider = VBAi.Tests.Infrastructure.LlmBoundaryScope.Provider("Ollama");
+                runtime.Settings.ProviderName = provider.Name;
+                runtime.Settings.SetSelectedModel(provider, "thinking");
+                runtime.Settings.SetReasoningEffort(provider, "thinking", "none");
+                var capabilities = new LlmModelCapabilities(reasoning: true);
+                var model = new LlmModelOption("thinking", "Thinking", defaultEffort: "default", efforts: OllamaReasoning.Options(capabilities), capabilities: capabilities);
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    window.ModelCatalogueOverride = selected => Task.FromResult(new[] { model });
+                    CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                    var efforts = Get<ComboBox>(window, "effortPicker");
+                    Assert.AreEqual("none", ((LlmEffortOption)efforts.SelectedItem).Id);
+                    var current = Get<ChatSessionState>(window, "currentSession");
+                    Assert.AreEqual("none", current.Effort);
+                    efforts.SelectedIndex = 0;
+                    Assert.AreEqual("default", current.Effort);
+                    Assert.AreEqual("default", runtime.Settings.GetReasoningEffort(provider, "thinking"));
+                    current.Effort = "none";
+                    CompleteOnSta((Task)Call(window, "LoadModelsAsync"));
+                    Assert.AreEqual("none", ((LlmEffortOption)efforts.SelectedItem).Id);
+                    Assert.AreEqual("default", runtime.Settings.GetReasoningEffort(provider, "thinking"), "Restoring a session must not overwrite the per-model default.");
+                    Set(window, "currentSession", null);
+                }
+            }
         }
         [STATestMethod, TestCategory("Unit")]
         public void RuntimeModelCatalogueHandlesMissingEmptyDefaultsFallbacksAndLateDisposedRequests()

@@ -15,7 +15,7 @@ namespace VBAi.Tests.Integration
     {
         public TestContext TestContext { get; set; }
 
-        /// <summary>Stops a live stream after its first fragment and verifies a fresh request can still complete.</summary>
+        /// <summary>Stops a live stream after its first text or explicitly published reasoning fragment and verifies a fresh request can complete.</summary>
         [TestMethod]
         public async Task LocalModelCancellationDoesNotPoisonTheNextConversation()
         {
@@ -30,10 +30,25 @@ namespace VBAi.Tests.Integration
                 profile.ApplyTo(settings);
                 TestContext.WriteLine("Ollama qualification profile: " + profile.Describe());
                 bool cancelled = false;
+                string fragmentKind = null;
                 Exception failure = null;
-                using (var client = new LlmChatClient(provider, settings, model))
+                using (var client = await profile.CreateClientAsync(settings))
                 {
-                    client.TextDelta = text => { if (!cancelled && !string.IsNullOrEmpty(text)) { cancelled = true; client.Dispose(); } };
+                    Action<string, string> stopAfterFragment = (kind, text) =>
+                    {
+                        if (cancelled || string.IsNullOrWhiteSpace(text)) return;
+                        cancelled = true;
+                        fragmentKind = kind;
+                        client.Dispose();
+                    };
+                    client.TextDelta = text => stopAfterFragment("text", text);
+                    // Use the same published activity channel as the real chat. Completion
+                    // snapshots and empty terminal notifications cannot trigger cancellation.
+                    client.ActivityUpdate = activity =>
+                    {
+                        if (activity != null && activity.Kind == "reasoning" && activity.Status == "inProgress")
+                            stopAfterFragment("reasoning", activity.Detail);
+                    };
                     try
                     {
                         await wire.CompleteAsync("cancellation-stream", client, new List<object> { new { role = "user", content = "Write a long numbered list of 1000 everyday objects, starting immediately with item 1." } }, new object[0]);
@@ -41,10 +56,11 @@ namespace VBAi.Tests.Integration
                     catch (Exception error) { failure = error; }
                 }
                 Assert.IsTrue(cancelled, "Cancellation must follow a real provider fragment.");
+                TestContext.WriteLine("Cancellation fragment kind: " + fragmentKind);
                 Assert.IsNotNull(failure, "A cancelled stream must not be published as a completed response.");
                 Assert.IsTrue(failure is OperationCanceledException || failure is ObjectDisposedException || failure is System.IO.IOException,
                     "Unexpected cancellation failure: " + failure.GetType().FullName);
-                using (var recovery = new LlmChatClient(provider, settings, model))
+                using (var recovery = await profile.CreateClientAsync(settings))
                 {
                     recovery.TextDelta = text => { };
                     var answer = await wire.CompleteAsync("recovery", recovery, new List<object> { new { role = "user", content = "Reply with exactly READY." } }, new object[0]);
@@ -73,7 +89,7 @@ namespace VBAi.Tests.Integration
                 Assert.IsTrue(models.Any(m => m.Id == model), "The qualification model must already be installed.");
                 var json = new JavaScriptSerializer();
                 var watch = Stopwatch.StartNew();
-                using (var client = new LlmChatClient(provider, settings, model))
+                using (var client = await profile.CreateClientAsync(settings))
                 {
                     int deltas = 0;
                     client.TextDelta = text => { if (!string.IsNullOrEmpty(text)) deltas++; };

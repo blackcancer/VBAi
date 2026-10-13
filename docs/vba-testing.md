@@ -2,9 +2,10 @@
 
 [Documentation](README.md)
 
-This implementation is under review. Registered native execution remains blocked
-by code-window focus validation in the latest disposable Excel trial. Production
-acceptance is incomplete; see [recorded validation](test-coverage.md).
+This implementation is under review. The installed Excel workflow has passed
+batch and single execution, copy coverage, stale-revision refusal and native
+explorer opening for a frozen audit candidate. Other hosts and broader production
+acceptance remain under qualification; see [recorded validation](test-coverage.md).
 
 VBAi discovers explicitly annotated tests in live VBA projects and presents them
 in the VBE's **View > VBAi test explorer** window. It uses VBAi's shared theme,
@@ -100,6 +101,13 @@ wrapper supplies the result through the callback channel or the Excel/Word/Power
 returned-value adapter, rather than an Immediate echo. Callback results are bound to the pending
 attempt, support signature, revision, run and test. Missing or rejected completion,
 or a native call with uncertain effects, stops further dispatch without retry.
+
+Native callback completion requires both a correlated verdict and the project's
+return to design mode within the existing 30-second observation window. A timeout
+reports the observed project mode, verdict presence, callback fault and whether
+dispatch was entered. Mode `0` means execution was still active when observed;
+mode `2` without a verdict means completion was not acknowledged by the callback.
+Neither diagnostic establishes a successful test or permits an automatic replay.
 Inspect the host before reconnecting VBAi after such a failure.
 
 **Stop after current test** is cooperative. Queued calls can be refused before
@@ -183,6 +191,12 @@ the copy in the same host application with its privileges and environment. This
 is not an external-system sandbox: tests and application-level handlers can
 affect other documents, files, databases or external systems. A close failure or
 cancellation can leave the copy open; inspect uncertain outcomes before acting.
+Excel and PowerPoint adapters track the COM references acquired while resolving
+targets and preparing copies. After a verified operation they release those
+acquisitions on their owning thread without releasing borrowed caller projects
+again. An uncertain invocation or copy close retains its references and prevents
+automatic reuse or another close attempt. Reference ownership tests do not prove
+that a native host will exit normally; that requires separate host qualification.
 Word's returned-value adapter activates only the exact owned document, revalidates
 its project/path, active context and unique module ownership, then invokes the module-qualified
 `Application.Run` with zero or two positional arguments. Activation or macro

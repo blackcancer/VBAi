@@ -119,6 +119,7 @@ namespace VBAi.Tests.Integration
             string path = RequireMainWordProduct(status, ProcessId, expectedMvid, expectedHash,
                 typeof(VbeSession).Module.ModuleVersionId, HashOwnedFile);
             var inventory = ObserveMainWord(IntPtr.Zero, true, true);
+            ArmWordShutdownObservation(status, inventory.Windows.Single(row => row.ClassName == "wndclass_desked_gsk" && row.Visible));
             var record = new
             {
                 Phase = "MainWordReadyPlacementObserved",

@@ -45,14 +45,29 @@ namespace VBAi
             /// <summary>Reads an already registered application without starting a process.</summary>
             internal Func<string, object> ReadActiveApplication = Marshal.GetActiveObject;
 
+            /// <summary>Balances only acquisitions made while resolving an Excel target.</summary>
+            internal Action<object> ReleaseAcquired = VbaTestComReferences.Release;
+
             /// <summary>Gets the executable process name without its extension for same-host ownership checks.</summary>
             /// <returns>The current process name reported by Windows.</returns>
             private static string CurrentProcessName()
             { using (var process = System.Diagnostics.Process.GetCurrentProcess()) return process.ProcessName; }
 
             /// <summary>Application/classeur COM détenus pour le seul appel préparé.</summary>
-            private sealed class OwnedTarget
+            internal sealed class OwnedTarget : IDisposable
             {
+                /// <summary>Only references acquired while resolving this exact native target.</summary>
+                internal VbaTestComReferences References;
+
+                /// <summary>Prevents reuse of a target after its one settled or uncertain invocation.</summary>
+                internal bool Closed;
+
+                /// <summary>Keeps the target alive when native invocation completion is uncertain.</summary>
+                internal void RetainOnUncertain() { References?.Retain(); }
+
+                /// <summary>Releases one reference per getter after a settled native operation.</summary>
+                public void Dispose() { Closed = true; References?.Dispose(); }
+
 
                 /// <summary>Application Excel du processus courant.</summary>
                 internal object Application, Workbook;
@@ -71,21 +86,32 @@ namespace VBAi
                 {
                     if (!string.Equals(ReadProcessName(), "EXCEL", StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("Returned procedure values currently require the in-process Excel host.");
-                    dynamic application = ResolveApplication(process.Id, () => ReadActiveApplication("Excel.Application"));
-                    VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out uint owner);
-                    if (owner != (uint)process.Id) throw new InvalidOperationException("The Excel application belongs to another PID.");
-                    object match = null; int count = 0;
-                    foreach (dynamic workbook in application.Workbooks)
+                    var references = new VbaTestComReferences(ReleaseAcquired);
+                    bool transferred = false;
+                    try
                     {
-                        if (++count > 1000) throw new InvalidOperationException("Unexpected open workbook count.");
-                        if (!SameComIdentity(project, (object)workbook.VBProject)) continue;
-                        if (match != null) throw new InvalidOperationException("Multiple workbooks share the selected project identity.");
-                        if (!SameValuesPath((string)workbook.FullName, expectedHostPath) || string.IsNullOrWhiteSpace((string)workbook.Path))
-                            throw new InvalidOperationException("The owned workbook path changed or has never been saved.");
-                        match = (object)workbook;
+                        dynamic application = references.Add(ResolveApplication(process.Id, () => ReadActiveApplication("Excel.Application")));
+                        VbeDebugWindows.GetWindowThreadProcessId(new IntPtr(Convert.ToInt64(application.Hwnd)), out uint owner);
+                        if (owner != (uint)process.Id) throw new InvalidOperationException("The Excel application belongs to another PID.");
+                        object match = null; int count = 0;
+                        foreach (dynamic workbook in references.Items((object)application.Workbooks))
+                        {
+                            if (++count > 1000) throw new InvalidOperationException("Unexpected open workbook count.");
+                            bool matches;
+                            using (var projectReference = new VbaTestComReferences(ReleaseAcquired))
+                                matches = SameComIdentity(project, projectReference.Add((object)workbook.VBProject));
+                            if (!matches) continue;
+                            if (match != null) throw new InvalidOperationException("Multiple workbooks share the selected project identity.");
+                            if (!SameValuesPath((string)workbook.FullName, expectedHostPath) || string.IsNullOrWhiteSpace((string)workbook.Path))
+                                throw new InvalidOperationException("The owned workbook path changed or has never been saved.");
+                            match = (object)workbook;
+                        }
+                        if (match == null) throw new InvalidOperationException("No owned open workbook shares this VBProject COM identity.");
+                        var target = new OwnedTarget { Application = (object)application, Workbook = match, Path = expectedHostPath, References = references };
+                        transferred = true;
+                        return target;
                     }
-                    if (match == null) throw new InvalidOperationException("No owned open workbook shares this VBProject COM identity.");
-                    return new OwnedTarget { Application = (object)application, Workbook = match, Path = expectedHostPath };
+                    finally { if (!transferred) references.Dispose(); }
                 }
             }
 
@@ -97,14 +123,21 @@ namespace VBAi
             /// <returns>Objet natif que la procédure retourne, avant sa normalisation JSON.</returns>
             public object Invoke(object target, string module, string procedure, object[] arguments)
             {
-                if (!(target is OwnedTarget owned)) throw new InvalidOperationException("An owned Excel target is required.");
-                if (!SameValuesPath((string)((dynamic)owned.Workbook).FullName, owned.Path))
-                    throw new InvalidOperationException("The workbook path changed before invocation.");
-                var invokeArguments = new object[arguments.Length + 1];
-                invokeArguments[0] = "'" + owned.Path.Replace("'", "''") + "'!" + module + "." + procedure;
-                Array.Copy(arguments, 0, invokeArguments, 1, arguments.Length);
-                return owned.Application.GetType().InvokeMember("Run", BindingFlags.InvokeMethod | BindingFlags.OptionalParamBinding,
-                    null, owned.Application, invokeArguments, System.Globalization.CultureInfo.InvariantCulture);
+                if (!(target is OwnedTarget owned) || owned.Closed) throw new InvalidOperationException("An owned Excel target is required.");
+                bool invoked = false;
+                try
+                {
+                    if (!SameValuesPath((string)((dynamic)owned.Workbook).FullName, owned.Path))
+                        throw new InvalidOperationException("The workbook path changed before invocation.");
+                    var invokeArguments = new object[arguments.Length + 1];
+                    invokeArguments[0] = "'" + owned.Path.Replace("'", "''") + "'!" + module + "." + procedure;
+                    Array.Copy(arguments, 0, invokeArguments, 1, arguments.Length);
+                    invoked = true;
+                    return owned.Application.GetType().InvokeMember("Run", BindingFlags.InvokeMethod | BindingFlags.OptionalParamBinding,
+                        null, owned.Application, invokeArguments, System.Globalization.CultureInfo.InvariantCulture);
+                }
+                catch { if (invoked) owned.RetainOnUncertain(); throw; }
+                finally { owned.Dispose(); }
             }
 
             /// <summary>Compare IUnknown sans utiliser les noms de projet ou de classeur.</summary>
@@ -161,6 +194,7 @@ namespace VBAi
                 ArgumentNames = request.ArgumentNames == null ? null : (string[])request.ArgumentNames.Clone()
             };
             var prepared = PrepareProcedureValues(captured);
+            (prepared.Target as NativeProcedureValuesHost.OwnedTarget)?.Dispose();
             var operation = new ProcedureOperation
             {
                 Id = Guid.NewGuid().ToString("N"),
@@ -182,7 +216,11 @@ namespace VBAi
                     try
                     {
                         var live = PrepareProcedureValues(captured);
-                        if (live.Identity != prepared.Identity) throw new InvalidOperationException("Procedure identity changed before execution.");
+                        if (live.Identity != prepared.Identity)
+                        {
+                            (live.Target as NativeProcedureValuesHost.OwnedTarget)?.Dispose();
+                            throw new InvalidOperationException("Procedure identity changed before execution.");
+                        }
                         operation.State = "Delivering"; procedureValueInvocations[operation.Id] = true;
                         object returned = ProcedureValuesHost.Invoke(live.Target, live.Module, live.Procedure, live.Arguments);
                         operation.State = "ReturnReceived";
@@ -236,19 +274,23 @@ namespace VBAi
             object[] bound = VbaProcedureValues.Bind(source, body, request.Procedure, request.Arguments, request.ArgumentNames);
             string module = (string)component.Name;
             object target = ProcedureValuesHost.ResolveTarget((object)project, expectedPath);
-            int finalCount = (int)codeModule.CountOfLines;
-            string finalSource = finalCount == 0 ? "" : (string)codeModule.Lines[1, finalCount];
-            if ((int)project.Mode != 2 || !SameValuesPath((string)project.FileName, expectedPath) ||
-                !string.Equals(Hash(finalSource), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Source, mode or host path changed while resolving the owned invocation target.");
-            return new ValuesCall
+            try
             {
-                Module = module,
-                Procedure = request.Procedure,
-                Target = target,
-                Arguments = bound,
-                Identity = expectedPath + "!" + module + "." + request.Procedure + ":" + request.ExpectedSha256
-            };
+                int finalCount = (int)codeModule.CountOfLines;
+                string finalSource = finalCount == 0 ? "" : (string)codeModule.Lines[1, finalCount];
+                if ((int)project.Mode != 2 || !SameValuesPath((string)project.FileName, expectedPath) ||
+                    !string.Equals(Hash(finalSource), request.ExpectedSha256, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Source, mode or host path changed while resolving the owned invocation target.");
+                return new ValuesCall
+                {
+                    Module = module,
+                    Procedure = request.Procedure,
+                    Target = target,
+                    Arguments = bound,
+                    Identity = expectedPath + "!" + module + "." + request.Procedure + ":" + request.ExpectedSha256
+                };
+            }
+            catch { (target as NativeProcedureValuesHost.OwnedTarget)?.Dispose(); throw; }
         }
 
         /// <summary>Décrit la preuve du retour, distincte de la correction de la macro et de ses effets de bord.</summary>

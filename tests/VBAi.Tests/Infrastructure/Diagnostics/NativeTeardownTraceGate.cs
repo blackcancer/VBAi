@@ -7,7 +7,7 @@ using System.Web.Script.Serialization;
 
 namespace VBAi.Tests.Integration
 {
-    /// <summary>Disabled-by-default rendezvous for the single cleanup of two owned procedure-value fixtures.</summary>
+    /// <summary>Disabled-by-default rendezvous for one cleanup of explicitly named, owned Excel qualification fixtures.</summary>
     internal sealed class NativeTeardownTraceGate
     {
         internal const string EnvironmentName = "VBAi_TEST_EXCEL_TEARDOWN_TRACE_GATE";
@@ -46,14 +46,16 @@ namespace VBAi.Tests.Integration
                 !LocalAbsolute(value.Executable) || !string.Equals(Path.GetFileName(value.Executable), "EXCEL.EXE", StringComparison.OrdinalIgnoreCase) ||
                 !LocalAbsolute(value.AssemblyPath) || !string.Equals(Path.GetFileName(value.AssemblyPath), "VBAi.dll", StringComparison.OrdinalIgnoreCase) ||
                 !AllowedScenario(value.Scenario))
-                throw new ArgumentException("Only an exact owned Excel procedure-value identity and GUID output are allowed.");
+                throw new ArgumentException("Only an exact owned Excel qualification identity and GUID output are allowed.");
         }
 
         private static bool LocalAbsolute(string path) => path != null && path.Length > 2 && char.IsLetter(path[0]) &&
             path[1] == ':' && (path[2] == '\\' || path[2] == '/');
 
         internal static bool AllowedScenario(string name) => name == "NativeVariantArraysRoundTripWithBoundsAndOneInvocation" ||
-            name == "NativeParamArrayCallsPreserveArityValuesAndSingleInvocation";
+            name == "NativeParamArrayCallsPreserveArityValuesAndSingleInvocation" ||
+            name == "ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving" ||
+            name == "SavedUnsignedWorkbookHasNoSignatureAndPreservesSource";
 
         /// <summary>Observes actual single emissions; a missing response never authorizes replay or cleanup.</summary>
         internal IDictionary<string, object> Command(object request, Func<IDictionary<string, object>> execute)

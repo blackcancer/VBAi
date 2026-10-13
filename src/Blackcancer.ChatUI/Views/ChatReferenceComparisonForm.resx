@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="$this.Text" xml:space="preserve"><value>Compare captured references</value></data>
+  <data name="copyOld.Text" xml:space="preserve"><value>Copy previous capture</value></data>
+  <data name="copyNew.Text" xml:space="preserve"><value>Copy proposed capture</value></data>
+  <data name="accept.Text" xml:space="preserve"><value>Apply to draft</value></data>
+  <data name="cancel.Text" xml:space="preserve"><value>Cancel</value></data>
+  <data name="oldTitle.Text" xml:space="preserve"><value>Previous capture</value></data>
+  <data name="newTitle.Text" xml:space="preserve"><value>Proposed capture</value></data>
+  <data name="oldMetadataLabel.Text" xml:space="preserve"><value>Captured metadata</value></data>
+  <data name="newMetadataLabel.Text" xml:space="preserve"><value>Captured metadata</value></data>
+  <data name="oldContentLabel.Text" xml:space="preserve"><value>Exact captured text</value></data>
+  <data name="newContentLabel.Text" xml:space="preserve"><value>Exact captured text</value></data>
+  <data name="oldCaptureNote.Text" xml:space="preserve"><value>Captured text; no automatic reread.</value></data>
+  <data name="newCaptureNote.Text" xml:space="preserve"><value>Captured text; no automatic reread.</value></data>
+  <data name="note.Text" xml:space="preserve"><value>Review both captures. Applying the proposed capture is an explicit request to the host; sent messages keep their original capture.</value></data>
+  <data name="statusNote.Text" xml:space="preserve"><value>Applying this capture to the draft is unavailable.</value></data>
+  <data name="identityId" xml:space="preserve"><value>ID</value></data>
+  <data name="identityOrigin" xml:space="preserve"><value>Origin</value></data>
+  <data name="truncatedCapture" xml:space="preserve"><value>Truncated capture: only the captured fragment is available.</value></data>
+  <data name="completeCapture" xml:space="preserve"><value>Captured text; no automatic reread.</value></data>
+  <data name="acceptanceAvailable" xml:space="preserve"><value>Apply to the draft only after reviewing both captures.</value></data>
+  <data name="acceptanceUnavailable" xml:space="preserve"><value>Applying this capture to the draft is unavailable.</value></data>
+  <data name="acceptanceRequested" xml:space="preserve"><value>Application requested. Waiting for the host to validate the draft.</value></data>
+  <data name="CapturePending" xml:space="preserve"><value>Capturing a proposed version for comparison…</value></data>
+  <data name="ValidationPending" xml:space="preserve"><value>Validating the proposed capture and the current draft…</value></data>
+  <data name="ComparisonUnavailable" xml:space="preserve"><value>Comparison is unavailable for this reference.</value></data>
+  <data name="SourceChanged" xml:space="preserve"><value>The source or draft changed. Request a new comparison.</value></data>
+  <data name="CandidateStale" xml:space="preserve"><value>The proposed capture is stale. Request a new comparison.</value></data>
+  <data name="Accepted" xml:space="preserve"><value>The proposed capture was applied to the draft.</value></data>
+  <data name="SavingPending" xml:space="preserve"><value>Saving the draft. Closing will be available after this save.</value></data>
+  <data name="SavingFailed" xml:space="preserve"><value>The proposed capture could not be saved to the draft.</value></data>
+</root>

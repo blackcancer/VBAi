@@ -12,7 +12,7 @@ namespace VBAi.Tests.Unit
     using VBAi.Tests.Infrastructure;
 
     /// <summary>Vérifie la validation et les opérations Git exposées par les outils LLM.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolsGitTests
     {

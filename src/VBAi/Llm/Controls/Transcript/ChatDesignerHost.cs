@@ -6,7 +6,7 @@ namespace VBAi
 {
 
     /// <summary>Hosts a transcript view in the WinForms Designer and measures its preferred height.</summary>
-    internal sealed class ChatDesignerHost : WindowsFormsHost
+    internal sealed partial class ChatDesignerHost : WindowsFormsHost
     {
 
         /// <summary>Gets the hosted transcript control when the native child is a WinForms UserControl.</summary>
@@ -19,6 +19,47 @@ namespace VBAi
         {
             Child = view;
             view.SizeChanged += (s, e) => InvalidateMeasure();
+            Loaded += OnLoaded;
+            Unloaded += OnUnloaded;
+        }
+
+        /// <summary>Starts clipping native child windows to the connected transcript viewport.</summary>
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            LayoutUpdated -= OnViewportLayoutUpdated;
+            LayoutUpdated += OnViewportLayoutUpdated;
+            UpdateViewportClip();
+        }
+
+        /// <summary>Disconnects layout observation while a transcript row is unloaded or recycled.</summary>
+        private void OnUnloaded(object sender, RoutedEventArgs e)
+        {
+            LayoutUpdated -= OnViewportLayoutUpdated;
+            clipWindow = IntPtr.Zero;
+            clipBounds = null;
+        }
+
+        /// <summary>Refreshes native clipping after scroll, layout, DPI or viewport changes.</summary>
+        private void OnViewportLayoutUpdated(object sender, EventArgs e) => UpdateViewportClip();
+
+        /// <summary>Reapplies the viewport region after WPF moves or resizes the native host.</summary>
+        protected override void OnWindowPositionChanged(Rect rcBoundingBox)
+        {
+            base.OnWindowPositionChanged(rcBoundingBox);
+            clipWindow = IntPtr.Zero;
+            UpdateViewportClip();
+        }
+
+        /// <summary>Detaches observation before disposing the native transcript host.</summary>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                LayoutUpdated -= OnViewportLayoutUpdated;
+                Loaded -= OnLoaded;
+                Unloaded -= OnUnloaded;
+            }
+            base.Dispose(disposing);
         }
 
         /// <summary>Measures the hosted transcript view within the available designer width.</summary>

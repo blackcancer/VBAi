@@ -28,6 +28,12 @@ namespace VBAi
         /// <summary>Known project COM identities keyed by stable explorer project IDs.</summary>
         private readonly Dictionary<string, object> projects = new Dictionary<string, object>();
 
+        /// <summary>Project acquisitions retained by this service; borrowed coverage-clone projects are excluded.</summary>
+        private readonly HashSet<string> acquiredProjects = new HashSet<string>();
+
+        /// <summary>Balances only references acquired by this service's COM getters.</summary>
+        internal Action<object> ReleaseAcquired = VbaTestComReferences.Release;
+
         /// <summary>Active or recently completed runs keyed by their caller-visible run IDs.</summary>
         private readonly Dictionary<string, RunEntry> runs = new Dictionary<string, RunEntry>();
 
@@ -93,6 +99,9 @@ namespace VBAi
         /// <summary>Owner-thread dispatcher for the registered native test callback.</summary>
         private VbaNativeTestExecutionHost nativeExecutionHost;
 
+        /// <summary>Opt-in metadata-only timings shared by snapshot and native execution stages.</summary>
+        private readonly NativeExecutionTimings nativeTimings = NativeExecutionTimings.ForCurrentProcess();
+
         /// <summary>Validates callback run identity and phase before accepting native result receipts.</summary>
         private readonly VbaTestResultSink resultSink = new VbaTestResultSink();
 
@@ -152,6 +161,7 @@ namespace VBAi
             nativeExecutionHost = new VbaNativeTestExecutionHost(vbe, dispatcher, resultSink,
                 catalog => ResolveLive(catalog.Project.Id), Validate, NativeExecutionGuard,
                 VbaTestRuntimeSource.DispatchSignature, () => active?.Run.Id ?? throw new InvalidOperationException("No authorized test run is active."));
+            nativeExecutionHost.Timings = nativeTimings;
         }
 
         /// <summary>Rejects disposed services and calls made outside the VBE-owning thread.</summary>
@@ -168,9 +178,10 @@ namespace VBAi
             RequireOwner();
             var result = new List<VbaTestProjectSnapshot>();
             var liveIds = new HashSet<string>();
-            foreach (object project in vbe.VBProjects)
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            foreach (object project in references.Items((object)vbe.VBProjects))
             {
-                string id = FindIdentity(project);
+                string id = RememberAcquiredProject(project, references);
                 liveIds.Add(id);
                 try { result.Add(Snapshot(id, project)); }
                 catch (Exception)
@@ -184,7 +195,11 @@ namespace VBAi
                     });
                 }
             }
-            foreach (string id in projects.Keys.Where(id => !liveIds.Contains(id)).ToArray()) projects.Remove(id);
+            foreach (string id in projects.Keys.Where(id => !liveIds.Contains(id)).ToArray())
+            {
+                if (acquiredProjects.Remove(id)) ReleaseAcquired(projects[id]);
+                projects.Remove(id);
+            }
             return result;
         }
 
@@ -200,14 +215,42 @@ namespace VBAi
             return id;
         }
 
+        /// <summary>Retains one collection acquisition only when assigning a new session project identity.</summary>
+        /// <param name="project">Project returned by a tracked collection enumeration.</param>
+        /// <param name="references">Scope that currently owns the acquisition.</param>
+        /// <returns>Stable session project identity.</returns>
+        private string RememberAcquiredProject(object project, VbaTestComReferences references)
+        {
+            int before = projects.Count;
+            string id = FindIdentity(project);
+            if (projects.Count != before) { references.Transfer(project); acquiredProjects.Add(id); }
+            return id;
+        }
+
         /// <summary>Resolves a project selector and discovers tests from its current source snapshot.</summary>
         /// <param name="selector">Host path or project selector accepted by <see cref="VbeProjectResolver"/>.</param>
         /// <returns>Catalog bound to the selected project's source and reference revision.</returns>
         internal VbaTestCatalog DiscoverSelector(string selector)
         {
             RequireOwner();
-            object project = VbeProjectResolver.Resolve(vbe, selector);
-            return Discover(FindIdentity(project));
+            if (string.IsNullOrWhiteSpace(selector)) throw new ArgumentException("Project is required.");
+            bool byPath = Path.IsPathRooted(selector);
+            string path = byPath ? Path.GetFullPath(selector) : null;
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            {
+                object match = null;
+                foreach (dynamic project in references.Items((object)vbe.VBProjects))
+                {
+                    string candidate;
+                    try { candidate = byPath ? VbeProjectHostPath.Read((object)project) : (string)project.Name; }
+                    catch { if (byPath) continue; throw; }
+                    if (!string.Equals(candidate, byPath ? path : selector, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (match != null) throw new InvalidOperationException("Project selector is absent or ambiguous: " + selector + ". Use the exact HostPath from list_projects when names collide.");
+                    match = project;
+                }
+                if (match == null) throw new InvalidOperationException("Project selector is absent or ambiguous: " + selector + ". Use the exact HostPath from list_projects when names collide.");
+                return Discover(RememberAcquiredProject(match, references));
+            }
         }
 
         /// <summary>Discovers eligible procedures in the exact live project previously assigned this ID.</summary>
@@ -227,8 +270,9 @@ namespace VBAi
         private object ResolveLive(string id)
         {
             if (string.IsNullOrWhiteSpace(id) || !projects.TryGetValue(id, out object wanted)) throw new InvalidOperationException("The selected test project is no longer available.");
-            foreach (object project in vbe.VBProjects)
-                if (ReferenceEquals(project, wanted) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(project, wanted)) return project;
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            foreach (object project in references.Items((object)vbe.VBProjects))
+                if (ReferenceEquals(project, wanted) || VbeDebug.NativeProcedureValuesHost.SameComIdentity(project, wanted)) return wanted;
             throw new InvalidOperationException("The selected project was closed or replaced.");
         }
 
@@ -237,38 +281,55 @@ namespace VBAi
         /// <param name="project">Live project read on the owning VBE thread.</param>
         /// <returns>Snapshot with module hashes and a revision that changes when source or references change.</returns>
         private VbaTestProjectSnapshot Snapshot(string id, dynamic project)
+            => nativeTimings.Measure<VbaTestProjectSnapshot>(NativeTestTimingStage.ProjectSnapshot, () => ReadSnapshot(id, (object)project));
+
+        /// <summary>Reads the current project's source and reference revision on the owning VBE thread.</summary>
+        /// <param name="id">Session-owned project identity.</param>
+        /// <param name="project">Live project already resolved by the caller.</param>
+        /// <returns>Current revision snapshot; timing observation cannot bypass its COM or protection checks.</returns>
+        private VbaTestProjectSnapshot ReadSnapshot(string id, dynamic project)
         {
-            if ((int)project.Protection != 0) throw new InvalidOperationException("The selected VBA project is protected.");
-            string name = (string)project.Name, path = null;
-            try { path = VbeProjectHostPath.Read((object)project); } catch (Exception) { }
-            var modules = new List<VbaTestModuleSnapshot>();
-            var identity = new StringBuilder().Append(id).Append('\n').Append(name).Append('\n').Append(path).Append('\n');
-            foreach (dynamic component in project.VBComponents)
+            using (var acquired = new VbaTestComReferences(ReleaseAcquired))
             {
-                dynamic code = component.CodeModule;
-                int count = (int)code.CountOfLines;
-                if (count > 200000 || modules.Count >= 1000) throw new InvalidOperationException("The project exceeds the test discovery limits.");
-                string source = count == 0 ? "" : (string)code.Lines[1, count];
-                modules.Add(new VbaTestModuleSnapshot { Name = (string)component.Name, Source = source, Hash = Hash(source), ComponentType = (int)component.Type });
+                if ((int)project.Protection != 0) throw new InvalidOperationException("The selected VBA project is protected.");
+                string name = (string)project.Name, path = null;
+                try { path = nativeTimings.Measure<string>(NativeTestTimingStage.SnapshotHostPath,
+                    () => VbeProjectHostPath.Read((object)project)); } catch (Exception) { }
+                var modules = new List<VbaTestModuleSnapshot>();
+                var identity = new StringBuilder().Append(id).Append('\n').Append(name).Append('\n').Append(path).Append('\n');
+                nativeTimings.Measure(NativeTestTimingStage.SnapshotModules, () =>
+                {
+                    foreach (dynamic component in acquired.Items((object)project.VBComponents))
+                    {
+                        dynamic code = acquired.Add((object)component.CodeModule);
+                        int count = (int)code.CountOfLines;
+                        if (count > 200000 || modules.Count >= 1000) throw new InvalidOperationException("The project exceeds the test discovery limits.");
+                        string source = count == 0 ? "" : (string)code.Lines[1, count];
+                        modules.Add(new VbaTestModuleSnapshot { Name = (string)component.Name, Source = source, Hash = Hash(source), ComponentType = (int)component.Type });
+                    }
+                });
+                foreach (var module in modules.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+                    identity.Append(module.Name).Append('|').Append(module.ComponentType).Append('|').Append(module.Hash).Append('\n');
+                // References are fingerprinted as well as code: a changed dependency invalidates the plan.
+                var references = new StringBuilder();
+                nativeTimings.Measure(NativeTestTimingStage.SnapshotReferences, () =>
+                {
+                    foreach (dynamic reference in acquired.Items((object)project.References))
+                        references.Append((string)reference.Name).Append('|').Append((string)reference.Guid).Append('|')
+                            .Append((int)reference.Major).Append('|').Append((int)reference.Minor).Append('|').Append((bool)reference.IsBroken).Append('\n');
+                });
+                identity.Append(references);
+                return new VbaTestProjectSnapshot
+                {
+                    Id = id,
+                    Name = name,
+                    Selector = !string.IsNullOrEmpty(path) && Path.IsPathRooted(path) ? path : name,
+                    HostPath = path,
+                    Revision = Hash(identity.ToString()),
+                    ReferencesHash = Hash(references.ToString()),
+                    Modules = modules.ToArray()
+                };
             }
-            foreach (var module in modules.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
-                identity.Append(module.Name).Append('|').Append(module.ComponentType).Append('|').Append(module.Hash).Append('\n');
-            // References are fingerprinted as well as code: a changed dependency invalidates the plan.
-            var references = new StringBuilder();
-            foreach (dynamic reference in project.References)
-                references.Append((string)reference.Name).Append('|').Append((string)reference.Guid).Append('|')
-                    .Append((int)reference.Major).Append('|').Append((int)reference.Minor).Append('|').Append((bool)reference.IsBroken).Append('\n');
-            identity.Append(references);
-            return new VbaTestProjectSnapshot
-            {
-                Id = id,
-                Name = name,
-                Selector = !string.IsNullOrEmpty(path) && Path.IsPathRooted(path) ? path : name,
-                HostPath = path,
-                Revision = Hash(identity.ToString()),
-                ReferencesHash = Hash(references.ToString()),
-                Modules = modules.ToArray()
-            };
         }
 
         /// <summary>Computes a SHA-256 fingerprint of UTF-8 source text.</summary>
@@ -376,12 +437,22 @@ namespace VBAi
             return completion.Task;
         }
 
-        /// <summary>Disposes a Word target or retains its COM references when invocation completion is uncertain.</summary>
+        /// <summary>Disposes an owned returned-value target or retains its references after uncertain completion.</summary>
         /// <param name="target">Owned host target returned by its adapter.</param>
         /// <param name="uncertain">Whether the target must remain rooted instead of being released.</param>
         private static void ReleaseReturnedTarget(object target, bool uncertain)
         {
-            if (target is VbaTestWordValuesHost.OwnedTarget word)
+            if (target is VbaTestPowerPointValuesHost.OwnedTarget powerPoint)
+            {
+                if (uncertain) powerPoint.RetainOnUncertain();
+                powerPoint.Dispose();
+            }
+            else if (target is VbeDebug.NativeProcedureValuesHost.OwnedTarget excel)
+            {
+                if (uncertain) excel.RetainOnUncertain();
+                excel.Dispose();
+            }
+            else if (target is VbaTestWordValuesHost.OwnedTarget word)
             {
                 if (uncertain) word.RetainOnUncertain();
                 word.Dispose();
@@ -595,6 +666,16 @@ namespace VBAi
         /// <returns>Command-specific response; permission checks are performed by the gateway before this method.</returns>
         internal object Command(Request request, Action executionGuard = null)
         {
+            return CommandCore(request, executionGuard, false);
+        }
+
+        /// <summary>Executes one command, optionally returning an expected revision refusal to the bridge.</summary>
+        /// <param name="request">Command whose scope and owner are checked before dispatch.</param>
+        /// <param name="executionGuard">Authorization callback retained for native execution.</param>
+        /// <param name="replyForStaleRevision">Whether a revision mismatch returns a protocol failure instead of throwing.</param>
+        /// <returns>The original payload, or the explicit refusal when requested.</returns>
+        private object CommandCore(Request request, Action executionGuard, bool replyForStaleRevision)
+        {
             RequireOwner();
             if (request.Command == "vba_test_run_status" || request.Command == "vba_test_coverage")
                 VbaTestReports.PageLimit(request.Offset, request.Limit);
@@ -651,7 +732,11 @@ namespace VBAi
                 return PreviewCoverage(catalog, request.Offset, request.Limit);
             }
             if (string.IsNullOrEmpty(request.ExpectedProjectVersion) || request.ExpectedProjectVersion != catalog.Project.Revision)
-                throw new InvalidOperationException("ExpectedProjectVersion must match the discovered test project revision.");
+            {
+                const string error = "ExpectedProjectVersion must match the discovered test project revision.";
+                if (replyForStaleRevision) return Response.Failure(error);
+                throw new InvalidOperationException(error);
+            }
             if (request.Command == "navigate_vba_test")
             {
                 if (request.Items == null || request.Items.Length != 1) throw new ArgumentException("Items must identify exactly one discovered test.");
@@ -679,30 +764,38 @@ namespace VBAi
             if (active != null) throw new InvalidOperationException("A test run is active.");
             string generated = VbaTestRuntimeSource.Generate(catalog);
             if (approvedSource != generated) throw new InvalidOperationException("Only the exact generated support source can be installed.");
-            dynamic project = ResolveLive(catalog.Project.Id), component = null;
-            foreach (dynamic candidate in project.VBComponents)
-                if (string.Equals((string)candidate.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase)) { component = candidate; break; }
-            string before = component == null || (int)component.CodeModule.CountOfLines == 0 ? "" : (string)component.CodeModule.Lines[1, (int)component.CodeModule.CountOfLines];
-            if (component != null && ((int)component.Type != 1 || !VbaTestRuntimeSource.IsOwned(before))) throw new InvalidOperationException("The support module name is occupied by user code.");
-            string folder = Path.Combine(BackupRoot(), Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(folder);
-            string backup = Path.Combine(folder, VbaTestRuntimeSource.ModuleName + ".bas");
-            File.WriteAllText(backup, before, new UTF8Encoding(false));
-            File.WriteAllText(Path.Combine(folder, "proposed.bas"), generated, new UTF8Encoding(false));
-            Validate(catalog);
-            try
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
             {
-                if (component == null) { component = project.VBComponents.Add(1); component.Name = VbaTestRuntimeSource.ModuleName; }
-                dynamic code = component.CodeModule;
-                int count = (int)code.CountOfLines;
-                if (count > 0) code.DeleteLines(1, count);
-                code.AddFromString(generated);
-                string observed = (string)code.Lines[1, (int)code.CountOfLines];
-                if (Canonical(observed) != Canonical(generated)) throw new InvalidOperationException("The support module did not match the reviewed source after writing.");
-                return new { Applied = true, Backup = backup, Project = catalog.Project.Selector, SavedToDisk = false };
+                dynamic project = ResolveLive(catalog.Project.Id), component = null;
+                dynamic components = references.Add((object)project.VBComponents);
+                foreach (dynamic candidate in references.ItemsFromBorrowed(components))
+                    if (string.Equals((string)candidate.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase)) { component = candidate; break; }
+                dynamic code = component == null ? null : references.Add((object)component.CodeModule);
+                string before = code == null || (int)code.CountOfLines == 0 ? "" : (string)code.Lines[1, (int)code.CountOfLines];
+                if (component != null && ((int)component.Type != 1 || !VbaTestRuntimeSource.IsOwned(before))) throw new InvalidOperationException("The support module name is occupied by user code.");
+                string folder = Path.Combine(BackupRoot(), Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(folder);
+                string backup = Path.Combine(folder, VbaTestRuntimeSource.ModuleName + ".bas");
+                File.WriteAllText(backup, before, new UTF8Encoding(false));
+                File.WriteAllText(Path.Combine(folder, "proposed.bas"), generated, new UTF8Encoding(false));
+                Validate(catalog);
+                try
+                {
+                    if (component == null)
+                    {
+                        component = references.Add((object)components.Add(1)); component.Name = VbaTestRuntimeSource.ModuleName;
+                        code = references.Add((object)component.CodeModule);
+                    }
+                    int count = (int)code.CountOfLines;
+                    if (count > 0) code.DeleteLines(1, count);
+                    code.AddFromString(generated);
+                    string observed = (string)code.Lines[1, (int)code.CountOfLines];
+                    if (Canonical(observed) != Canonical(generated)) throw new InvalidOperationException("The support module did not match the reviewed source after writing.");
+                    return new { Applied = true, Backup = backup, Project = catalog.Project.Selector, SavedToDisk = false };
+                }
+                catch (Exception error)
+                { throw new InvalidOperationException("Test support may be partially written. No automatic retry or restoration was attempted. Preserved backup: " + backup + ". " + error.Message, error); }
             }
-            catch (Exception error)
-            { throw new InvalidOperationException("Test support may be partially written. No automatic retry or restoration was attempted. Preserved backup: " + backup + ". " + error.Message, error); }
         }
 
         /// <summary>Marks the session unavailable, cancels active work, and releases continuation resources when idle.</summary>
@@ -710,6 +803,7 @@ namespace VBAi
         {
             if (disposed) return;
             RequireContinuationOwner();
+            bool retainProjects = outcomeUnknown || active != null || pendingCalls.Any(call => call.Invoked);
             active?.Stop.Cancel();
             disposed = true;
             coverageService?.Dispose();
@@ -718,6 +812,12 @@ namespace VBAi
             foreach (var pending in pendingCalls.ToArray())
                 pending.Completion.TrySetException(new VbaTestInvocationException("The VBE session disconnected before completion could be verified.", pending.Invoked));
             pendingCalls.Clear();
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            {
+                foreach (string id in acquiredProjects) references.Add(projects[id]);
+                if (retainProjects) references.Retain();
+            }
+            acquiredProjects.Clear();
             projects.Clear();
             foreach (var entry in runs.Values) entry.Stop.Dispose();
             runs.Clear();

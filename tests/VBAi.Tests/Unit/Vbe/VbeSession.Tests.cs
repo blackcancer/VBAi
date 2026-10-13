@@ -1,6 +1,58 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Collections.Generic;
+using System.IO;
 namespace VBAi.Tests.Unit
 {
+    [TestClass, TestCategory("Unit")]
+    public sealed class VbeSessionInventoryTests
+    {
+        public sealed class InventoryProject
+        {
+            public string Fault;
+            public string Name => Fault == "Name" ? throw new InvalidOperationException("Name changed.") : "ProjetÉté";
+            public string FileName => Fault == "FileName" ? throw new DirectoryNotFoundException("Closed project.") : @"C:\owned\Original.xlsm";
+            public int Mode => Fault == "Mode" ? throw new InvalidOperationException("Mode changed.") : 2;
+        }
+
+        [DataTestMethod][DataRow("success")][DataRow("duplicate")][DataRow("enumeration")]
+        [DataRow("Name")][DataRow("Mode")][DataRow("FileName")]
+        public void InventoryBalancesEveryAcquisitionEvenWhenMetadataOrEnumerationFails(string scenario)
+        {
+            var first = new InventoryProject { Fault = scenario };
+            var second = scenario == "duplicate" ? first : new InventoryProject();
+            var items = new ProjectResolverTests.ResolverCollection(first, second) { ThrowAfterFirst = scenario == "enumeration" };
+            var host = new ProjectResolverTests.ResolverHost { VBProjects = items };
+            var releases = new List<object>();
+            if (scenario == "Name" || scenario == "Mode" || scenario == "enumeration")
+                Assert.ThrowsException<InvalidOperationException>(() => VbeSession.ReadProjectInventory(host, releases.Add));
+            else
+            {
+                var result = (List<object>)VbeSession.ReadProjectInventory(host, releases.Add);
+                Assert.AreEqual(2, result.Count);
+                dynamic row = result[0];
+                Assert.AreEqual("ProjetÉté", (string)row.Name); Assert.AreEqual(2, (int)row.Mode);
+                if (scenario == "FileName")
+                {
+                    Assert.IsNull((string)row.FileName); Assert.IsNull((string)row.HostPath);
+                    Assert.AreEqual(new DirectoryNotFoundException().HResult, (int)row.FileNameErrorHResult);
+                    Assert.AreEqual(typeof(DirectoryNotFoundException).FullName, (string)row.FileNameErrorType);
+                    StringAssert.Contains((string)row.HostPathError, "Closed project.");
+                }
+                else
+                {
+                    Assert.AreEqual(first.FileName, (string)row.FileName);
+                    Assert.IsNull((object)row.FileNameErrorHResult); Assert.IsNull((string)row.FileNameErrorType);
+                }
+            }
+            var expected = new List<object>();
+            if (scenario != "Name" && scenario != "Mode" && scenario != "enumeration") expected.Add(second);
+            expected.Add(first); expected.Add(items.Enumerator); expected.Add(items);
+            CollectionAssert.AreEqual(expected, releases, "Every getter is balanced in reverse order, including duplicate RCWs.");
+            Assert.IsFalse(releases.Contains(host), "The caller's VBE is borrowed.");
+        }
+    }
+
     public sealed partial class ToolbarProfilesTests
     {
         [TestMethod]

@@ -268,8 +268,11 @@ namespace VBAi.Tests.Unit
                     f.Base.Get<System.Collections.Generic.Dictionary<string, string>>("reviewed")[f.Document.Id] = f.Document.Native;
                     f.Base.Set("showingDiff", true);
                     System.Threading.SynchronizationContext.SetSynchronizationContext(null);
-                    UiInvoke.Call(typeof(ModernEditorWindow), "ResolveClick", f.Window, null, System.EventArgs.Empty);
-                    pump(() => !f.Document.Dirty && !f.Base.Get<bool>("showingDiff") && !f.Base.Get<bool>("busy"));
+                    using (new VbeInspectionTrace(line => ledger.Enqueue("resolve-ui " + line)).Enter())
+                    {
+                        UiInvoke.Call(typeof(ModernEditorWindow), "ResolveClick", f.Window, null, System.EventArgs.Empty);
+                        pump(() => !f.Document.Dirty && !f.Base.Get<bool>("showingDiff") && !f.Base.Get<bool>("busy"));
+                    }
                     Assert.IsTrue(calls.Any(call => call.Item1 == "hideDiff"));
                     Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Resolve renderer calls must remain on the owning STA.");
                     Assert.AreEqual(1, f.Module.Writes, "Only the explicit conflict resolution may write native source.");
@@ -281,8 +284,11 @@ namespace VBAi.Tests.Unit
                     f.Document.Observe();
                     Assert.IsTrue(f.Document.Dirty && f.Document.Conflict);
                     System.Threading.SynchronizationContext.SetSynchronizationContext(null);
-                    UiInvoke.Call(typeof(ModernEditorWindow), "ReloadClick", f.Window, null, System.EventArgs.Empty);
-                    pump(() => !f.Document.Dirty && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    using (new VbeInspectionTrace(line => ledger.Enqueue("reload-ui " + line)).Enter())
+                    {
+                        UiInvoke.Call(typeof(ModernEditorWindow), "ReloadClick", f.Window, null, System.EventArgs.Empty);
+                        pump(() => !f.Document.Dirty && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    }
                     Assert.AreEqual(EditorDocument.Normalize(f.Module.Code), f.Document.Text);
                     Assert.AreEqual(draft, f.Window.Drafts.Recover(f.Document.RecoveryKey).Text);
                     Assert.IsTrue(calls.Any(call => call.Item1 == "apply"));
@@ -291,8 +297,11 @@ namespace VBAi.Tests.Unit
                     int applies = f.Applies;
 
                     System.Threading.SynchronizationContext.SetSynchronizationContext(null);
-                    UiInvoke.Call(typeof(ModernEditorWindow), "RestoreClick", f.Window, null, System.EventArgs.Empty);
-                    pump(() => f.Document.Dirty && f.Document.Text == draft && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    using (new VbeInspectionTrace(line => ledger.Enqueue("restore-ui " + line)).Enter())
+                    {
+                        UiInvoke.Call(typeof(ModernEditorWindow), "RestoreClick", f.Window, null, System.EventArgs.Empty);
+                        pump(() => f.Document.Dirty && f.Document.Text == draft && !UiInvoke.Field<bool>(f.Window, "busy"));
+                    }
                     Assert.AreEqual(applies + 1, f.Applies);
                     Assert.IsTrue(calls.All(call => call.Item2 == ownerThread), "Restore renderer calls must remain on the owning STA.");
                     Assert.AreEqual(draft, f.Window.Drafts.Recover(f.Document.RecoveryKey).Text);

@@ -65,19 +65,22 @@ namespace VBAi
         /// <summary>Capture l’état Monaco, restaure les changements demandés puis réconcilie les documents ouverts.</summary>
         /// <param name="changes">Changements de code issus du transcript.</param><param name="hunk">Index facultatif du bloc à restaurer.</param>
         /// <returns>Réponse de restauration ou échec converti en réponse.</returns>
-        internal async Task<Response> RestoreChangesAsync(CodeChange[] changes, int? hunk)
+        internal Task<Response> RestoreChangesAsync(CodeChange[] changes, int? hunk)
         {
-            try
+            return VbeUiTask.Run(async () =>
             {
-                var window = EditorWindow(false);
-                if (window != null && !window.IsDisposed && window.Documents.Any())
-                    await window.CaptureForTool();
-                GuardLegacyEditorMutation("replace_lines");
-                var result = RestoreChanges(changes, hunk);
-                if (result.Ok && window != null && !window.IsDisposed) await window.ProcessDocuments(false);
-                return result;
-            }
-            catch (Exception error) { return Response.Failure(error.Message); }
+                try
+                {
+                    var window = EditorWindow(false);
+                    if (window != null && !window.IsDisposed && window.Documents.Any())
+                        await window.CaptureForTool();
+                    GuardLegacyEditorMutation("replace_lines");
+                    var result = RestoreChanges(changes, hunk);
+                    if (result.Ok && window != null && !window.IsDisposed) await window.ProcessDocuments(false);
+                    return result;
+                }
+                catch (Exception error) { return Response.Failure(error.Message); }
+            });
         }
 
         /// <summary>Valide et exécute un outil Monaco, en appliquant les gardes de projet, d’édition et de thread UI.</summary>
@@ -111,7 +114,6 @@ namespace VBAi
                         using (var approval = new VbeApprovalDialog(name + "\r\n" + project + " / " + module))
                             if (ShowApproval(approval, owner) != DialogResult.Yes) throw new InvalidOperationException("User rejected the edit.");
                 }
-                var target = EditorModule(project, module);
                 var window = EditorWindow(name == "monaco_open");
                 if (window == null || window.IsDisposed) throw new InvalidOperationException("Open the modern editor with monaco_open first.");
                 if (window.InvokeRequired) throw new InvalidOperationException("Monaco tools must run on the owning VBE UI thread.");
@@ -119,6 +121,9 @@ namespace VBAi
                 // complete renderer/COM operation to the already verified owning STA.
                 return await VbeUiTask.Run(async () =>
                 {
+                    var target = EditorModule(project, module);
+                    try
+                    {
                     EditorDocument doc;
                     if (name == "monaco_open")
                     {
@@ -149,6 +154,8 @@ namespace VBAi
                     }
                     else result = await window.ReadForTool(doc);
                     return json.Serialize(Response.Success(result));
+                    }
+                    finally { window.ReleaseUnadoptedModule(target); }
                 });
             }
             catch (Exception error) { return json.Serialize(Response.Failure(error.Message)); }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,8 +17,37 @@ namespace VBAi
         /// <summary>Appels récents conservés dans cette session, sans autorité de relancement.</summary>
         private readonly List<ProcedureOperation> procedureOperations = new List<ProcedureOperation>();
 
-        /// <summary>Frontière native asynchrone injectable pour les essais locaux.</summary>
-        internal Func<string, Task<object>> ExecuteProcedureCall = command => Task.Run(() => VbeDebugWindows.ExecuteImmediate(command));
+        /// <summary>Identifies the default native boundary independently of test overrides.</summary>
+        private static readonly Func<string, Task<object>> DefaultProcedureCall =
+            command => RunProcedureWorker(command, VbeDebugWindows.ExecuteImmediate);
+
+        /// <summary>Native asynchronous boundary; overrides are reserved for host-free contract tests.</summary>
+        internal Func<string, Task<object>> ExecuteProcedureCall = DefaultProcedureCall;
+
+        /// <summary>Keeps UI Automation on a worker while final validation and Enter use the VBE owner.</summary>
+        internal Func<string, Action<Action>, Task<object>> ExecuteGuardedProcedureCall =
+            (command, submit) => RunProcedureWorker(command,
+                value => VbeDebugWindows.ExecuteImmediateGuarded(value, submit));
+
+        /// <summary>Captures native failures inside the worker before transferring them through a faulted task.</summary>
+        /// <param name="command">The already validated, single-line procedure call.</param>
+        /// <param name="execute">One native operation; it is never replayed after failure.</param>
+        /// <returns>The original result or exception, delivered without an escaping worker exception.</returns>
+        internal static Task<object> RunProcedureWorker(string command, Func<string, object> execute)
+        {
+            if (execute == null) throw new ArgumentNullException(nameof(execute));
+            return Task.Run(() =>
+            {
+                try { return Task.FromResult(execute(command)); }
+                catch (Exception error)
+                {
+                    // Preserve cancellation, its original exception and token without throwing again.
+                    var completion = AsyncTaskMethodBuilder<object>.Create();
+                    completion.SetException(error);
+                    return completion.Task;
+                }
+            });
+        }
 
         /// <summary>Ouverture du volet Exécution, injectable pour les tests sans hôte.</summary>
         internal Action ShowProcedureImmediate;
@@ -29,6 +59,7 @@ namespace VBAi
         {
             if (request == null) throw new ArgumentNullException(nameof(request));
             var context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+            int ownerThread = Thread.CurrentThread.ManagedThreadId;
             if (procedureOperations.Any(x => x.State == "Queued" || x.State == "Delivering"))
                 throw new InvalidOperationException("A procedure call is still pending; inspect its status instead of retrying.");
             var captured = new Request
@@ -65,7 +96,18 @@ namespace VBAi
                         else OpenDebugPane("immediate", new VbeEditorWindows((object)vbe));
                         operation.State = "Delivering";
                         // Native messages are processed by the UI while this worker observes their echo.
-                        operation.Output = await ExecuteProcedureCall(command);
+                        if (ReferenceEquals(ExecuteProcedureCall, DefaultProcedureCall))
+                        {
+                            operation.Output = await ExecuteGuardedProcedureCall(command, enter => context.Send(__ =>
+                            {
+                                if (Thread.CurrentThread.ManagedThreadId != ownerThread)
+                                    throw new InvalidOperationException("Procedure submission left the owning VBE thread.");
+                                if (PrepareProcedureCall(captured) != command)
+                                    throw new InvalidOperationException("Procedure identity changed before submission.");
+                                enter();
+                            }, null));
+                        }
+                        else operation.Output = await ExecuteProcedureCall(command);
                         operation.State = "Delivered";
                     }
                     catch (Exception ex) { operation.Error = ex.Message; operation.State = "Failed"; }

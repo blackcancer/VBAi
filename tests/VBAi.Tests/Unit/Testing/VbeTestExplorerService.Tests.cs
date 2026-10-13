@@ -14,6 +14,63 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed partial class VbeTestExplorerServiceTests
     {
+        [STATestMethod]
+        public void SnapshotAndLiveResolutionBalanceTheirGettersWhileTheProjectLeaseRemainsOwned()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>(); fixture.Service.ReleaseAcquired = released.Add;
+                var catalog = fixture.Catalog();
+                int before = released.Count(value => ReferenceEquals(value, fixture.Project));
+                fixture.Service.Validate(catalog);
+                Assert.AreEqual(before + 1, released.Count(value => ReferenceEquals(value, fixture.Project)), "ResolveLive balances its collection acquisition without releasing the borrowed project a second time.");
+                foreach (var component in fixture.Project.VBComponents)
+                {
+                    Assert.AreEqual(2, released.Count(value => ReferenceEquals(value, component)));
+                    Assert.AreEqual(2, released.Count(value => ReferenceEquals(value, component.CodeModule)));
+                }
+                Assert.AreEqual(2, released.Count(value => ReferenceEquals(value, fixture.Project.VBComponents)));
+                Assert.AreEqual(2, released.Count(value => ReferenceEquals(value, fixture.Project.References)));
+                Assert.AreEqual(2, released.Count(value => ReferenceEquals(value, fixture.Project.References[0])));
+                fixture.Service.Dispose();
+                Assert.AreEqual(before + 2, released.Count(value => ReferenceEquals(value, fixture.Project)), "Only the service's original retained acquisition is released on disposal.");
+            }
+        }
+
+        [STATestMethod]
+        public void BorrowedCoverageProjectIdentityIsNotReleasedByTheTemporaryServiceOnDisposal()
+        {
+            using (var fixture = new Fixture())
+            using (var dispatcher = new Control())
+            {
+                var handle = dispatcher.Handle;
+                var released = new List<object>();
+                var service = new VbeTestExplorerService(fixture.Vbe, dispatcher) { ReleaseAcquired = released.Add };
+                string id = (string)typeof(VbeTestExplorerService).GetMethod("FindIdentity", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(service, new object[] { fixture.Project });
+                service.Discover(id);
+                int acquisitions = released.Count(value => ReferenceEquals(value, fixture.Project));
+                service.Dispose();
+                Assert.AreEqual(1, acquisitions);
+                Assert.AreEqual(acquisitions, released.Count(value => ReferenceEquals(value, fixture.Project)), "The coverage clone owns this borrowed identity; service disposal must not invalidate it.");
+            }
+        }
+
+        [STATestMethod]
+        public void FailedSourceReadStillReleasesTheModuleAndCollectionAcquisitionsWithoutExecutingVba()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>(); fixture.Service.ReleaseAcquired = released.Add;
+                var component = fixture.Project.VBComponents[0];
+                component.CodeModule.BeforeReadLines = () => { throw new InvalidOperationException("Source inaccessible"); };
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Catalog());
+                Assert.AreEqual(1, released.Count(value => ReferenceEquals(value, component.CodeModule)));
+                Assert.AreEqual(1, released.Count(value => ReferenceEquals(value, component)));
+                Assert.AreEqual(1, released.Count(value => ReferenceEquals(value, fixture.Project.VBComponents)));
+                Assert.AreEqual(0, fixture.Host.Invocations);
+            }
+        }
+
         /// <summary>Native trailing-space removal must not invalidate newly reviewed generated support.</summary>
         [STATestMethod]
         public void ReviewedSupportInstallsAndRemainsCurrentWhenVbeTrimsCommentWhitespace()
@@ -88,6 +145,71 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(VbaTestOutcome.Blocked, run.Results.Single().Outcome);
             }
         }
+        [STATestMethod]
+        public void ReturnedPowerPointValidationAndDispatchBalanceKnownTargetsAndRetainUnknown()
+        {
+            foreach (string outcome in new[] { "passed", "predispatch", "unknown" })
+            using (var fixture = new Fixture())
+            {
+                fixture.InstallFixtureSupport();
+                var leases = new ServicePowerPointLeaseRecorder();
+                fixture.Host.TargetFactory = leases.Acquire;
+                Assert.IsNull(fixture.Service.ExecutionUnavailableReason(fixture.Catalog()));
+                Assert.AreEqual(leases.Targets.Count, leases.Released);
+                if (outcome == "predispatch") fixture.Host.Resolving = count => { if (count == 4) fixture.Project.Mode = 1; };
+                fixture.Host.ThrowOnInvoke = outcome == "unknown";
+                var catalog = fixture.Catalog();
+                var run = Pump(fixture.Service.RunAsync(catalog, new[] { catalog.Tests.First() }, null, CancellationToken.None));
+                Assert.AreEqual(outcome == "unknown", run.OutcomeUnknown);
+                Assert.AreEqual(leases.Targets.Count - (outcome == "unknown" ? 1 : 0), leases.Released);
+                Assert.IsTrue(leases.Targets.All(target => target.Closed));
+                int released = leases.Released;
+                foreach (var target in leases.Targets) target.Dispose();
+                Assert.AreEqual(released, leases.Released);
+                Assert.AreEqual(outcome == "predispatch" ? 0 : 1, fixture.Host.Invocations);
+            }
+        }
+
+        [STATestMethod]
+        public void ReturnedPowerPointReleaseFailureBeforeDispatchSettlesWithoutNativeRetry()
+        {
+            using (var fixture = new Fixture())
+            {
+                fixture.InstallFixtureSupport();
+                var leases = new ServicePowerPointLeaseRecorder { ThrowOnRelease = 3 };
+                fixture.Host.TargetFactory = leases.Acquire;
+                fixture.Host.Resolving = count => { if (count == 3) fixture.Project.Mode = 1; };
+                var catalog = fixture.Catalog();
+                var run = Pump(fixture.Service.RunAsync(catalog, new[] { catalog.Tests.First() }, null, CancellationToken.None));
+                Assert.IsFalse(run.OutcomeUnknown);
+                Assert.AreEqual(0, fixture.Host.Invocations);
+                Assert.AreEqual(3, leases.Released);
+                Assert.AreEqual(VbaTestOutcome.Blocked, run.Results.Single().Outcome);
+                StringAssert.Contains(run.Results.Single().Message, "design mode");
+                StringAssert.Contains(run.Results.Single().Message, "Release failed");
+            }
+        }
+
+        private sealed class ServicePowerPointLeaseRecorder
+        {
+            internal readonly List<VbaTestPowerPointValuesHost.OwnedTarget> Targets = new List<VbaTestPowerPointValuesHost.OwnedTarget>();
+            internal int Released, ThrowOnRelease;
+            internal object Acquire(object project)
+            {
+                var references = new VbaTestComReferences(value =>
+                {
+                    if (++Released == ThrowOnRelease) throw new InvalidOperationException("Release failed");
+                });
+                references.Add(new object());
+                var target = new VbaTestPowerPointValuesHost.OwnedTarget
+                {
+                    Owner = new VbaTestPowerPointValuesHost(), Project = project, References = references
+                };
+                Targets.Add(target);
+                return target;
+            }
+        }
+
         private sealed class ServiceWordLeaseRecorder : IDisposable
         {
             private readonly Func<object, bool> priorCheck = VbaTestWordValuesHost.IsComReference;
@@ -490,7 +612,9 @@ namespace VBAi.Tests.Unit
                 var continuations = OwnerContinuations(fixture.Service);
                 var task = fixture.Service.RunCoverageAsync(catalog, catalog.Tests.ToArray(), _ =>
                     Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId), CancellationToken.None);
+                var released = new List<object>(); fixture.Service.ReleaseAcquired = released.Add;
                 fixture.Service.Dispose();
+                Assert.IsFalse(released.Any(value => ReferenceEquals(value, fixture.Project)), "A pending run must keep the service-owned project acquisition alive through uncertain disconnect cleanup.");
                 fixture.Dispatcher.Dispose();
                 Assert.IsFalse(continuations.IsDisposed, "The posted start still needs its owned continuation handle.");
                 var run = Pump(task);
@@ -499,6 +623,7 @@ namespace VBAi.Tests.Unit
                 Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Cancelled));
                 Assert.IsTrue(continuations.IsDisposed);
                 Assert.IsNull(typeof(VbeTestExplorerService).GetField("active", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(fixture.Service));
+                Assert.IsFalse(VbeDebugInspection.IsActive, "A disposed queued coverage run must release its automatic-navigation suspension.");
             }
         }
 

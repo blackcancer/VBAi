@@ -9,6 +9,25 @@ namespace VBAi.Tests.Unit
 {
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Freezes a queued attachment rather than sharing the composer draft object.</summary>
+        [STATestMethod, TestCategory("Unit")]
+        public void QueueCapturesDetachedDraftAttachments()
+        {
+            using (var window = ReadyCodexWindow(new ChatSessionState { Scope = "temporary:test" }))
+            {
+                var draft = new ChatAttachment { Label = "Selected file", Text = "captured text" };
+                Get<List<ChatAttachment>>(window, "draftAttachments").Add(draft);
+                Question(window, "Explain the file");
+                Call(window, "QueueComposerMessage");
+                draft.Label = "changed"; draft.Text = "changed";
+                var queued = Get<ChatSessionState>(window, "currentSession").PendingMessages.Single();
+                Assert.AreEqual("Selected file", queued.Attachments.Single().Label);
+                Assert.AreEqual("captured text", queued.Attachments.Single().Text);
+                Assert.AreNotSame(draft, queued.Attachments.Single());
+                Set(window, "currentSession", null);
+            }
+        }
+
         [STATestMethod, TestCategory("Unit")]
         public void QueuedRequestDefersWhileBusyAndDiscardsAResponseReceivedAfterInterruption()
         {

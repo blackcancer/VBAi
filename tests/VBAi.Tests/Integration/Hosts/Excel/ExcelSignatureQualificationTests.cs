@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,6 +23,7 @@ namespace VBAi.Tests.Integration.Hosts.Excel
             string path = null, sourceHash = null;
             ExcelVbeFixture.Run(host =>
             {
+                host.EnableOwnedTeardownTrace(nameof(SavedUnsignedWorkbookHasNoSignatureAndPreservesSource));
                 Prepare(host, out path, out sourceHash);
                 Assert.AreEqual(false, Data(host.Command(new { Command = "project_signature_status", Project = path }))["Signed"]);
                 Assert.AreEqual(sourceHash, Data(host.Command(new { Command = "read_module", Project = path, Module }))["Sha256"]);
@@ -98,6 +99,15 @@ namespace VBAi.Tests.Integration.Hosts.Excel
                 });
             });
             Assert.AreEqual(savedFileHash, FileHash(path), "Read-only reopen and Close(false) must preserve the exact saved signed file.");
+            string tampered = SyntheticSignatureTamper.CreateCopy(path, Path.GetDirectoryName(path));
+            var invalid = VerifyClosed(tampered, "tampered-source-file-verification.json");
+            Assert.AreEqual(true, invalid["Available"]);
+            Assert.AreEqual("BadDigest", invalid["Status"],
+                "Changing saved source without changing any signature payload must produce a digest mismatch; an untrusted root alone is insufficient.");
+            Assert.AreEqual(false, invalid["Trusted"]);
+            Assert.AreEqual(false, invalid["SignatureValid"]);
+            Assert.AreEqual("0x80096010", invalid["NativeStatus"]);
+            Assert.AreEqual(savedFileHash, FileHash(path), "The untouched signed original must remain byte-identical after negative-fixture verification.");
         }
 
         private static void RequireOptIn()

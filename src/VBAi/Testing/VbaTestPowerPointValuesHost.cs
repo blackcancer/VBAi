@@ -33,6 +33,9 @@ namespace VBAi
         /// <summary>Single Application.Run route using PowerPoint's SAFEARRAY argument convention.</summary>
         internal Func<object, string, object[], object> RunProcedure = NativeRun;
 
+        /// <summary>Balances only explicit COM getter acquisitions on their owning thread.</summary>
+        internal Action<object> ReleaseAcquired = VbaTestComReferences.Release;
+
         /// <summary>Managed thread ID required for all PowerPoint COM operations.</summary>
         private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
 
@@ -40,7 +43,7 @@ namespace VBAi
         private static readonly Regex Identifier = new Regex(@"\A\p{L}[\p{L}\p{N}_]{0,254}\z", RegexOptions.CultureInvariant);
 
         /// <summary>Resolved PowerPoint application, presentation, VBProject, and saved path for one run target.</summary>
-        internal sealed class OwnedTarget
+        internal sealed class OwnedTarget : IDisposable
         {
 
             /// <summary>Adapter that created and revalidates this target.</summary>
@@ -51,6 +54,25 @@ namespace VBAi
 
             /// <summary>Normalized saved presentation path used for identity revalidation.</summary>
             internal string Path;
+
+            /// <summary>Owns the application, collection and presentation acquisitions, but not the caller's project.</summary>
+            internal VbaTestComReferences References;
+
+            /// <summary>Prevents reuse after disposal or an uncertain native invocation.</summary>
+            internal bool Closed;
+
+            /// <summary>Keeps the remaining references alive without permitting another invocation.</summary>
+            internal void RetainOnUncertain()
+            { Owner.RequireOwner(); References.Retain(); Closed = true; }
+
+            /// <summary>Releases the target's acquisitions once, without releasing a borrowed project.</summary>
+            public void Dispose()
+            {
+                Owner.RequireOwner();
+                if (Closed) return;
+                Closed = true;
+                References.Dispose();
+            }
         }
 
         /// <summary>Resolves the exact saved presentation that owns the supplied VBProject.</summary>
@@ -62,9 +84,15 @@ namespace VBAi
             RequireOwner();
             if (project == null) throw new InvalidOperationException("An exact PowerPoint project is required.");
             RequireAbsolutePath(expectedHostPath);
-            object application = ResolveApplication();
-            object match = FindPresentation(application, project, expectedHostPath);
-            return new OwnedTarget { Owner = this, Application = application, Presentation = match, Project = project, Path = Path.GetFullPath(expectedHostPath) };
+            var references = new VbaTestComReferences(ReleaseAcquired);
+            try
+            {
+                object application = ResolveApplication(references);
+                object match = FindPresentation(application, project, expectedHostPath, references);
+                return new OwnedTarget { Owner = this, Application = application, Presentation = match,
+                    Project = project, Path = Path.GetFullPath(expectedHostPath), References = references };
+            }
+            catch { references.Dispose(); throw; }
         }
 
         /// <summary>Invokes one presentation-qualified macro after checking target identity and filename uniqueness.</summary>
@@ -84,11 +112,13 @@ namespace VBAi
                 || name.IndexOfAny(new[] { '!', '\r', '\n' }) >= 0)
                 throw new InvalidOperationException("The presentation filename cannot qualify this macro safely.");
             int sameNames = 0;
-            foreach (dynamic presentation in ((dynamic)owned.Application).Presentations)
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            foreach (dynamic presentation in references.Items((object)((dynamic)owned.Application).Presentations))
                 if (string.Equals((string)presentation.Name, name, StringComparison.OrdinalIgnoreCase)) sameNames++;
             if (sameNames != 1) throw new InvalidOperationException("The qualified presentation filename is ambiguous.");
             // No retry, alternate invocation shape, active-presentation fallback or VBA expression evaluation.
-            return RunProcedure(owned.Application, name + "!" + module + "." + procedure, arguments == null ? new object[0] : (object[])arguments.Clone());
+            try { return RunProcedure(owned.Application, name + "!" + module + "." + procedure, arguments == null ? new object[0] : (object[])arguments.Clone()); }
+            catch { owned.RetainOnUncertain(); throw; }
         }
 
         /// <summary>Requires the target belong to this adapter and reacquires the same application and presentation.</summary>
@@ -98,23 +128,28 @@ namespace VBAi
         {
             RequireOwner();
             if (!(target is OwnedTarget owned) || !ReferenceEquals(owned.Owner, this)) throw new InvalidOperationException("An owned PowerPoint target is required.");
-            object application = ResolveApplication();
-            if (!SameIdentity(application, owned.Application)) throw new InvalidOperationException("The owned PowerPoint application identity changed.");
-            object presentation = FindPresentation(application, owned.Project, owned.Path);
-            if (!SameIdentity(presentation, owned.Presentation)) throw new InvalidOperationException("The owned presentation identity changed.");
-            return owned;
+            if (owned.Closed) throw new ObjectDisposedException(nameof(OwnedTarget));
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            {
+                object application = ResolveApplication(references);
+                if (!SameIdentity(application, owned.Application)) throw new InvalidOperationException("The owned PowerPoint application identity changed.");
+                object presentation = FindPresentation(application, owned.Project, owned.Path, references);
+                if (!SameIdentity(presentation, owned.Presentation)) throw new InvalidOperationException("The owned presentation identity changed.");
+                return owned;
+            }
         }
 
         /// <summary>Resolves the registered PowerPoint instance in this process without changing host security policy.</summary>
-        /// <returns>Application object whose window belongs to this PID.</returns>
+        /// <param name="references">Scope that will balance the application getter, including failed validation.</param>
+        /// <returns>Application object borrowed from the supplied acquisition scope.</returns>
         /// <exception cref="InvalidOperationException">The process, window ownership, registration, or AutomationSecurity state is unsafe.</exception>
-        internal object ResolveApplication()
+        private object ResolveApplication(VbaTestComReferences references)
         {
             RequireOwner();
             if (!string.Equals(ReadProcessName(), "POWERPNT", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException("PowerPoint returned values require the in-process POWERPNT host.");
             int processId = ReadProcessId();
-            object application = ReadActiveApplication("PowerPoint.Application") ?? throw new InvalidOperationException("The registered PowerPoint application is unavailable.");
+            object application = references.Add(ReadActiveApplication("PowerPoint.Application")) ?? throw new InvalidOperationException("The registered PowerPoint application is unavailable.");
             IntPtr window = ReadApplicationWindow(application);
             if (window == IntPtr.Zero || ReadWindowOwner(window) != (uint)processId)
                 throw new InvalidOperationException("The registered PowerPoint application belongs to another PID.");
@@ -129,14 +164,18 @@ namespace VBAi
         /// <param name="application">Registered PowerPoint.Application instance to inspect.</param>
         /// <param name="project">Exact VBProject identity used to select its owning presentation.</param>
         /// <param name="expectedPath">Expected absolute saved presentation path.</param>
-        /// <returns>Matching Presentation COM object; caller retains responsibility for its lifetime.</returns>
-        private object FindPresentation(object application, object project, string expectedPath)
+        /// <param name="references">Scope owning the collection, enumerator and presentation getter acquisitions.</param>
+        /// <returns>Matching presentation borrowed from the supplied scope.</returns>
+        private object FindPresentation(object application, object project, string expectedPath, VbaTestComReferences references)
         {
             object match = null; int count = 0;
-            foreach (dynamic presentation in ((dynamic)application).Presentations)
+            foreach (dynamic presentation in references.Items((object)((dynamic)application).Presentations))
             {
                 if (++count > 1000) throw new InvalidOperationException("Unexpected open PowerPoint presentation count.");
-                if (!SameIdentity(project, (object)presentation.VBProject)) continue;
+                bool sameProject;
+                using (var projectReference = new VbaTestComReferences(ReleaseAcquired))
+                    sameProject = SameIdentity(project, projectReference.Add((object)presentation.VBProject));
+                if (!sameProject) continue;
                 if (match != null) throw new InvalidOperationException("Multiple presentations share the selected project identity.");
                 if (string.IsNullOrWhiteSpace((string)presentation.Path) || !SamePath((string)presentation.FullName, expectedPath))
                     throw new InvalidOperationException("The owned presentation path changed or has never been saved.");

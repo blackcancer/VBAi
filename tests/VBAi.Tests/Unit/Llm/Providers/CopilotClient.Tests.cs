@@ -12,7 +12,7 @@ using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Vérifie le client Copilot avec sessions, transports et callbacks simulés.</summary>
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class CopilotClientCoverageTests
     {
         /// <summary>Définition de l’outil de lecture de module utilisée par les fixtures.</summary>

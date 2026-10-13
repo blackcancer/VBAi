@@ -29,7 +29,18 @@ namespace VBAi.Tests.Integration
         private static readonly List<OutlookVbaTestFixture> retainedOutlookFixtures = new List<OutlookVbaTestFixture>();
         internal Func<int, object, IDictionary<string, object>> Dispatch = (pid, request) => VbeBridgeClient.Read(pid, request);
         internal Action VerifyOwnedProcess;
-        internal OutlookVbaTestFixture() { VerifyOwnedProcess = RequireOnlyOwnedProcess; }
+        internal OutlookVbaTestFixture()
+        {
+            VerifyOwnedProcess = RequireOnlyOwnedProcess;
+            WaitForOwnedShutdownExit = timeout =>
+            {
+                var clock = Stopwatch.StartNew();
+                return OfficeVbeFixture.WaitForWordExit(timeout, () => clock.ElapsedMilliseconds,
+                    () => process.HasExited, System.Windows.Forms.Application.DoEvents,
+                    System.Threading.Thread.Sleep);
+            };
+        }
+        internal Func<int, bool> WaitForOwnedShutdownExit;
         internal string Root { get; private set; }
         internal int ProcessId { get; private set; }
         internal string Project { get; private set; }
@@ -119,6 +130,7 @@ namespace VBAi.Tests.Integration
                     "BLOCKED: the Outlook project already contains source. No mutation is permitted.");
                 fixture.referencesVersion = (string)fixture.Data("list_references")["Version"];
                 fixture.baselineVerified = true;
+                fixture.ArmOutlookShutdownObservation(status);
                 fixture.Save("project-baseline.json", new
                 {
                     OtmPath = otm,
@@ -265,6 +277,7 @@ namespace VBAi.Tests.Integration
                 catch (Exception error)
                 {
                     failures.Add("Unsaved inspector discard: " + error.Message);
+                    ObserveFailedShutdown("Inspector.Close", error, failures);
                     RetainAndFail(failures, restored, exitedNormally, "Inspector closure failed with unknown native effect; no Quit or release was attempted.");
                 }
                 try
@@ -284,7 +297,9 @@ namespace VBAi.Tests.Integration
                 catch (Exception error)
                 {
                     failures.Add("Normal Quit: " + error.Message);
-                    RetainAndFail(failures, restored, exitedNormally, "Normal Quit failed with unknown native effect; no release, retry or OTM recovery was attempted.");
+                    ObserveFailedShutdown("Application.Quit", error, failures);
+                    ObserveOutlookShutdownTrace(failures);
+                    RetainAndFail(failures, restored, exitedNormally, "Normal Quit failed; the original process handle was observed without COM release, retry or OTM recovery. The failure remains unqualified.");
                 }
             }
             foreach (var value in new[] { commandBars, inspector, item, application })
@@ -312,6 +327,7 @@ namespace VBAi.Tests.Integration
                 finally { if (exitedNormally) process.Dispose(); else RetainUncertainOutlook(); }
             }
             SaveLifecycle(failures, restored, exitedNormally);
+            ObserveOutlookShutdownTrace(failures);
             if (failures.Count != 0) Assert.Fail(string.Join("\n", failures));
         }
 

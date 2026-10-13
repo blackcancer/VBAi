@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -54,6 +55,7 @@ namespace VBAi
         /// <param name="session">Session VBE qui fournit l’index des références du projet.</param>
         private void InitializeComposer(VbeSession session)
         {
+            promptHost.UseNativeEditor = false;
             prompt = promptHost.Editor;
             prompt.Language = XmlLanguage.GetLanguage(UiText.Culture.Name);
             prompt.FlowDirection = UiText.Culture.TextInfo.IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
@@ -82,6 +84,8 @@ namespace VBAi
                 AllowsTransparency = true,
                 Child = new ChatDesignerHost(referenceView)
             };
+            referencePopupOpenDescriptor = DependencyPropertyDescriptor.FromProperty(Popup.IsOpenProperty, typeof(Popup));
+            referencePopupOpenDescriptor.AddValueChanged(referencePopup, ReferencePopupOpenChanged);
             referenceIndex = new VbeChatReferences(session);
             referenceTimer = new Forms.Timer { Interval = 30 };
             referenceTimer.Tick += (sender, args) =>
@@ -93,6 +97,7 @@ namespace VBAi
             prompt.PreviewKeyDown += PromptKeyDown;
             prompt.TextChanged += (sender, args) =>
             {
+                if (referenceNavigationProject != null) HideReferences();
                 UpdateBudgetControls();
                 acceptedTokenEnd = -1;
                 UpdateReferences();
@@ -124,6 +129,8 @@ namespace VBAi
                 }
                 if ((e.Key == Key.Enter || e.Key == Key.Tab) && referenceList.SelectedItem != null)
                 { AcceptReference(); e.Handled = true; return; }
+                if (referenceNavigationProject != null && (e.Key == Key.Enter || e.Key == Key.Tab))
+                { e.Handled = true; return; }
             }
             if (e.Key == Key.Enter && (ReadModifiers() & System.Windows.Input.ModifierKeys.Shift) == 0)
             {
@@ -136,6 +143,7 @@ namespace VBAi
         private void UpdateReferences()
         {
             if (prompt == null) return;
+            if (referenceNavigationProject != null) return;
             int caret = prompt.CaretIndex;
             if (caret == acceptedTokenEnd) { HideReferences(); return; }
             if (TryShowCommands(caret)) return;
@@ -211,6 +219,12 @@ namespace VBAi
         /// <summary>Insère la commande ou référence sélectionnée dans le message.</summary>
         private void AcceptReference()
         {
+            if (referenceNavigationProject != null)
+            {
+                var target = referenceList.SelectedItem as VbeChatReference;
+                if (target == null) return;
+                HideReferences(); NavigateReference(target); return;
+            }
             if (referenceList.SelectedItem is ChatCommand command)
             {
                 prompt.Select(0, prompt.CaretIndex); prompt.SelectedText = command.DisplayToken + " ";
@@ -218,6 +232,12 @@ namespace VBAi
                 HideReferences(); prompt.CaretIndex = command.DisplayToken.Length + 1; return;
             }
             if (!(referenceList.SelectedItem is VbeChatReference reference) || referenceStart < 0) return;
+            try
+            {
+                tools?.RequireProjectRead(reference.Project);
+                reference = referenceIndex.CaptureSelection(reference);
+            }
+            catch (Exception error) { SetStatus(UiText.Get("Context: ") + error.Message); return; }
             int caret = prompt.CaretIndex;
             int start = referenceStart;
             prompt.Select(referenceStart, caret - referenceStart);
@@ -233,6 +253,7 @@ namespace VBAi
         /// <summary>Ferme les suggestions et réinitialise l’état de recherche.</summary>
         private void HideReferences()
         {
+            referenceNavigationProject = null;
             if (referencePopup != null) referencePopup.IsOpen = false;
             referenceTimer?.Stop();
             referenceIndexReady = false;
@@ -263,7 +284,7 @@ namespace VBAi
         private VbeChatReference[] CurrentReferences(string text)
         {
             return selectedReferences.Where(item => ContainsToken(text, item.Token))
-                .GroupBy(item => item.Token, StringComparer.Ordinal).Select(group => group.Last()).ToArray();
+                .GroupBy(item => item.Token, StringComparer.Ordinal).Select(group => group.Last().CaptureSnapshot()).ToArray();
         }
 
         /// <summary>Reconstruit les boutons de mémoire, références et pièces jointes.</summary>
@@ -304,24 +325,6 @@ namespace VBAi
             finally { contextChips.ResumeLayout(true); }
         }
 
-        /// <summary>Navigue vers le module référencé ou insère le nom du projet dans la saisie.</summary>
-        /// <param name="reference">Référence VBE à ouvrir ou insérer.</param>
-        private void NavigateReference(VbeChatReference reference)
-        {
-            try
-            {
-                if (reference.Module == null)
-                {
-                    prompt.Text = reference.Token + ".";
-                    prompt.CaretIndex = prompt.Text.Length;
-                    prompt.Focus();
-                    return;
-                }
-                referenceIndex.Navigate(reference);
-            }
-            catch (Exception ex) { SetStatus(UiText.Get("Unable to navigate: ") + ex.Message); }
-        }
-
         /// <summary>Indique si un jeton apparaît comme référence complète, délimité par des caractères non identifiants.</summary>
         /// <param name="text">Texte dans lequel rechercher les références sélectionnées.</param>
         /// <param name="token">Jeton dont la présence comme référence entière doit être vérifiée.</param>
@@ -342,6 +345,9 @@ namespace VBAi
         /// <summary>Arrête et libère les ressources de recherche de références.</summary>
         private void DisposeComposer()
         {
+            if (referencePopupOpenDescriptor != null && referencePopup != null)
+                referencePopupOpenDescriptor.RemoveValueChanged(referencePopup, ReferencePopupOpenChanged);
+            referencePopupOpenDescriptor = null;
             referenceTimer?.Stop();
             referenceTimer?.Dispose();
             referenceView?.Dispose();

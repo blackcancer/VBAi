@@ -6,6 +6,7 @@ namespace VBAi.Tests.Integration
 {
     internal sealed partial class OfficeVbeFixture
     {
+        private bool wordStartupMacroSafetyVerified;
         /// <summary>Suppresses legacy auto macros before creating documents in the exact owned Word generation.</summary>
         private void PrepareOwnedWordMacroSafety()
         {
@@ -23,6 +24,7 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"],
                         "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16"));
                 }, Release, value => retainedDiagnosticReferences.Add(value));
+                wordStartupMacroSafetyVerified = true;
                 steps.Add(new
                 {
                     WordAutoMacroSuppressionReturned = true,

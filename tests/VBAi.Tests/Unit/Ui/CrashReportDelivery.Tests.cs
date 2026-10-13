@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    [ToolBoundaryTestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed partial class CrashReportDeliveryTests
     {
         [TestMethod]

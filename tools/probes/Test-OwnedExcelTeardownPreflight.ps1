@@ -10,12 +10,12 @@ $common=Join-Path $PSScriptRoot 'OwnedTeardownTrace.Common.ps1'
 $report=[ordered]@{State='PREPARE_ONLY';Mode='TEARDOWN_EXCEPTION_PREFLIGHT';HelperPath=$HelperPath;HelperSha256=(Get-FileHash -LiteralPath $HelperPath).Hash;
  CdbPath=$CdbPath;CdbSha256=(Get-FileHash -LiteralPath $CdbPath).Hash;CommonScriptSha256=(Get-FileHash -LiteralPath $common).Hash;RegisterCaptureMode='LiveEventThread';
  CollectorProfile='AV_FIRSTCHANCE_FORWARD_AV_SECONDCHANCE_AND_FAILFAST';
- Scope='Four newly owned non-Office helpers: normal detach/STOP, one failfast, one software second-chance AV, one locally handled software first-chance AV. No Office, COM, dump or global policy.'}
+ Scope='Five newly owned non-Office helpers: normal detach/STOP, one failfast, one software second-chance AV, one locally handled software first-chance AV, and a six-event bounded capture control. No Office, COM, dump or global policy.'}
 if(-not $Execute){$report|ConvertTo-Json -Depth 4;return}
 . $common
 $trial=Join-Path $OutputRoot ([Guid]::NewGuid().ToString('N'));[void][IO.Directory]::CreateDirectory($trial)
 $primary=$null;$cleanup=New-Object Collections.Generic.List[string];$report.State='STARTED'
-foreach($mode in @('normal','failfast','secondchanceav','firstchanceav')){
+foreach($mode in @('normal','failfast','secondchanceav','firstchanceav','firstchanceburst')){
  $target=$null;$session=$null
  try{
   $dir=Join-Path $trial $mode;[void][IO.Directory]::CreateDirectory($dir)
@@ -43,10 +43,11 @@ foreach($mode in @('normal','failfast','secondchanceav','firstchanceav')){
    if(-not $target.WaitForExit(5000)){throw 'Normal helper did not exit; preserve without termination.'}
    $report.NormalHelperExitCode=$target.ExitCode
    if($target.ExitCode -ne 0){throw 'Normal helper exit is not zero.'}
-  }elseif($mode -eq 'firstchanceav'){
-   $report.SyntheticFirstChanceAvRequests=1
-   $target.StandardInput.WriteLine('FIRSTCHANCEAV');$target.StandardInput.Flush()
-   foreach($expected in @('FIRSTCHANCE_AV_REQUESTED','FIRSTCHANCE_AV_HANDLED')){
+  }elseif($mode -in @('firstchanceav','firstchanceburst')){
+   $requests=if($mode -eq 'firstchanceburst'){6}else{1}
+   if($mode -eq 'firstchanceburst'){$report.SyntheticFirstChanceBurstRequests=$requests}else{$report.SyntheticFirstChanceAvRequests=$requests}
+   $target.StandardInput.WriteLine($(if($mode -eq 'firstchanceburst'){'FIRSTCHANCEAVBURST'}else{'FIRSTCHANCEAV'}));$target.StandardInput.Flush()
+   foreach($expected in @(1..$requests|ForEach-Object{'FIRSTCHANCE_AV_REQUESTED';'FIRSTCHANCE_AV_HANDLED'})){
     $line=$target.StandardOutput.ReadLineAsync()
     if(-not $line.Wait(5000) -or $line.Result -ne $expected){throw 'Synthetic first-chance AV request/local-handler evidence missing.'}
    }
@@ -55,6 +56,8 @@ foreach($mode in @('normal','failfast','secondchanceav','firstchanceav')){
    $text=Get-Content -LiteralPath $session.Log -Raw -Encoding Unicode
    $report.FirstChanceAvForwardedVerified=Test-OwnedFirstChanceAv $text $target.Id $nonce
    if(-not $report.FirstChanceAvForwardedVerified){throw 'Executed exact first-chance AV forwarding was not observed.'}
+   $details=Get-OwnedFirstChanceDetailCount $text $target.Id $nonce
+   if($mode -eq 'firstchanceburst'){$report.FirstChanceBurstDetailCount=$details;$report.FirstChanceDetailBoundVerified=($details -eq 4);if(-not $report.FirstChanceDetailBoundVerified){throw 'Six forwarded events must produce exactly four detailed records.'}}elseif($details -ne 1){throw 'The single first-chance event lacks its detailed live context.'}
   }else{
    $command=if($mode -eq 'failfast'){'FAILFAST'}else{'SECONDCHANCEAV'}
    $code=if($mode -eq 'failfast'){'c0000409'}else{'c0000005'}
@@ -89,6 +92,8 @@ $report.State=if($primary -eq $null -and $cleanup.Count -eq 0 -and $report.Excep
  $report.secondchanceavHelperExitCodeHex -eq '0xC0000005' -and $report.secondchanceavDebuggerExitCodeHex -in @('0x00000000','0xC0000005') -and
  $report.FirstChanceAvForwardedVerified -eq $true -and $report.firstchanceavHelperExitObserved -eq $true -and
  $report.firstchanceavHelperExitCodeHex -eq '0x00000000' -and $report.firstchanceavDebuggerExitCodeHex -eq '0x00000000' -and
+ $report.FirstChanceDetailBoundVerified -eq $true -and $report.FirstChanceBurstDetailCount -eq 4 -and $report.SyntheticFirstChanceBurstRequests -eq 6 -and
+ $report.firstchanceburstHelperExitObserved -eq $true -and $report.firstchanceburstHelperExitCodeHex -eq '0x00000000' -and $report.firstchanceburstDebuggerExitCodeHex -eq '0x00000000' -and
  $report.SyntheticFailfastRequests -eq 1 -and $report.SyntheticSecondChanceAvRequests -eq 1 -and $report.SyntheticFirstChanceAvRequests -eq 1){'PASS'}else{'FAIL'}
 $report.CompletedUtc=[DateTime]::UtcNow.ToString('o');Write-TeardownJson (Join-Path $trial 'preflight.json') $report
 Write-Output (Join-Path $trial 'preflight.json')

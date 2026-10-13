@@ -8,7 +8,7 @@ namespace VBAi.Tests.Unit
     using VBAi;
     using VBAi.Tests.Infrastructure;
 
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed class CodexAccountTests
     {

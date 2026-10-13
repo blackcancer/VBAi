@@ -12,7 +12,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class HostSettingsCoverageTests
     {
         /// <summary>Ferme la fenêtre native une fois et rend l’arrêt répétable.</summary>
-        [TestMethod]
         [STATestMethod]
         public void AddInShutdownClosesNativeWindowAndCanRunTwice()
         {

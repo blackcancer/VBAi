@@ -46,7 +46,7 @@ namespace VBAi
         internal Func<MacroGitRepository, string, Task> ConnectRepository = (selected, url) => Task.Run(() => { selected.Initialize(url); selected.Fetch(); });
 
         /// <summary>Crée la fenêtre Git et initialise la revue et les ressources visuelles.</summary>
-        public GitWindow() { InitializeComponent(); BindViews(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
+        public GitWindow() { UiResourceReader.Apply(InitializeComponent); BindViews(); Icon = VbeWindowIcons.Icon("github"); UiText.Apply(this, components); InitializeReview(); }
 
         /// <summary>Crée la fenêtre et l’associe au projet, à sa portée de cache et au compte GitHub choisi.</summary>
         /// <param name="project">Projet VBA à suivre.</param>
@@ -161,9 +161,9 @@ namespace VBAi
         /// <param name="choice">Choix facultatif de résolution de fusion.</param>
         /// <param name="path">Chemin facultatif du conflit ciblé.</param>
         /// <returns>Tâche terminée après l’opération et la comparaison de suivi.</returns>
-        private async Task RunGitAction(string action, string name = null, string text = null, string choice = null, string path = null)
+        private Task RunGitAction(string action, string name = null, string text = null, string choice = null, string path = null)
         {
-            if (running || project == null) return;
+            if (running || project == null) return Task.CompletedTask;
             string[] selected = changes.CheckedItems.Cast<ModuleChange>().Where(x => x.Name != null).Select(x => x.Name).ToArray();
             bool references = changes.CheckedItems.Cast<ModuleChange>().Any(x => x.Name == null);
             GitModalSession.Request request = null;
@@ -218,20 +218,21 @@ namespace VBAi
                 }
                 return true;
             };
-            try
+            Action<Exception> completed = error =>
             {
-                if (modalSession != null) await VbeUiTask.Run(execute);
-                else await execute();
-            }
-            catch (Exception error)
-            {
-                operationFailure = operationFailure == null ? error : new AggregateException(operationFailure, error);
-                throw;
-            }
-            finally
-            {
+                if (error != null)
+                    operationFailure = operationFailure == null || ReferenceEquals(operationFailure, error) ? error :
+                        new AggregateException(operationFailure, error);
                 if (request != null && (request.Phase == "Executing" || request.Phase == "Refused"))
                     request.Complete(operationFailure, PublishHandoffState);
+            };
+            // Return the owned task directly: no terminal continuation may depend on an ambient modal context.
+            if (modalSession == null) return execute();
+            try { return VbeUiTask.RunWithCompletion(execute, completed); }
+            catch (Exception error)
+            {
+                completed(error);
+                return Task.FromException(error);
             }
         }
 

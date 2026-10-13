@@ -15,7 +15,32 @@ namespace VBAi.Tests.Integration
         private string addInShutdownRoot;
         private Exception addInShutdownFailure;
 
-        /// <summary>Arms only an explicitly launched, already identified native host; reads no project or additional COM object.</summary>
+        /// <summary>Validates optional classic COM fixture observation before reading its retained process image; reads no additional COM object.</summary>
+        /// <param name="configured">Explicit temporary diagnostic root, or null to preserve ordinary startup.</param>
+        /// <param name="owned">Whether the original COM activation created this fixture's process.</param>
+        /// <param name="durable">Whether the fixture retains durable native evidence.</param>
+        /// <param name="fixturePid">PID identified from the original application window.</param>
+        /// <param name="retainedPid">PID associated with the process handle retained before shutdown.</param>
+        /// <param name="ownerThread">Observed native application window thread.</param>
+        /// <param name="loaded">Status from the exact connected add-in.</param>
+        /// <param name="readImage">Reads the retained live process's image without reopening by PID.</param>
+        /// <returns>Canonical Excel image when observation is enabled; otherwise null.</returns>
+        internal static string CaptureClassicShutdownImage(string configured, bool owned, bool durable,
+            int fixturePid, int retainedPid, uint ownerThread, IDictionary<string, object> loaded, Func<string> readImage)
+        {
+            if (string.IsNullOrWhiteSpace(configured)) return null;
+            if (!owned || !durable || fixturePid <= 0 || retainedPid != fixturePid || ownerThread == 0 ||
+                loaded == null || !loaded.TryGetValue("HostProcessId", out var observed) ||
+                !(observed is int hostPid) || hostPid != fixturePid || readImage == null)
+                throw new InvalidOperationException("Classic shutdown observation requires the exact durable owned process, window thread and connected host identity.");
+            AddInShutdownDiagnostic.RequireRoot(configured, Path.GetTempPath());
+            string image = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(readImage());
+            if (!string.Equals(Path.GetFileName(image), "EXCEL.EXE", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Classic shutdown observation requires the identified Excel image.");
+            return image;
+        }
+
+        /// <summary>Arms only an owned, already identified native host; reads no project or additional COM object.</summary>
         private void ArmAddInShutdownObservation(uint owningThread, IDictionary<string, object> loaded)
         {
             string configured = Environment.GetEnvironmentVariable(AddInShutdownDiagnostic.EnvironmentName);

@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +56,48 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual(0, probe.Writes, "scenario " + scenario);
                 Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
             }
+        }
+
+        [TestMethod]
+        [DataRow("absent"), DataRow("disabled"), DataRow("unreadable"), DataRow("ambiguous")]
+        public void PlanningRefusalIdentifiesTargetAndCancelsWithoutPreferenceWrites(string failure)
+        {
+            var probe = new BatchProbe(); var request = probe.Request();
+            request.OptionChanges = new[] { Change("Font", "Consolas"), Change("Foreground", "Red", "Comment") };
+            int reads = 0;
+            probe.OnControls = () =>
+            {
+                if (++reads != 4) return;
+                if (failure == "absent") probe.RemovedProperty = "Foreground";
+                if (failure == "disabled") probe.DisabledProperty = "Foreground";
+                if (failure == "unreadable") probe.FaultProperty = "Foreground";
+                if (failure == "ambiguous") probe.AmbiguousProperty = "Foreground";
+            };
+            var error = Failure(() => VbeDebugWindows.SetVbeOption(request, probe));
+            StringAssert.Contains(error.Message, "Phase='planning'; Index=2");
+            StringAssert.Contains(error.Message, "Property='" + request.OptionChanges[1].Property + "'");
+            StringAssert.Contains(error.Message, "Category='Comment'");
+            if (failure == "disabled") StringAssert.Contains(error.Message, "Enabled=False");
+            if (failure == "unreadable") StringAssert.Contains(error.Message, "Error=unreadable");
+            Assert.AreEqual(0, probe.Writes); Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
+        }
+
+        [TestMethod]
+        [DataRow("staging"), DataRow("verification")]
+        public void PaletteAvailabilityChangesAfterPlanningAreDiagnosedAndNeverCommitted(string phase)
+        {
+            var probe = new BatchProbe(); var request = probe.Request();
+            probe.OnWrite = () =>
+            {
+                if (phase == "staging" && probe.Writes == 2) probe.DisabledProperty = "Foreground";
+                if (phase == "verification" && probe.Writes == 9) probe.DisabledProperty = "Foreground";
+            };
+            var error = Failure(() => VbeDebugWindows.SetVbeOption(request, probe));
+            StringAssert.Contains(error.Message, "Phase='" + phase + "'");
+            StringAssert.Contains(error.Message, "Property='Foreground'");
+            StringAssert.Contains(error.Message, "Enabled=False");
+            Assert.AreEqual(phase == "staging" ? 2 : 9, probe.Writes);
+            Assert.AreEqual(0, probe.Accepts); Assert.AreEqual(1, probe.Closes);
         }
 
         [TestMethod]
@@ -140,10 +182,10 @@ namespace VBAi.Tests.Unit
             internal static readonly string[] Palettes = { "Foreground", "Background", "Indicator" };
             internal readonly Dictionary<string, object> Values = new Dictionary<string, object>
                 { ["Font"] = "Courier New", ["Size"] = "12", ["Margin Indicator Bar"] = "On" };
-            internal string Category = "Normal", FaultProperty, DisabledProperty, AmbiguousProperty;
+            internal string Category = "Normal", FaultProperty, DisabledProperty, AmbiguousProperty, RemovedProperty;
             internal int Reads, Writes, Accepts, Closes;
             internal bool Open = true, KeepOpen;
-            internal Action OnWrite, OnAccept, OnPause;
+            internal Action OnWrite, OnAccept, OnPause, OnControls;
             internal Func<string, bool> RefuseSelection;
             internal BatchProbe()
             { foreach (string category in new[] { "Normal", "Comment" }) foreach (string name in Palettes) Values[category + "." + name] = "Black"; }
@@ -156,6 +198,7 @@ namespace VBAi.Tests.Unit
                 Control(name, "ControlType.ComboBox", Values[category + "." + name], "Black", "Red")).ToArray();
             public IList<VbeDebugWindows.OptionsControl> Controls(IntPtr dialog, int tabIndex)
             {
+                OnControls?.Invoke();
                 Reads++;
                 var controls = new List<VbeDebugWindows.OptionsControl> {
                     Control("Font", "ControlType.ComboBox", Values["Font"], "Courier New", "Consolas"),
@@ -163,6 +206,7 @@ namespace VBAi.Tests.Unit
                     Control("Margin Indicator Bar", "ControlType.CheckBox", Values["Margin Indicator Bar"]),
                     Control("Code Colors", "ControlType.List", Category, "Normal", "Comment") };
                 controls.AddRange(PaletteControls(Category));
+                if (RemovedProperty != null) controls.RemoveAll(control => control.Name == RemovedProperty);
                 if (AmbiguousProperty != null) controls.Add(controls.Single(control => control.Name == AmbiguousProperty));
                 return controls;
             }

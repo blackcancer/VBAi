@@ -2871,4 +2871,25 @@ Git Credential Manager로 로그인하며 커밋 작성자 정보는 Git에서 �
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>이 모델은 도구 호출을 지원하지 않습니다.</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>공급자가 {0}초 이내에 응답을 완료하지 못했습니다. 자동으로 다시 실행된 작업은 없습니다.</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>모델의 기본 추론 설정을 사용합니다.</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>이 대화에서는 추론을 사용하지 않습니다.</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>모델 기본값</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>추론 사용 안 함</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>이 모델은 선택한 추론 옵션을 지원하지 않습니다.</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>현재 대화에 첨부할 파일을 선택하세요.</value>
+  </data>
 </root>

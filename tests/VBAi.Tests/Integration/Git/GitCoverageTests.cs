@@ -8,7 +8,6 @@ namespace VBAi.Tests.Integration
     public sealed class GitCoverageTests
     {
         /// <summary>Exécute le workflow Git et les contrôles Designer dans un projet de test.</summary>
-        [TestMethod]
         [STATestMethod]
         public void GitWorkflowUsesTheProductionAssembly()
         {

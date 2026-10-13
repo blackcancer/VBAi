@@ -16,6 +16,8 @@ namespace VBAi.Tests.Unit.Editor
         internal readonly Dictionary<string, object> Values = new Dictionary<string, object>();
         internal readonly Dictionary<string, object> Handlers = new Dictionary<string, object>();
         internal Func<string, object[], object> Operation;
+        /// <summary>Observes or faults one raw boundary before the SDK consumes its result.</summary>
+        internal Action<string> BeforeCall;
         internal readonly List<string> Errors = new List<string>();
         internal object Proxy => GetTransparentProxy();
         internal static Type Raw(string name) => typeof(CoreWebView2).Assembly.GetType("Microsoft.Web.WebView2.Core.Raw." + name, true);
@@ -27,6 +29,7 @@ namespace VBAi.Tests.Unit.Editor
             try
             {
                 string name = call.MethodName;
+                BeforeCall?.Invoke(name);
                 if (name.StartsWith("get_")) { if (!Values.TryGetValue(name.Substring(4), out result)) throw new AssertFailedException("Unexpected owned WebView getter " + name); }
                 else if (name.StartsWith("set_")) Values[name.Substring(4)] = args[0];
                 else if (name.StartsWith("add_")) { Handlers[name.Substring(4)] = args[0]; args[1] = Activator.CreateInstance(call.MethodBase.GetParameters()[1].ParameterType.GetElementType()); }

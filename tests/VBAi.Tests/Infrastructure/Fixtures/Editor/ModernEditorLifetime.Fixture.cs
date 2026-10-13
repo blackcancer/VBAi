@@ -9,13 +9,32 @@ namespace VBAi.Tests.Unit.Editor
         private int active;
         private readonly System.Collections.Generic.List<Exception> failures = new System.Collections.Generic.List<Exception>();
         internal OwnedEditorDispatcher() { SetSynchronizationContext(this); }
-        public override void Post(SendOrPostCallback callback, object value) => previous.Post(state => { try { callback(state); } catch (Exception error) { failures.Add(error); } }, value);
+        public override void Post(SendOrPostCallback callback, object value) => previous.Post(state =>
+        {
+            var ambient = Current;
+            try { SetSynchronizationContext(this); callback(state); }
+            catch (Exception error) { failures.Add(error); }
+            finally { SetSynchronizationContext(ambient); }
+        }, value);
         public override void Send(SendOrPostCallback callback, object value) => previous.Send(callback, value);
         public override void OperationStarted() { Interlocked.Increment(ref active); }
         public override void OperationCompleted() { Interlocked.Decrement(ref active); }
         internal void Drain(Type expectedFailure = null)
         {
-            ModernEditorDebugFixture.Wait(System.Threading.Tasks.Task.Run(() => { var limit = System.Diagnostics.Stopwatch.StartNew(); while (Volatile.Read(ref active) != 0) { if (limit.ElapsedMilliseconds > 5000) throw new TimeoutException("Owned editor events did not complete"); Thread.Sleep(1); } }));
+            var limit = System.Diagnostics.Stopwatch.StartNew();
+            // Pump before checking: Show() may have posted OnShown while active was still zero.
+            // A worker-side zero observation must not outrun the owner's queued event admission.
+            while (true)
+            {
+                System.Windows.Forms.Application.DoEvents();
+                if (Volatile.Read(ref active) == 0)
+                {
+                    System.Windows.Forms.Application.DoEvents();
+                    if (Volatile.Read(ref active) == 0) break;
+                }
+                if (limit.ElapsedMilliseconds > 5000) throw new TimeoutException("Owned editor events did not complete");
+                Thread.Sleep(1);
+            }
             Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(expectedFailure == null ? 0 : 1, failures.Count, "Unexpected asynchronous editor failure");
             if (expectedFailure != null) Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsInstanceOfType(failures[0], expectedFailure);
             failures.Clear();

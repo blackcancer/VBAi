@@ -232,18 +232,30 @@ namespace VBAi
             if (!folder.StartsWith("040000 tree ", StringComparison.Ordinal)) throw new InvalidOperationException(UiText.Get("vba must be a Git directory."));
             string tree = folder.Split(' ', '\t')[2];
             var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-            long total = 0;
-            foreach (string entry in Tree(tree))
+            var names = new List<string>();
+            var requests = new List<GitBlobBatch.Entry>();
+            var entriesWithSizes = Text("ls-tree", "-z", "-l", tree).Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string entry in entriesWithSizes)
             {
                 int tab = entry.IndexOf('\t');
-                var parts = entry.Substring(0, tab).Split(' ');
+                if (tab < 0) throw new InvalidOperationException("The Git tree entry is malformed.");
+                var parts = entry.Substring(0, tab).Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 string name = entry.Substring(tab + 1);
-                if (parts[0] != "100644" || parts[1] != "blob" || name.IndexOfAny(new[] { '/', '\\', ':', '\0' }) >= 0)
+                if (parts.Length != 4 || parts[0] != "100644" || parts[1] != "blob" || name.IndexOfAny(new[] { '/', '\\', ':', '\0' }) >= 0)
                     throw new InvalidOperationException(UiText.Get("The vba directory contains a link, subdirectory or unsupported file."));
-                long size = long.Parse(Text("cat-file", "-s", parts[2]), System.Globalization.CultureInfo.InvariantCulture);
-                total += size;
-                if (total > VbaGitSnapshot.MaxBytes || files.Count > 2048) throw new InvalidOperationException(UiText.Get("The VBA repository exceeds 32 MB."));
-                files.Add(name, Run(new[] { "cat-file", "blob", parts[2] }).Bytes);
+                long size;
+                if (!long.TryParse(parts[3], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out size))
+                    throw new InvalidOperationException("The Git tree contains an invalid blob size.");
+                if (requests.Count > 2048) throw new InvalidOperationException(UiText.Get("The VBA repository exceeds 32 MB."));
+                names.Add(name); requests.Add(new GitBlobBatch.Entry(parts[2], size));
+            }
+            var requestArray = requests.ToArray();
+            GitBlobBatch.Validate(requestArray); // Reject identity and package limits before reading any bodies.
+            if (requestArray.Length != 0)
+            {
+                byte[] input = Encoding.ASCII.GetBytes(string.Join("\n", requests.Select(item => item.Id)) + "\n");
+                byte[][] bodies = GitBlobBatch.Read(Run(new[] { "cat-file", "--batch" }, input).Bytes, requestArray);
+                for (int index = 0; index < names.Count; index++) files.Add(names[index], bodies[index]);
             }
             return VbaGitSnapshot.Read(files);
         }

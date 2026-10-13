@@ -27,7 +27,7 @@ namespace VBAi
         /// <summary>Section caption, editable in the Designer.</summary>
         /// <value>Localized caption displayed by the disclosure toggle.</value>
         [System.ComponentModel.Category("Appearance")]
-        public string Title { get => title; set { title = value; UpdateExpansion(); } }
+        public string Title { get => title; set { title = value; UpdateCaption(); } }
 
         /// <summary>Whether the section body is expanded.</summary>
         /// <value>True when the disclosure body is visible.</value>
@@ -35,6 +35,14 @@ namespace VBAi
         public bool Expanded { get => expanded; set { if (expanded == value) return; expanded = value; UpdateExpansion(); ExpansionChanged?.Invoke(this, EventArgs.Empty); } }
 
         /// <summary>Synchronizes the disclosure caption and body visibility with the expanded state.</summary>
-        private void UpdateExpansion() { if (toggle == null) return; toggle.Text = (expanded ? "▾ " : "▸ ") + UiText.Get(title); body.Visible = expanded; }
+        private void UpdateExpansion() { if (toggle == null) return; UpdateCaption(); body.Visible = expanded; }
+
+        /// <summary>Refreshes the caption without reapplying body visibility or disturbing nested activity layouts.</summary>
+        private void UpdateCaption()
+        {
+            if (toggle == null) return;
+            string caption = (expanded ? "▾ " : "▸ ") + UiText.Get(title);
+            if (toggle.Text != caption) toggle.Text = caption;
+        }
     }
 }

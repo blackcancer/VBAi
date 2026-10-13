@@ -23,6 +23,10 @@ namespace VBAi
 
         /// <summary>Hooks attachés aux arborescences de projets actuellement ouvertes.</summary>
         private readonly List<TreeHook> hooks = new List<TreeHook>();
+        /// <summary>Owned adapters queued on the dispatcher but not yet delivered to the editor.</summary>
+        private readonly List<EditorVbeModule> pending = new List<EditorVbeModule>();
+        /// <summary>Prevents a queued callback from delivering an adapter after teardown.</summary>
+        private bool disposed;
 
         /// <summary>Minuterie qui découvre périodiquement les fenêtres d’explorateur de projets.</summary>
         private readonly Timer timer = new Timer { Interval = 1000 };
@@ -43,7 +47,8 @@ namespace VBAi
             hooks.RemoveAll(h => h.Handle == IntPtr.Zero);
             try
             {
-                foreach (dynamic window in ((dynamic)vbe).Windows)
+                using (var references = new VbaTestComReferences())
+                foreach (dynamic window in references.Items((object)((dynamic)vbe).Windows))
                 {
                     if ((int)window.Type != 6) continue; // vbext_wt_ProjectWindow
                     foreach (IntPtr handle in FindProjectTrees(System.Diagnostics.Process.GetCurrentProcess().Id, (string)window.Caption))
@@ -60,16 +65,33 @@ namespace VBAi
         /// <returns><see langword="true"/> lorsqu’une ouverture a été mise en file d’attente.</returns>
         private bool Route()
         {
+            EditorVbeModule module = null;
             try
             {
-                dynamic component = ((dynamic)vbe).SelectedVBComponent;
-                if (component == null || !IsCodeComponent((int)component.Type)) return false;
-                object project = component.Collection.Parent;
-                var module = new EditorVbeModule(vbe, project, component);
-                dispatcher.BeginInvoke(new Action(() => open(module)));
+                if (disposed) return false;
+                module = EditorVbeModule.AcquireSelected(vbe);
+                if (module == null) return false;
+                pending.Add(module);
+                var queued = module;
+                dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!pending.Remove(queued)) return;
+                    if (disposed) { queued.Dispose(); return; }
+                    try { open(queued); }
+                    catch (Exception error)
+                    {
+                        queued.Dispose();
+                        LoadLog.Write("Monaco queued navigation refused: " + error.GetType().Name);
+                    }
+                }));
                 return true;
             }
-            catch (Exception error) { LoadLog.Write("Monaco navigation refused: " + error.GetType().Name); return false; }
+            catch (Exception error)
+            {
+                if (module != null) { pending.Remove(module); module.Dispose(); }
+                LoadLog.Write("Monaco navigation refused: " + error.GetType().Name);
+                return false;
+            }
         }
 
         /// <summary>Indique si le type VBComponent désigne un module, une classe ou un module de document.</summary>
@@ -108,7 +130,15 @@ namespace VBAi
 
         /// <summary>Arrête la découverte et détache les hooks des fenêtres encore ouvertes.</summary>
         public void Dispose()
-        { timer.Stop(); timer.Dispose(); foreach (var hook in hooks) if (hook.Handle != IntPtr.Zero) hook.ReleaseHandle(); hooks.Clear(); }
+        {
+            if (disposed) return;
+            disposed = true;
+            timer.Stop(); timer.Dispose();
+            foreach (var hook in hooks) if (hook.Handle != IntPtr.Zero) hook.ReleaseHandle();
+            hooks.Clear();
+            foreach (var module in pending.ToArray()) module.Dispose();
+            pending.Clear();
+        }
 
         /// <summary>Intercepte les doubles clics du TreeView natif d’un explorateur de projets.</summary>
         private sealed class TreeHook : NativeWindow

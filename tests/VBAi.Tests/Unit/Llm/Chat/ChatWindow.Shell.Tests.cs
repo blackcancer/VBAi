@@ -32,11 +32,11 @@
                     Call(chat, "History_Click", null, EventArgs.Empty); host.PerformLayout();
                     Assert.IsTrue(history.Visible); Assert.IsFalse(transcript.Visible);
                     Assert.AreEqual(surface.ClientRectangle, history.Bounds);
-                    Assert.AreEqual(UiSymbol.Previous, Get<ChatActionButton>(chat, "history").Symbol);
+                    Assert.AreEqual(((char)UiSymbol.Previous).ToString(), Get<Blackcancer.ChatUI.Views.ChatActionButton>(chat, "history").Symbol);
                     Assert.IsTrue(Get<ListBox>(chat, "sessionList").Width > width - 100);
                     Call(chat, "History_Click", null, EventArgs.Empty);
                     Assert.IsFalse(history.Visible); Assert.IsTrue(transcript.Visible);
-                    Assert.AreEqual(UiSymbol.History, Get<ChatActionButton>(chat, "history").Symbol);
+                    Assert.AreEqual(((char)UiSymbol.History).ToString(), Get<Blackcancer.ChatUI.Views.ChatActionButton>(chat, "history").Symbol);
                     Assert.AreEqual("Keep this unsent draft", prompt.Text);
                     Assert.AreEqual(1, Get<List<ChatEntry>>(chat, "transcriptEntries").Count);
                 }
@@ -143,7 +143,6 @@
         }
 
         /// <summary>Vérifie que l’action d’éditeur prépare une commande uniquement lorsque la fenêtre est inactive.</summary>
-        [TestMethod]
         [STATestMethod]
         public void EditorActionSeedsCommandWhileBusyStateBlocksIt()
         {
@@ -197,7 +196,6 @@
         }
 
         /// <summary>Vérifie que le mode de session suit la sélection uniquement lorsque la fenêtre est inactive.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ModeSelectionUpdatesSessionOnlyWhenIdle()
         {
@@ -242,7 +240,7 @@ namespace VBAi.Tests.Unit
                 window.Show(); System.Windows.Forms.Application.DoEvents();
                 Call(window, "Docking_Click", null, EventArgs.Empty); int docks = 0; window.DockRequested += () => docks++; Call(window, "Docking_Click", null, EventArgs.Empty); Set(window, "busy", true); Call(window, "Docking_Click", null, EventArgs.Empty); Assert.AreEqual(1, docks); Set(window, "busy", false); window.ReportDockFailure("test"); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "test");
                 foreach (var method in new[] { "History_Click", "MemoryToggle_Click", "ContextToggle_Click" }) { Call(window, method, null, EventArgs.Empty); Call(window, method, null, EventArgs.Empty); }
-                Get<System.Windows.Forms.Panel>(window, "historyPanel").Visible = true; Get<System.Windows.Forms.GroupBox>(window, "memoryPanel").Visible = false; Call(window, "MemoryToggle_Click", null, EventArgs.Empty); Assert.AreEqual(226F, Get<System.Windows.Forms.TableLayoutPanel>(window, "historyLayout").RowStyles[7].Height); Call(window, "MemoryToggle_Click", null, EventArgs.Empty);
+                Get<System.Windows.Forms.Panel>(window, "historyPanel").Visible = true; Get<System.Windows.Forms.GroupBox>(window, "memoryPanel").Visible = false; Call(window, "MemoryToggle_Click", null, EventArgs.Empty); var memoryLayout = Get<System.Windows.Forms.TableLayoutPanel>(window, "historyLayout"); var memoryPanel = Get<System.Windows.Forms.GroupBox>(window, "memoryPanel"); Assert.IsTrue(memoryPanel.Visible); Assert.AreEqual(System.Windows.Forms.SizeType.AutoSize, memoryLayout.RowStyles[memoryLayout.GetRow(memoryPanel)].SizeType); Assert.IsTrue(memoryPanel.Height >= Get<System.Windows.Forms.TextBox>(window, "memoryEditor").Height, "The expanded memory editor must be fully allocated."); Call(window, "MemoryToggle_Click", null, EventArgs.Empty);
                 Call(window, "Options_Click", null, EventArgs.Empty); Get<System.Windows.Forms.ContextMenuStrip>(window, "optionsMenu").Close(); Call(window, "JumpToLatest_Click", null, EventArgs.Empty); Call(window, "ShowArchived_CheckedChanged", null, EventArgs.Empty);
                 foreach (var mode in new[] { ChatMode.Agent, ChatMode.Discussion, ChatMode.Plan }) { Get<System.Windows.Forms.ComboBox>(window, "modePicker").SelectedItem = mode; Call(window, "ModePicker_SelectedIndexChanged", null, EventArgs.Empty); Assert.AreEqual(mode, Get<ChatSessionState>(window, "currentSession").Mode); }
                 Set(window, "loadingSession", true); Call(window, "ModePicker_SelectedIndexChanged", null, EventArgs.Empty); Set(window, "loadingSession", false); Set(window, "busy", true); Call(window, "Compile_Click", null, EventArgs.Empty); Call(window, "Pin_Click", null, EventArgs.Empty); Call(window, "GitHub_Click", null, EventArgs.Empty); Set(window, "busy", false);

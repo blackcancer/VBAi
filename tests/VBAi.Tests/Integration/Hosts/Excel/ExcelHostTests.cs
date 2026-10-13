@@ -20,7 +20,6 @@ namespace VBAi.Tests.Integration
         private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
         /// <summary>Démarre une instance Excel séparée, crée un classeur et vérifie le pont VBE connecté.</summary>
-        [TestMethod]
         [STATestMethod]
         public void IsolatedExcelCanCreateAndReadWorkbookWithoutTouchingUserSession()
         {

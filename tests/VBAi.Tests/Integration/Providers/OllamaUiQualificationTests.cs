@@ -217,7 +217,7 @@ namespace VBAi.Tests.Unit
                     RefusedToolCalls = toolCalls
                 };
                 string root = Environment.GetEnvironmentVariable("VBAi_OLLAMA_UI_RESULTS") ??
-                    Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ollama-ui-diagnostics");
+                    Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "ollama-ui-diagnostics");
                 Directory.CreateDirectory(root);
                 string path = Path.Combine(root, "failure-" + Guid.NewGuid().ToString("N") + ".json");
                 File.WriteAllText(path, new JavaScriptSerializer { MaxJsonLength = 4 * 1024 * 1024 }.Serialize(result));

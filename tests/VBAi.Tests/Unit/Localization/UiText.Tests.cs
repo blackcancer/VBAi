@@ -52,7 +52,7 @@ namespace VBAi.Tests.Unit
                 }
         }
 
-        [TestMethod]
+        [STATestMethod]
         public void ConversationDeletionHasLocalizedConfirmationAndPreservesItsTitlePlaceholder()
         {
             string[] keys = {
@@ -79,8 +79,11 @@ namespace VBAi.Tests.Unit
                         var delete = (Button)typeof(ChatWindow).GetField("deleteSession", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(window);
                         Assert.AreEqual(UiText.Get(keys[0]), delete.Text);
                         Assert.AreEqual(UiText.Get(keys[0]), delete.AccessibleName);
-                        Assert.IsTrue(delete.AutoSize, "Localized captions must retain their preferred width.");
-                        Assert.AreEqual(0, delete.Parent.Controls.GetChildIndex(delete), "Deletion must be the first history action.");
+                        var shared = delete as Blackcancer.ChatUI.Views.ChatActionButton;
+                        Assert.IsNotNull(shared, "History uses the shared accessible command renderer.");
+                        Assert.IsTrue(shared.IconOnly, "The compact history action keeps its translated caption through its accessible name and tooltip.");
+                        Assert.IsTrue(shared.GetPreferredSize(System.Drawing.Size.Empty).Width >= 32 * shared.DeviceDpi / 96);
+                        Assert.AreEqual("historyActions", delete.Parent.Name, "Deletion must remain in the explicit history action group.");
                         Assert.IsFalse(delete.Enabled, "The inert Designer window has no saved session to delete.");
                     }
                 }
@@ -143,7 +146,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Traduit récursivement les contrôles fixes, menus, noms accessibles et infobulles.</summary>
-        [TestMethod]
         [STATestMethod]
         public void FixedControlsMenusAndTooltipsTranslateRecursively()
         {
@@ -188,7 +190,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Applique le sens de lecture arabe tout en conservant les champs techniques de gauche à droite.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ArabicMirrorsTheFormButPreservesTechnicalFields()
         {

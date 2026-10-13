@@ -13,7 +13,7 @@ namespace VBAi.Tests.Unit
 {
     /// <summary>Mirrors the real shutdown call sites using managed resources and the pure publication seam.</summary>
     [TestClass, TestCategory("Unit"), DoNotParallelize]
-    public sealed class AddInShutdownObservationTests
+    public sealed partial class AddInShutdownObservationTests
     {
         private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
         private const string Nonce = "e0dc627ec00147c5b2304c503c144afa";
@@ -184,13 +184,12 @@ namespace VBAi.Tests.Unit
                 if (propagates) Assert.AreSame(primary, Assert.ThrowsException<InvalidOperationException>(() => Shutdown(instance, true)));
                 else Shutdown(instance, true);
                 Assert.AreEqual(1, native.Calls);
-                Assert.AreEqual(!propagates, dispatcher.IsDisposed);
-                Assert.AreEqual(propagates ? 0 : 1, scope.Stops);
+                Assert.IsTrue(dispatcher.IsDisposed);
+                Assert.AreEqual(1, scope.Stops);
                 Assert.AreEqual(failure == 0 ? 1 : 0, scope.Events.Count(row => Is(row, "Returned", stage)));
                 Assert.AreEqual(failure == 0 ? 0 : 1, scope.Events.Count(row => Is(row, "Fault", stage)));
                 Assert.AreEqual(propagates ? 2 : 0, scope.Events.Count(row => Is(row, "Fault", null)));
-                if (propagates) { Assert.AreSame(native, Get(instance, field)); Assert.IsFalse(scope.Events.Any(row => Is(row, "ManagedReferenceCleared", field))); }
-                else { Assert.IsNull(Get(instance, field)); Before(scope, failure == 0 ? "Returned" : "Fault", stage, "ManagedReferenceCleared", field); }
+                Assert.IsNull(Get(instance, field)); Before(scope, failure == 0 ? "Returned" : "Fault", stage, "ManagedReferenceCleared", field);
                 Assert.IsFalse(scope.Roots.Single().DiagnosticFailed);
             }
         }
@@ -198,7 +197,7 @@ namespace VBAi.Tests.Unit
         [STATestMethod]
         [DataRow(false)]
         [DataRow(true)]
-        public void StopUpdateFailureKeepsTheSameExceptionAndPreventsLaterChatServerAndDispatcherCleanup(bool begin)
+        public void StopUpdateFailureKeepsTheSameExceptionAfterCleaningChatServerAndDispatcher(bool begin)
         {
             using (var host = new HostUiScope())
             using (var scope = new ObservationScope())
@@ -211,12 +210,16 @@ namespace VBAi.Tests.Unit
                 try
                 {
                     Assert.AreSame(primary, Assert.ThrowsException<IOException>(() => Shutdown(instance, begin)));
-                    Assert.AreEqual(1, calls); Assert.AreSame(chat, Get(instance, "chat")); Assert.AreSame(server, Get(instance, "server"));
-                    Assert.AreSame(dispatcher, Get(instance, "dispatcher")); Assert.IsFalse(dispatcher.IsDisposed);
-                    Assert.IsFalse(scope.Events.Any(row => Is(row, "Entry", "chat.Dispose") || Is(row, "Entry", "server.Dispose") || Is(row, "Entry", "dispatcher.Dispose")));
+                    Assert.AreEqual(1, calls); Assert.IsTrue(((ChatWindow)chat).IsDisposed);
+                    Assert.IsNull(Get(instance, "chat")); Assert.IsNull(Get(instance, "server"));
+                    Assert.IsNull(Get(instance, "dispatcher")); Assert.IsTrue(dispatcher.IsDisposed);
+                    foreach (string stage in new[] { "chat.Dispose", "server.Dispose", "dispatcher.Dispose" })
+                        Assert.AreEqual(1, scope.Events.Count(row => Is(row, "Returned", stage)), stage);
                     Assert.AreEqual(1, scope.Events.Count(row => Is(row, "Fault", "StopUpdateCheck")));
                     Assert.AreEqual(2, scope.Events.Count(row => Is(row, "Fault", null)));
-                    Assert.IsFalse(scope.Events.Any(row => Is(row, "Returned", null)));
+                    Assert.IsFalse(scope.Events.Any(row => Is(row, "Returned", null) &&
+                        (row["ParentInvocationId"] == null || scope.Roots.Any(root => root.InvocationId.Equals(row["ParentInvocationId"])))),
+                        "The failing shutdown and its parent must remain failed; successfully disposed chat children may complete.");
                 }
                 finally { AddIn.StopUpdateCheck = () => { }; AddIn.CreateShutdownDiagnostic = entry => null; host.Close(instance); }
             }
@@ -284,7 +287,7 @@ namespace VBAi.Tests.Unit
                 if (nativeFailure) AddIn.StopUpdateCheck = () => { throw primary; };
                 if (nativeFailure) Assert.AreSame(primary, Assert.ThrowsException<IOException>(() => Shutdown(instance, false)));
                 else Shutdown(instance, false);
-                Assert.AreEqual(nativeFailure ? 0 : 1, native.Calls); Assert.AreEqual(!nativeFailure, dispatcher.IsDisposed);
+                Assert.AreEqual(1, native.Calls); Assert.IsTrue(dispatcher.IsDisposed);
                 Assert.AreEqual(0, scope.Events.Count);
             }
         }
@@ -307,7 +310,7 @@ namespace VBAi.Tests.Unit
         }
 
         [STATestMethod]
-        public void ReentrantCallbackKeepsSeparateInvocationIdentitiesAndExistingCloseBehavior()
+        public void ReentrantCallbackKeepsSeparateInvocationIdentitiesWithoutRepeatingNativeClose()
         {
             using (var scope = new ObservationScope())
             {
@@ -315,8 +318,8 @@ namespace VBAi.Tests.Unit
                 Set(instance, "nativeChatWindow", native);
                 native.OnClose = () => { native.OnClose = null; Shutdown(instance, false); };
                 Shutdown(instance, true);
-                Assert.AreEqual(2, native.Calls, "Observation must not add a cleanup guard or suppress the existing reentrant call.");
-                Assert.AreEqual(2, scope.Roots.Count); Assert.AreEqual(2, scope.Stops);
+                Assert.AreEqual(1, native.Calls, "A reentrant callback must not repeat an uncertain native close.");
+                Assert.AreEqual(2, scope.Roots.Count); Assert.AreEqual(1, scope.Stops);
                 var starts = scope.Events.Where(row => Is(row, "Entry", null)).ToArray();
                 Assert.AreEqual(4, starts.Select(row => row["InvocationId"]).Distinct().Count());
                 foreach (var root in scope.Roots)
@@ -346,7 +349,7 @@ namespace VBAi.Tests.Unit
                     if (failStop) AddIn.StopUpdateCheck = () => { scope.Stops++; throw stopError; };
                     if (failStop) Assert.AreSame(stopError, Assert.ThrowsException<IOException>(() => Shutdown(instance, true)));
                     else Shutdown(instance, true);
-                    Assert.AreEqual(1, removes); Assert.AreEqual(1, scope.Stops); Assert.AreEqual(!failStop, dispatcher.IsDisposed);
+                    Assert.AreEqual(1, removes); Assert.AreEqual(1, scope.Stops); Assert.IsTrue(dispatcher.IsDisposed);
                     Assert.AreEqual(1, scope.Events.Count(row => Is(row, "Fault", "VbeNativeTheme.Disconnect")));
                     Assert.IsFalse(scope.Events.Any(row => Is(row, "Returned", "VbeNativeTheme.Disconnect")));
                     Assert.IsTrue(scope.Logs.Any(log => log.Contains(themeError.Message)));

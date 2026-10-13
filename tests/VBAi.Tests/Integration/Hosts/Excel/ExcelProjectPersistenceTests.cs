@@ -11,7 +11,6 @@ namespace VBAi.Tests.Integration
     public sealed class ExcelProjectPersistenceTests
     {
         /// <summary>Sauvegarde le classeur macro puis vérifie le chemin, l’état et le résultat relus par le pont.</summary>
-        [TestMethod]
         [STATestMethod]
         public void IsolatedExcelCanSaveMacroProjectThroughItsOwnVbeBridge()
         {

@@ -154,18 +154,18 @@ namespace VBAi.Tests.Unit
             {
                 f.Repository.CommandOverride = (args, input, use, allow) => Reply("100644 blob blob-id\tvba\0");
                 Assert.ThrowsException<InvalidOperationException>(() => f.Repository.Read("root"));
-                foreach (string entry in new[] { "120000 blob x\tlink.bas", "100644 tree x\tnested", "100644 blob x\tbad:name.bas" })
+                foreach (string entry in new[] { "120000 blob " + new string('a', 40) + " 1\tlink.bas", "100644 tree " + new string('a', 40) + " -\tnested", "100644 blob " + new string('a', 40) + " 1\tbad:name.bas" })
                 {
                     f.Repository.CommandOverride = (args, input, use, allow) => Reply(args[2] == "root" ? "040000 tree subtree\tvba\0" : entry + "\0");
                     Assert.ThrowsException<InvalidOperationException>(() => f.Repository.Read("root"));
                 }
                 foreach (bool countLimit in new[] { false, true })
                 {
-                    string entries = countLimit ? string.Join("\0", Enumerable.Range(0, 2050).Select(i => "100644 blob blob-id\tM" + i + ".bas")) + "\0" : "100644 blob blob-id\tlarge.bas\0";
+                    string objectId = new string('a', 40);
+                    string entries = countLimit ? string.Join("\0", Enumerable.Range(0, 2050).Select(i => "100644 blob " + objectId + " 0\tM" + i + ".bas")) + "\0" : "100644 blob " + objectId + " " + (VbaGitSnapshot.MaxBytes + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) + "\tlarge.bas\0";
                     f.Repository.CommandOverride = (args, input, use, allow) =>
                     {
-                        if (args[0] == "ls-tree") return Reply(args[2] == "root" ? "040000 tree subtree\tvba\0" : entries);
-                        if (args[1] == "-s") return Reply(countLimit ? "0" : (VbaGitSnapshot.MaxBytes + 1).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                        if (args[0] == "ls-tree") return Reply(args.Last() == "root" ? "040000 tree subtree\tvba\0" : entries);
                         return Reply("");
                     };
                     Assert.ThrowsException<InvalidOperationException>(() => f.Repository.Read("root"));

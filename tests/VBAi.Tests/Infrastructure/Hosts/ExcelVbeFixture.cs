@@ -120,6 +120,15 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(typeof(VBAi.VbeSession).Module.ModuleVersionId.ToString("D"), state["AssemblyModuleVersionId"],
                     "Excel loaded another build of the shared COM add-in; native tests must qualify this assembly.");
                 fixture.RecordStartup("Ready", existingIds, status);
+                string observationImage = CaptureClassicShutdownImage(
+                    Environment.GetEnvironmentVariable(AddInShutdownDiagnostic.EnvironmentName),
+                    fixture.owned, fixture.retainEvidence, fixture.ProcessId, fixture.ownedProcess.Id,
+                    windowThread, state, () => fixture.ownedProcess.MainModule.FileName);
+                if (observationImage != null)
+                {
+                    fixture.ownedImagePath = () => observationImage;
+                    fixture.ArmAddInShutdownObservation(windowThread, state);
+                }
                 return fixture;
             }
             catch (Exception startup)

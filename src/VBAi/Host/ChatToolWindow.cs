@@ -64,6 +64,9 @@ namespace VBAi
         internal void Attach(Form chat)
         {
             Dock = DockStyle.Fill;
+            // Keep painting independent of the VBE's ambient ActiveX properties:
+            // the host can release that site before its child handles are destroyed.
+            BackColor = chat.BackColor;
             chat.Hide(); chat.TopLevel = false; chat.FormBorderStyle = FormBorderStyle.None;
             chat.Dock = DockStyle.Fill; Controls.Add(chat); chat.Show();
             siteResizeTimer.Start();
@@ -77,6 +80,13 @@ namespace VBAi
             siteResizeTimer.Stop();
             chat.Hide(); Controls.Remove(chat); chat.Dock = DockStyle.None;
             chat.TopLevel = true; chat.FormBorderStyle = FormBorderStyle.Sizable;
+        }
+
+        /// <summary>Stops resize tracking while the caller disposes the embedded form in place.</summary>
+        /// <remarks>Hiding or reparenting the child before disposal can notify a native ActiveX site that its host has already released.</remarks>
+        internal void StopSiteTrackingForShutdown()
+        {
+            siteResizeTimer.Stop();
         }
 
         /// <summary>Actualise la taille du contrôle lors du tick du minuteur.</summary>

@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace VBAi.Tests.Unit
@@ -226,6 +227,104 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [TestMethod]
+        public void SuccessfulRunBalancesEveryGetterWithoutReleasingTheBorrowedProjectAgain()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                fixture.Host.ReleaseAcquired = released.Add;
+                object project = fixture.Source.VBProject;
+                int projectReads = 0;
+                fixture.Source.OnProjectRead = () => projectReads++;
+                var target = (VbaTestPowerPointValuesHost.OwnedTarget)fixture.Host.ResolveTarget(project, fixture.Source.FullName);
+                fixture.Host.ValidateTarget(target);
+                fixture.Host.Invoke(target, "Support", "Run", null);
+                target.Dispose();
+                Assert.AreEqual(fixture.ApplicationReads, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                Assert.AreEqual(projectReads, released.Count(value => ReferenceEquals(value, project)));
+                Assert.AreEqual(fixture.ApplicationReads + 1, released.Count(value => ReferenceEquals(value, fixture.Source)));
+                Assert.AreEqual(fixture.ApplicationReads + 1, released.Count(value => ReferenceEquals(value, fixture.Application.Presentations)));
+                int count = released.Count;
+                target.Dispose();
+                Assert.AreEqual(count, released.Count);
+                Assert.ThrowsException<ObjectDisposedException>(() => fixture.Host.Invoke(target, "Support", "Run", null));
+                Assert.AreEqual(1, fixture.Invocations);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("pid")]
+        [DataRow("window")]
+        [DataRow("security")]
+        [DataRow("project")]
+        [DataRow("path")]
+        [DataRow("ambiguous")]
+        public void KnownResolutionRefusalsReleaseTheirApplicationAcquisition(string fault)
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                fixture.Host.ReleaseAcquired = released.Add;
+                object project = fixture.Source.VBProject;
+                if (fault == "pid") fixture.Host.ReadWindowOwner = _ => 777;
+                if (fault == "window") fixture.Host.ReadApplicationWindow = _ => { throw new InvalidOperationException("Window proof unavailable"); };
+                if (fault == "security") fixture.Application.AutomationSecurity = 3;
+                if (fault == "project") project = new object();
+                if (fault == "path") fixture.Source.PathOverride = " ";
+                if (fault == "ambiguous") fixture.Application.Presentations.Add(new Presentation { FullName = fixture.Source.FullName, VBProject = project });
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Host.ResolveTarget(project, fixture.Source.FullName));
+                Assert.AreEqual(fixture.ApplicationReads, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                Assert.AreEqual(0, fixture.Invocations);
+            }
+        }
+
+        [TestMethod]
+        public void UnknownRunRetainsOnlyTheOwnedTargetAndForbidsItsReuse()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                fixture.Host.ReleaseAcquired = released.Add;
+                var target = (VbaTestPowerPointValuesHost.OwnedTarget)fixture.Resolve();
+                fixture.Host.RunProcedure = (application, macro, arguments) => { fixture.Invocations++; throw new InvalidOperationException("Unknown completion"); };
+                Assert.ThrowsException<InvalidOperationException>(() => fixture.Host.Invoke(target, "Support", "Run", null));
+                Assert.IsTrue(target.Closed);
+                Assert.AreEqual(fixture.ApplicationReads - 1, released.Count(value => ReferenceEquals(value, fixture.Application)));
+                int count = released.Count;
+                target.Dispose();
+                Assert.ThrowsException<ObjectDisposedException>(() => fixture.Host.Invoke(target, "Support", "Run", null));
+                Assert.AreEqual(count, released.Count);
+                Assert.AreEqual(1, fixture.Invocations);
+            }
+        }
+
+        [TestMethod]
+        public void DisposalRequiresTheOwningThreadAndNeverRetriesAFailedRelease()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>();
+                bool fail = false;
+                fixture.Host.ReleaseAcquired = value => { released.Add(value); if (fail) throw new InvalidOperationException("Release failed"); };
+                var target = (VbaTestPowerPointValuesHost.OwnedTarget)fixture.Resolve();
+                Exception refusal = null;
+                int count = released.Count;
+                var thread = new Thread(() => { try { target.Dispose(); } catch (Exception error) { refusal = error; } });
+                thread.Start(); thread.Join();
+                Assert.IsInstanceOfType(refusal, typeof(InvalidOperationException));
+                Assert.IsFalse(target.Closed);
+                Assert.AreEqual(count, released.Count);
+                fail = true;
+                Assert.ThrowsException<InvalidOperationException>(() => target.Dispose());
+                Assert.IsTrue(target.Closed);
+                Assert.AreEqual(count + 1, released.Count);
+                target.Dispose();
+                Assert.AreEqual(count + 1, released.Count);
+                Assert.AreEqual(0, fixture.Invocations);
+            }
+        }
+
         internal sealed class Fixture : IDisposable
         {
             internal readonly string Folder = Path.Combine(Path.GetTempPath(), "VBAi-PowerPoint-" + Guid.NewGuid().ToString("N"));
@@ -268,7 +367,9 @@ namespace VBAi.Tests.Unit
         }
         public sealed class Presentation
         {
-            public object VBProject { get; set; } = new object();
+            private object project = new object();
+            public Action OnProjectRead;
+            public object VBProject { get { OnProjectRead?.Invoke(); return project; } set { project = value; } }
             public string FullName { get; set; }
             public string NameOverride, PathOverride;
             public string Name => NameOverride ?? System.IO.Path.GetFileName(FullName);

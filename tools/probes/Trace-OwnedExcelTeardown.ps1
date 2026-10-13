@@ -15,7 +15,8 @@ $pending=Get-Content -LiteralPath $PendingReport -Raw -Encoding UTF8 | ConvertFr
 $directory=[IO.Path]::GetDirectoryName($PendingReport)
 if ($pending.Nonce -notmatch '^[a-f0-9]{32}$' -or [IO.Path]::GetFileName($directory) -notmatch '^[a-f0-9]{32}$' -or
     $pending.Root -ne $directory -or [int]$pending.ProcessId -le 0 -or
-    $pending.Scenario -notin @('NativeVariantArraysRoundTripWithBoundsAndOneInvocation','NativeParamArrayCallsPreserveArityValuesAndSingleInvocation') -or
+    $pending.Scenario -notin @('NativeVariantArraysRoundTripWithBoundsAndOneInvocation','NativeParamArrayCallsPreserveArityValuesAndSingleInvocation',
+      'ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving','SavedUnsignedWorkbookHasNoSignatureAndPreservesSource') -or
     [IO.Path]::GetFileName($pending.Executable) -ine 'EXCEL.EXE' -or $pending.Executable -notmatch '^[A-Za-z]:[\\/]' -or
     [IO.Path]::GetFileName($pending.AssemblyPath) -ine 'VBAi.dll' -or $pending.AssemblyPath -notmatch '^[A-Za-z]:[\\/]') { throw 'Pending owned procedure-value identity/path mismatch.' }
 $started=[DateTime]::Parse($pending.ProcessStartedUtc).ToUniversalTime()
@@ -44,6 +45,8 @@ if ($preflight.State -ne 'PASS' -or $preflight.Mode -ne 'TEARDOWN_EXCEPTION_PREF
     $preflight.NormalHelperExitCode -ne 0 -or $preflight.NormalHelperDetachedVerified -ne $true -or
     $preflight.FailfastHelperExitCodeHex -ne '0xC0000409' -or $preflight.SyntheticFailfastRequests -ne 1 -or
     $preflight.CdbSha256 -ne (Get-FileHash -LiteralPath $CdbPath -Algorithm SHA256).Hash -or
+    $preflight.FirstChanceDetailBoundVerified -ne $true -or $preflight.FirstChanceBurstDetailCount -ne 4 -or $preflight.SyntheticFirstChanceBurstRequests -ne 6 -or
+    $preflight.firstchanceburstHelperExitObserved -ne $true -or $preflight.firstchanceburstHelperExitCodeHex -ne '0x00000000' -or $preflight.firstchanceburstDebuggerExitCodeHex -ne '0x00000000' -or
     $preflight.CommonScriptSha256 -ne (Get-FileHash -LiteralPath $common -Algorithm SHA256).Hash) { throw 'Different/incomplete helper handler preflight; no attachment.' }
 $target=[Diagnostics.Process]::GetProcessById([int]$pending.ProcessId)
 if ($target.StartTime.ToUniversalTime() -ne $started -or (Get-OwnedTeardownImage $target) -ine $pending.Executable) { throw 'PID/start/image mismatch; no attachment.' }

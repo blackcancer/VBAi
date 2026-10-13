@@ -15,8 +15,23 @@ a mode; verify the visible mode before sending.
 
 Explicit references, selections and optional project notes appear in the context
 preview. Code revisions are checked before transmission; stale attachments must
-be refreshed. The displayed size describes explicit context, not all system
+be refreshed. A module or procedure reference must retain its selected source
+revision; a changed or missing revision refuses the send instead of silently
+attaching the latest code. Remove the token and select the current reference again.
+The displayed size describes explicit context, not all system
 instructions, tool schemas or provider history.
+
+Links in a saved message use that message's captured references or the preceding
+prompt from its own turn. Later messages cannot replace an older link's source
+range or revision. Sending captures references and draft attachments before live
+source reads. The request and its history entry use that same detached context,
+so callbacks during a COM read cannot substitute later composer edits. Queued
+attachments are also detached when the message enters the queue.
+Legacy entries without turn IDs use only their preceding
+legacy prompt. Explicit empty context stays empty; conflicting attachments with
+the same visible token are not made clickable. Recognized tokens work in prose,
+emphasis and inline code. Navigation still rechecks live project access and source
+freshness; captured context does not grant permission to a project.
 
 | Mode | Intended use | Enforcement |
 | --- | --- | --- |

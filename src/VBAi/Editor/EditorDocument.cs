@@ -121,7 +121,7 @@ namespace VBAi
             Observe();
             if (!Dirty) return Text;
             if (Conflict) throw new InvalidOperationException("The module changed in VBA. Resolve the conflict first.");
-            if (!Writable) throw new InvalidOperationException("VBA is running, paused or unavailable. Your draft is preserved.");
+            if (!Writable) throw new InvalidOperationException((Module as EditorVbeModule)?.MutationUnavailability ?? "VBA is running, paused or unavailable. Your draft is preserved.");
             if (Native == Text) { Baseline = Text; return Text; }
             if (plan != null && (plan.Before != Baseline || plan.After != Text))
                 throw new InvalidOperationException("The draft changed while synchronization was being prepared.");
@@ -140,7 +140,7 @@ namespace VBAi
         {
             Observe();
             if (Native != reviewedNative) throw new InvalidOperationException("The module changed again. Compare with VBA before resolving.");
-            if (!Writable) throw new InvalidOperationException("VBA is running, paused or unavailable. Your draft is preserved.");
+            if (!Writable) throw new InvalidOperationException((Module as EditorVbeModule)?.MutationUnavailability ?? "VBA is running, paused or unavailable. Your draft is preserved.");
             string actual = Normalize(Module.Write(reviewedNative, Text));
             Baseline = Native = actual; Conflict = false; return actual;
         }

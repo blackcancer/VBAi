@@ -2871,4 +2871,25 @@ Inicio de sesión mediante Git Credential Manager; la identidad de los commits s
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>Este modelo no admite llamadas a herramientas.</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>El proveedor no completó su respuesta en {0} segundos. No se volvió a ejecutar ninguna acción automáticamente.</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>Usar el razonamiento predeterminado del modelo.</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>Desactivar el razonamiento para esta conversación.</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>Predeterminado del modelo</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>Razonamiento desactivado</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>Este modelo no admite la opción de razonamiento seleccionada.</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>Seleccione un archivo para adjuntarlo a la conversación actual.</value>
+  </data>
 </root>

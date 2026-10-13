@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
@@ -93,6 +94,8 @@ namespace VBAi
 
         /// <summary>Indique qu’une opération asynchrone ou un état transitoire interdit une autre opération.</summary>
         private bool busy, initializing, closing, closeAllowed, showingDiff;
+        /// <summary>Prevents replay of teardown after a failed native or renderer cleanup.</summary>
+        private bool runtimeDisposalEntered;
 
         /// <summary>Nombre de mises à jour d’état qui manipulent actuellement la disposition des contrôles.</summary>
         private int activeStatusLayouts;
@@ -134,20 +137,23 @@ namespace VBAi
         /// <summary>Accepts only revision-matched deltas; missing batches are recovered from Monaco.</summary>
         /// <param name="message">Renderer change carrying a document ID, new revision, and either a delta batch or full text.</param>
         /// <returns>A completed task after applying a valid change or requesting a full renderer snapshot for a stale delta.</returns>
-        private async Task AcceptEditorChange(EditorMessage message)
+        private Task AcceptEditorChange(EditorMessage message)
         {
-            if (!documents.TryGetValue(message.id ?? "", out var doc) || message.version <= versions[doc.Id]) return;
-            if (message.changes != null)
+            return VbeUiTask.RunAsync(async () =>
             {
-                if (message.baseVersion != versions[doc.Id] || !EditorTextChange.TryApply(doc.Text, message.changes, out var text))
-                    await CaptureDocuments();
-                else { doc.Edit(text); versions[doc.Id] = message.version; }
-            }
-            else { doc.Edit(message.text); versions[doc.Id] = message.version; }
-            lastEdit = DateTime.UtcNow;
-            if (streamSequence == streamedSequence) firstStreamEdit = lastEdit;
-            streamSequence++;
-            documentSynchronizationErrors.Remove(doc.Id); lastSaveError = null; SetStatus();
+                if (!documents.TryGetValue(message.id ?? "", out var doc) || message.version <= versions[doc.Id]) return;
+                if (message.changes != null)
+                {
+                    if (message.baseVersion != versions[doc.Id] || !EditorTextChange.TryApply(doc.Text, message.changes, out var text))
+                        await CaptureDocuments();
+                    else { doc.Edit(text); versions[doc.Id] = message.version; }
+                }
+                else { doc.Edit(message.text); versions[doc.Id] = message.version; }
+                lastEdit = DateTime.UtcNow;
+                if (streamSequence == streamedSequence) firstStreamEdit = lastEdit;
+                streamSequence++;
+                documentSynchronizationErrors.Remove(doc.Id); lastSaveError = null; SetStatus();
+            });
         }
 
         /// <summary>Observes execution independently of draft persistence, without overlapping UI operations.</summary>
@@ -155,11 +161,14 @@ namespace VBAi
         /// <param name="e">Timer event data.</param>
         private async void DebugTimerTick(object sender, EventArgs e)
         {
-            if (!Ready || busy || observingDebug || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
-            observingDebug = true;
-            try { await ObserveDebugMode(); }
-            catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
-            finally { observingDebug = false; SchedulePostStepObservation(); }
+            await VbeUiTask.RunAsync(async () =>
+            {
+                if (!Ready || busy || observingDebug || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
+                observingDebug = true;
+                try { await ObserveDebugMode(); }
+                catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
+                finally { observingDebug = false; SchedulePostStepObservation(); }
+            });
         }
 
         /// <summary>Flushes streamed drafts after 120 ms of idle, or 450 ms during sustained typing.</summary>
@@ -169,15 +178,18 @@ namespace VBAi
 
         /// <summary>Flushes the latest stream batch without rereading unchanged renderer models.</summary>
         /// <returns>A task completed after the latest settled change batch is reconciled or skipped.</returns>
-        private async Task FlushStream()
+        private Task FlushStream()
         {
-            if (!Ready || busy || closing || IsDisposed || streamSequence == streamedSequence || debugCommands.CurrentCount == 0) return;
-            var now = DateTime.UtcNow;
-            if (now - lastEdit < TimeSpan.FromMilliseconds(120) && now - firstStreamEdit < TimeSpan.FromMilliseconds(450)) return;
-            busy = true; streamedSequence = streamSequence;
-            try { await ProcessCapturedDocumentsCore(true, false, true); }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+            return VbeUiTask.RunAsync(async () =>
+            {
+                if (!Ready || busy || closing || IsDisposed || streamSequence == streamedSequence || debugCommands.CurrentCount == 0) return;
+                var now = DateTime.UtcNow;
+                if (now - lastEdit < TimeSpan.FromMilliseconds(120) && now - firstStreamEdit < TimeSpan.FromMilliseconds(450)) return;
+                busy = true; streamedSequence = streamSequence;
+                try { await ProcessCapturedDocumentsCore(true, false, true); }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+            });
         }
 
         /// <summary>Worker dédié à la préparation des instantanés et des diffs.</summary>
@@ -294,50 +306,53 @@ namespace VBAi
         /// <param name="args">Origine et contenu du message reçu.</param>
         private async void MessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs args)
         {
-            if (!Trusted(args.Source) || IsDisposed || Disposing || closing) return;
-            try
+            await VbeUiTask.RunAsync(async () =>
             {
-                if (args.WebMessageAsJson.Length > 16 * 1024 * 1024) return;
-                var message = json.Deserialize<EditorMessage>(args.WebMessageAsJson);
-                if (message.type == "ready")
+                if (!Trusted(args.Source) || IsDisposed || Disposing || closing) return;
+                try
                 {
-                    Ready = true; await Theme();
-                    await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE.", "Explain", "Fix", "Refactor" }.ToDictionary(key => key, UiText.Get));
-                    foreach (var document in documents.Values.ToArray()) await RenderDocument(document);
-                    if (selected != null) await SelectEditorDocument(selected);
-                    if (!closing && !IsDisposed && !Disposing && IsHandleCreated)
-                        BeginInvoke(new Action(() =>
-                        {
-                            if (closing || IsDisposed || Disposing) return;
-                            timer.Start(); debugTimer.Start(); streamTimer.Start(); SetStatus();
-                        }));
-                }
-                else if (message.type == "change") await AcceptEditorChange(message);
-                else if (message.type == "command" && message.name == "sync") await ProcessDocuments(true);
-                else if (message.type == "command" && message.name == "save") await SaveDocument(message.id);
-                else if (message.type == "language") await LanguageRequest(message);
-                else if (message.type == "definition") await OpenDefinition(message);
-                else if (message.type == "assistantAction" && documents.TryGetValue(message.id ?? "", out var actionDoc) && actionDoc.Module is EditorVbeModule actionModule)
-                {
-                    if (!new[] { "/expliquer", "/corriger", "/refactoriser" }.Contains(message.name)) return;
-                    EditorDocument.Validate(message.text); EditorDocument.Validate(message.selectedText);
-                    if (message.version < versions[actionDoc.Id]) throw new InvalidOperationException("The editor selection changed. Select it again.");
-                    actionDoc.Edit(message.text); versions[actionDoc.Id] = message.version;
-                    await Task.Yield();
-                    AssistantAction?.Invoke(message.name, new ChatAttachment
+                    if (args.WebMessageAsJson.Length > 16 * 1024 * 1024) return;
+                    var message = json.Deserialize<EditorMessage>(args.WebMessageAsJson);
+                    if (message.type == "ready")
                     {
-                        Label = actionModule.Name + " · Monaco L" + message.line,
-                        Project = actionModule.ProjectName,
-                        Module = actionModule.ModuleName,
-                        Text = message.selectedText,
-                        StartLine = message.line,
-                        EditorDocumentId = actionDoc.Id,
-                        Sha256 = EditorDocument.Hash(message.text)
-                    });
+                        Ready = true; await Theme();
+                        await Script("labels", new[] { "Compile project", "Toggle breakpoint", "Show next statement", "Step into", "Step over", "Step out", "Breakpoint request sent; verify in VBE.", "Explain", "Fix", "Refactor" }.ToDictionary(key => key, UiText.Get));
+                        foreach (var document in documents.Values.ToArray()) await RenderDocument(document);
+                        if (selected != null) await SelectEditorDocument(selected);
+                        if (!closing && !IsDisposed && !Disposing && IsHandleCreated)
+                            BeginInvoke(new Action(() =>
+                            {
+                                if (closing || IsDisposed || Disposing) return;
+                                timer.Start(); debugTimer.Start(); streamTimer.Start(); SetStatus();
+                            }));
+                    }
+                    else if (message.type == "change") await AcceptEditorChange(message);
+                    else if (message.type == "command" && message.name == "sync") await ProcessDocuments(true);
+                    else if (message.type == "command" && message.name == "save") await SaveDocument(message.id);
+                    else if (message.type == "language") await LanguageRequest(message);
+                    else if (message.type == "definition") await OpenDefinition(message);
+                    else if (message.type == "assistantAction" && documents.TryGetValue(message.id ?? "", out var actionDoc) && actionDoc.Module is EditorVbeModule actionModule)
+                    {
+                        if (!new[] { "/expliquer", "/corriger", "/refactoriser" }.Contains(message.name)) return;
+                        EditorDocument.Validate(message.text); EditorDocument.Validate(message.selectedText);
+                        if (message.version < versions[actionDoc.Id]) throw new InvalidOperationException("The editor selection changed. Select it again.");
+                        actionDoc.Edit(message.text); versions[actionDoc.Id] = message.version;
+                        await Task.Yield();
+                        AssistantAction?.Invoke(message.name, new ChatAttachment
+                        {
+                            Label = actionModule.Name + " · Monaco L" + message.line,
+                            Project = actionModule.ProjectName,
+                            Module = actionModule.ModuleName,
+                            Text = message.selectedText,
+                            StartLine = message.line,
+                            EditorDocumentId = actionDoc.Id,
+                            Sha256 = EditorDocument.Hash(message.text)
+                        });
+                    }
+                    else if (message.type == "editorCommand") await EditorCommand(message);
                 }
-                else if (message.type == "editorCommand") await EditorCommand(message);
-            }
-            catch (Exception error) { Report(error); }
+                catch (Exception error) { Report(error); }
+            });
         }
 
         /// <summary>Message typé échangé entre l’interface Monaco et la fenêtre hôte.</summary>
@@ -448,25 +463,32 @@ namespace VBAi
         /// <param name="module">Adapter for the exact native or detached module to open.</param>
         /// <param name="activateWindow"><see langword="true"/> to show/activate a native CodePane and the editor form; <see langword="false"/> to retain the pane without stealing visibility or focus.</param>
         /// <returns>The existing document for the same module identity or the newly created document.</returns>
-        private async Task<EditorDocument> OpenModuleCore(IEditorModule module, bool activateWindow)
+        private Task<EditorDocument> OpenModuleCore(IEditorModule module, bool activateWindow)
         {
-            var existing = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
-                (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component)));
-            if (existing != null) { selected = existing.Id; SelectTab(existing.Id); if (Ready) await SelectEditorDocument(existing.Id); return existing; }
-            if (documents.Count >= 30) throw new InvalidOperationException("Close the editor before opening more than 30 modules.");
-            var document = new EditorDocument(module);
-            if (module is EditorVbeModule nativeModule)
+            return VbeUiTask.Run(async () =>
             {
-                if (activateWindow) nativeModule.EnsureNativeWindow();
-                else nativeModule.RetainNativeWindow();
-            }
-            var draft = Drafts.Recover(module.Key);
-            documents.Add(document.Id, document); versions[document.Id] = 1;
-            if (draft != null && EditorDocument.Normalize(draft.Text) != document.Text) recovered[document.Id] = draft;
-            string displayName = module.Name; displayNames[document.Id] = displayName;
-            var tab = new TabPage(displayName) { Tag = document.Id }; tabs.TabPages.Add(tab); selected = document.Id; tabs.SelectedTab = tab;
-            if (Ready) await RenderDocument(document);
-            SetStatus(); if (activateWindow) Activate(); return document;
+                try
+                {
+                    var existing = documents.Values.FirstOrDefault(d => ReferenceEquals(d.Module, module) ||
+                        (d.Module is EditorVbeModule vm && module is EditorVbeModule other && vm.IsComponent(other.Component)));
+                    if (existing != null) { selected = existing.Id; SelectTab(existing.Id); if (Ready) await SelectEditorDocument(existing.Id); return existing; }
+                    if (documents.Count >= 30) throw new InvalidOperationException("Close the editor before opening more than 30 modules.");
+                    var document = new EditorDocument(module);
+                    if (module is EditorVbeModule nativeModule)
+                    {
+                        if (activateWindow) nativeModule.EnsureNativeWindow();
+                        else nativeModule.RetainNativeWindow();
+                    }
+                    var draft = Drafts.Recover(module.Key);
+                    documents.Add(document.Id, document); versions[document.Id] = 1;
+                    if (draft != null && EditorDocument.Normalize(draft.Text) != document.Text) recovered[document.Id] = draft;
+                    string displayName = module.Name; displayNames[document.Id] = displayName;
+                    var tab = new TabPage(displayName) { Tag = document.Id }; tabs.TabPages.Add(tab); selected = document.Id; tabs.SelectedTab = tab;
+                    if (Ready) await RenderDocument(document);
+                    SetStatus(); if (activateWindow) Activate(); return document;
+                }
+                finally { ReleaseUnadoptedModule(module); }
+            });
         }
 
         /// <summary>Envoie le contenu d’un document nouvellement ouvert à Monaco et actualise sa révision.</summary>
@@ -489,7 +511,19 @@ namespace VBAi
         /// <param name="sender">Onglets à l’origine de l’événement.</param>
         /// <param name="e">Données de sélection.</param>
         private async void TabChanged(object sender, EventArgs e)
-        { if (tabs.SelectedTab == null) return; selected = (string)tabs.SelectedTab.Tag; try { if (Ready) await SelectEditorDocument(selected); else SetStatus(); } catch (Exception error) { Report(error); } }
+        {
+            await VbeUiTask.RunAsync(async () =>
+            {
+                if (tabs.SelectedTab == null) return;
+                selected = (string)tabs.SelectedTab.Tag;
+                try
+                {
+                    if (Ready) await SelectEditorDocument(selected);
+                    else SetStatus();
+                }
+                catch (Exception error) { Report(error); }
+            });
+        }
 
         /// <summary>Capture les textes et révisions les plus récents depuis la surface Monaco.</summary>
         /// <returns>Tâche terminée après la mise à jour des documents hôtes.</returns>
@@ -505,13 +539,16 @@ namespace VBAi
         /// <summary>Capture les documents, observe les changements natifs et synchronise les brouillons admissibles.</summary>
         /// <param name="synchronize">Autorise l’écriture native des brouillons propres et modifiés.</param>
         /// <returns>Tâche terminée après le traitement de tous les documents ouverts.</returns>
-        internal async Task ProcessDocuments(bool synchronize)
+        internal Task ProcessDocuments(bool synchronize)
         {
-            if (busy || !Ready || closing) return;
-            busy = true;
-            try { await ProcessDocumentsCore(synchronize); }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; }
+            return VbeUiTask.RunAsync(async () =>
+            {
+                if (busy || !Ready || closing) return;
+                busy = true;
+                try { await ProcessDocumentsCore(synchronize); }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; }
+            });
         }
 
         /// <summary>Captures renderer state, then observes and optionally synchronizes all open documents.</summary>
@@ -526,51 +563,54 @@ namespace VBAi
         /// <param name="onlyDocument">Optional document restriction, used for commands such as one module's breakpoint toggle.</param>
         /// <param name="backgroundBatch">Optional bounded snapshot of documents to process; each entry is revalidated before use.</param>
         /// <returns>A task completed after selected documents have been observed and eligible edits applied.</returns>
-        private async Task ProcessCapturedDocumentsCore(bool synchronize, bool capture, bool dirtyOnly = false, EditorDocument onlyDocument = null,
+        private Task ProcessCapturedDocumentsCore(bool synchronize, bool capture, bool dirtyOnly = false, EditorDocument onlyDocument = null,
             EditorDocument[] backgroundBatch = null)
         {
-            if (capture) await CaptureDocuments();
-            if (IsDisposed || closing) return;
-            foreach (var doc in backgroundBatch ?? documents.Values.ToArray())
+            return VbeUiTask.RunAsync(async () =>
             {
-                if (backgroundBatch != null)
+                if (capture) await CaptureDocuments();
+                if (IsDisposed || closing) return;
+                foreach (var doc in backgroundBatch ?? documents.Values.ToArray())
                 {
-                    // Yield between COM reads so a queued user command can take priority.
-                    await Task.Yield();
-                    if (closing || IsDisposed || debugCommands.CurrentCount == 0) break;
-                    if (!documents.ContainsKey(doc.Id)) continue;
-                }
-                if (onlyDocument != null && doc != onlyDocument) continue;
-                if (dirtyOnly && !doc.Dirty) continue;
-                try
-                {
-                    var plan = doc.Dirty ? await PrepareSynchronization(doc) : null;
-                    if (IsDisposed || closing) return;
-                    if (plan != null && (doc.Text != plan.After || doc.Baseline != plan.Before)) continue;
-                    string captured = doc.Text;
-                    int capturedVersion = versions[doc.Id];
-                    string native = doc.Observe();
-                    try { displayNames[doc.Id] = doc.Module.Name; } catch { /* Preserve the last caption if only metadata is unavailable. */ }
-                    if (synchronize && doc.Dirty && !doc.Conflict && doc.Writable) native = doc.Synchronize(plan);
-                    if (native != null)
+                    if (backgroundBatch != null)
                     {
-                        int applied;
-                        if (int.TryParse(await Script("apply", doc.Id, capturedVersion, native), out applied) && applied > 0)
-                        { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
+                        // Yield between COM reads so a queued user command can take priority.
+                        await Task.Yield();
+                        if (closing || IsDisposed || debugCommands.CurrentCount == 0) break;
+                        if (!documents.ContainsKey(doc.Id)) continue;
                     }
-                    // Native synchronization is not durable document persistence.
-                    // Keep the recovery snapshot until a verified host save completes.
-                    documentSynchronizationErrors.Remove(doc.Id);
+                    if (onlyDocument != null && doc != onlyDocument) continue;
+                    if (dirtyOnly && !doc.Dirty) continue;
+                    try
+                    {
+                        var plan = doc.Dirty ? await PrepareSynchronization(doc) : null;
+                        if (IsDisposed || closing) return;
+                        if (plan != null && (doc.Text != plan.After || doc.Baseline != plan.Before)) continue;
+                        string captured = doc.Text;
+                        int capturedVersion = versions[doc.Id];
+                        string native = doc.Observe();
+                        try { displayNames[doc.Id] = doc.Module.Name; } catch { /* Preserve the last caption if only metadata is unavailable. */ }
+                        if (synchronize && doc.Dirty && !doc.Conflict && doc.Writable) native = doc.Synchronize(plan);
+                        if (native != null)
+                        {
+                            int applied;
+                            if (int.TryParse(await Script("apply", doc.Id, capturedVersion, native), out applied) && applied > 0)
+                            { doc.Acknowledge(native, captured); versions[doc.Id] = Math.Max(versions[doc.Id], applied); }
+                        }
+                        // Native synchronization is not durable document persistence.
+                        // Keep the recovery snapshot until a verified host save completes.
+                        documentSynchronizationErrors.Remove(doc.Id);
+                    }
+                    catch (Exception error)
+                    {
+                        if (documents.TryGetValue(doc.Id, out var open) && ReferenceEquals(open, doc))
+                            documentSynchronizationErrors[doc.Id] = error.Message;
+                        // Keep background diagnostics without overwriting status after an asynchronous tab switch.
+                        LoadLog.Write("Monaco: " + error.GetType().Name);
+                    }
                 }
-                catch (Exception error)
-                {
-                    if (documents.TryGetValue(doc.Id, out var open) && ReferenceEquals(open, doc))
-                        documentSynchronizationErrors[doc.Id] = error.Message;
-                    // Keep background diagnostics without overwriting status after an asynchronous tab switch.
-                    LoadLog.Write("Monaco: " + error.GetType().Name);
-                }
-            }
-            SetStatus();
+                SetStatus();
+            });
         }
 
         /// <summary>Traite les changements après un court délai de repos puis observe le mode de débogage VBE.</summary>
@@ -578,35 +618,41 @@ namespace VBAi
         /// <param name="e">Données de l’événement.</param>
         private async void TimerTick(object sender, EventArgs e)
         {
-            if (busy || closing || debugCommands.CurrentCount == 0) return;
-            await FollowNativeActivation();
-            if (closing || IsDisposed || debugCommands.CurrentCount == 0) return;
-            await ProcessBackgroundDocuments();
-            try { if (!closing && !IsDisposed) await ObserveDebugMode(); } catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
+            await VbeUiTask.RunAsync(async () =>
+            {
+                if (busy || closing || debugCommands.CurrentCount == 0) return;
+                await FollowNativeActivation();
+                if (closing || IsDisposed || debugCommands.CurrentCount == 0) return;
+                await ProcessBackgroundDocuments();
+                try { if (!closing && !IsDisposed) await ObserveDebugMode(); } catch (Exception error) { LoadLog.Write("Monaco debug observation: " + error.Message); }
+            });
         }
 
         /// <summary>Reconciles the active document and at most two background documents per tick.</summary>
         /// <returns>A task completed after the active document and at most two rotating background documents are reconciled.</returns>
-        private async Task ProcessBackgroundDocuments()
+        private Task ProcessBackgroundDocuments()
         {
-            if (busy || !Ready || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
-            busy = true;
-            var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
-            try
+            return VbeUiTask.RunAsync(async () =>
             {
-                await CaptureDocuments();
-                var active = Current;
-                var inactive = documents.Values.Where(doc => doc != active).ToArray();
-                var batch = new List<EditorDocument>();
-                if (active != null) batch.Add(active);
-                for (int i = 0; i < Math.Min(2, inactive.Length); i++)
-                    batch.Add(inactive[(backgroundDocumentCursor + i) % inactive.Length]);
-                if (inactive.Length > 0) backgroundDocumentCursor = (backgroundDocumentCursor + Math.Min(2, inactive.Length)) % inactive.Length;
-                await ProcessCapturedDocumentsCore(DateTime.UtcNow - lastEdit > TimeSpan.FromMilliseconds(600), false,
-                    backgroundBatch: batch.ToArray());
-            }
-            catch (Exception error) { Report(error); }
-            finally { busy = false; Measure("reconcile.background", timing); }
+                if (busy || !Ready || closing || IsDisposed || debugCommands.CurrentCount == 0) return;
+                busy = true;
+                var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
+                try
+                {
+                    await CaptureDocuments();
+                    var active = Current;
+                    var inactive = documents.Values.Where(doc => doc != active).ToArray();
+                    var batch = new List<EditorDocument>();
+                    if (active != null) batch.Add(active);
+                    for (int i = 0; i < Math.Min(2, inactive.Length); i++)
+                        batch.Add(inactive[(backgroundDocumentCursor + i) % inactive.Length]);
+                    if (inactive.Length > 0) backgroundDocumentCursor = (backgroundDocumentCursor + Math.Min(2, inactive.Length)) % inactive.Length;
+                    await ProcessCapturedDocumentsCore(DateTime.UtcNow - lastEdit > TimeSpan.FromMilliseconds(600), false,
+                        backgroundBatch: batch.ToArray());
+                }
+                catch (Exception error) { Report(error); }
+                finally { busy = false; Measure("reconcile.background", timing); }
+            });
         }
 
         /// <summary>Planifie la mise à jour des contrôles de statut après la fin des callbacks WebView2.</summary>
@@ -764,11 +810,13 @@ namespace VBAi
                         try
                         {
                             (doc.Module as EditorVbeModule)?.CloseNativeWindow();
+                            if (ReferenceEquals(lastFollowedNativeModule, doc.Module)) lastFollowedNativeModule = null;
                             var page = tabs.TabPages.Cast<TabPage>().First(t => (string)t.Tag == doc.Id);
                             if (selected == doc.Id) selected = null; tabs.TabPages.Remove(page); page.Dispose();
                             if (tabs.SelectedTab != null) selected = (string)tabs.SelectedTab.Tag;
                             documents.Remove(doc.Id); versions.Remove(doc.Id); reviewed.Remove(doc.Id); recovered.Remove(doc.Id); displayNames.Remove(doc.Id);
                             documentSynchronizationErrors.Remove(doc.Id);
+                            (doc.Module as EditorVbeModule)?.Dispose();
                             SetStatus(); closed.SetResult(true);
                         }
                         catch (Exception error) { closed.SetException(error); }
@@ -903,10 +951,54 @@ namespace VBAi
         /// <summary>Arrête les minuteries et workers, détache le thème, libère WebView2 et ferme les CodePane détenus.</summary>
         private void DisposeRuntime()
         {
-            timer?.Stop(); debugTimer?.Stop(); streamTimer?.Stop(); PreserveDrafts(); synchronizationWorker?.Dispose();
-            foreach (var request in languageRequests.Values.ToArray()) request.Cancel();
-            languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged; Browser?.Dispose(); browserProfile?.Retire();
-            foreach (var doc in documents.Values) (doc.Module as EditorVbeModule)?.CloseNativeWindow();
+            if (runtimeDisposalEntered) return;
+            runtimeDisposalEntered = true;
+            Exception primary = null;
+            try
+            {
+                timer?.Stop(); debugTimer?.Stop(); streamTimer?.Stop(); PreserveDrafts(); synchronizationWorker?.Dispose();
+                foreach (var request in languageRequests.Values.ToArray()) request.Cancel();
+                languageWorker?.Dispose(); UiTheme.Changed -= ThemeChanged;
+                try { Browser?.Dispose(); }
+                catch (InvalidComObjectException)
+                {
+                    // The host can release the controller before its shutdown callback.
+                    // WebView2 clears that controller in its disposal finally; allow the
+                    // remaining managed form cleanup without replaying a native Close.
+                    LoadLog.Write("Editor browser controller already detached during disposal.");
+                }
+                browserProfile?.Retire();
+            }
+            catch (Exception error) { primary = error; }
+            finally
+            {
+                try { DisposeDocumentModules(); }
+                catch (Exception cleanup)
+                {
+                    if (primary != null) throw new AggregateException(primary, cleanup);
+                    throw;
+                }
+            }
+            if (primary != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(primary).Throw();
+        }
+
+
+        /// <summary>Completes every adapter's cleanup even when another native pane or release boundary fails.</summary>
+        private void DisposeDocumentModules()
+        {
+            var failures = new List<Exception>();
+            var visited = new HashSet<EditorVbeModule>();
+            foreach (var document in documents.Values)
+            {
+                if (!(document.Module is EditorVbeModule native) || !visited.Add(native)) continue;
+                try { native.CloseNativeWindow(); }
+                catch (Exception error) { failures.Add(error); }
+                try { native.Dispose(); }
+                catch (Exception error) { failures.Add(error); }
+            }
+            lastFollowedNativeModule = null;
+            if (failures.Count == 1) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failures[0]).Throw();
+            if (failures.Count > 1) throw new AggregateException("Native editor module cleanup failed.", failures);
         }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -11,7 +11,7 @@ using System.Windows.Automation;
 namespace VBAi.Tests.Integration
 {
     /// <summary>One-shot actions on the actual installed assistant under the owned, inactive VBE.</summary>
-    internal sealed class OllamaOfficeUi
+    internal sealed partial class OllamaOfficeUi
     {
         private delegate bool Visitor(IntPtr hwnd, IntPtr state);
         [DllImport("user32.dll")] private static extern bool EnumWindows(Visitor visitor, IntPtr state);
@@ -37,6 +37,7 @@ namespace VBAi.Tests.Integration
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int size);
         private readonly int pid;
         private readonly Action<object> record;
+        private readonly Action requireObserverOwner;
         private readonly int observerThread = Thread.CurrentThread.ManagedThreadId;
         private IntPtr vbe, chat;
         private IntPtr toolContainer, nativeSite;
@@ -49,8 +50,8 @@ namespace VBAi.Tests.Integration
         internal bool SentUnsettled { get; private set; }
         internal bool StopEmitted { get; private set; }
 
-        internal OllamaOfficeUi(int processId, Action<object> record)
-        { pid = processId; this.record = record; }
+        internal OllamaOfficeUi(int processId, Action<object> record, Action requireObserverOwner = null)
+        { pid = processId; this.record = record; this.requireObserverOwner = requireObserverOwner; }
 
         internal void Discover()
         {
@@ -108,8 +109,8 @@ namespace VBAi.Tests.Integration
                         if (!name.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) continue;
                         var title = new StringBuilder(128); GetWindowText(window, title, title.Capacity);
                         bool captionMatches = title.ToString() == "VBAi — Your AI agent for VBA";
-                        var candidate = AutomationElement.FromHandle(window);
-                        string automationId = candidate.Current.AutomationId;
+                        var candidate = OfficeUiSnapshot.Refresh(AutomationElement.FromHandle(window), requireObserverOwner);
+                        string automationId = candidate.Cached.AutomationId;
                         bool knownControl = automationId == "ChatToolWindow" || automationId == "ChatWindow";
                         inventory.Add(new
                         {
@@ -122,7 +123,7 @@ namespace VBAi.Tests.Integration
                             Visible = IsWindowVisible(window),
                             KnownAssistantControl = knownControl,
                             FixedControlId = knownControl ? automationId : null,
-                            Type = candidate.Current.ControlType.ProgrammaticName,
+                            Type = candidate.Cached.ControlType.ProgrammaticName,
                             ControlIdSha256 = EditorDocument.Hash(automationId ?? ""),
                             Root = GetAncestor(window, 2).ToInt64(),
                             Parent = GetAncestor(window, 1).ToInt64()
@@ -130,13 +131,13 @@ namespace VBAi.Tests.Integration
                         // A hosted borderless Form need not expose its caption through cross-process
                         // GetWindowText. The COM container and exact control identities are the proof.
                         if (!IsWindowVisible(window) || (!captionMatches && !knownControl)) continue;
-                        if (candidate.Current.ControlType != ControlType.Window && candidate.Current.ControlType != ControlType.Pane) continue;
+                        if (candidate.Cached.ControlType != ControlType.Window && candidate.Cached.ControlType != ControlType.Pane) continue;
                         var scope = candidate.FindAll(TreeScope.Descendants,
                             new PropertyCondition(AutomationElement.AutomationIdProperty, "scopePicker"));
                         var options = candidate.FindAll(TreeScope.Descendants,
-                            new PropertyCondition(AutomationElement.AutomationIdProperty, "options"));
+                            new PropertyCondition(AutomationElement.AutomationIdProperty, AssistantControlId("options")));
                         var send = candidate.FindAll(TreeScope.Descendants,
-                            new PropertyCondition(AutomationElement.AutomationIdProperty, "send"));
+                            new PropertyCondition(AutomationElement.AutomationIdProperty, AssistantControlId("send")));
                         IntPtr container, site;
                         bool hosted = TryHostedSite(window, out container, out site);
                         inventory.Add(new
@@ -172,7 +173,7 @@ namespace VBAi.Tests.Integration
                         ToolContainer = toolContainer.ToInt64(),
                         NativeSite = nativeSite.ToInt64(),
                         NativeSiteOwnedByVbe = OwnedByVbe(GetAncestor(nativeSite, 2)),
-                        ContainerIdentity = AutomationElement.FromHandle(toolContainer).Current.AutomationId,
+                        ContainerIdentity = OfficeUiSnapshot.Refresh(AutomationElement.FromHandle(toolContainer), requireObserverOwner).Cached.AutomationId,
                         NativeSiteClass = "GenericPane",
                         NativeToolCaptionMatches = true
                     });
@@ -197,17 +198,17 @@ namespace VBAi.Tests.Integration
         {
             Guard();
             var vbeElement = AutomationElement.FromHandle(vbe);
-            var bars = vbeElement.FindAll(TreeScope.Descendants,
+            var bars = OfficeUiSnapshot.FindAll(vbeElement, TreeScope.Descendants,
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuBar));
             if (bars.Count > 16) throw new InvalidOperationException("Bounded native VBE menu inventory.");
             var captions = new List<string>();
             foreach (AutomationElement bar in bars)
             {
-                if (bar.Current.ProcessId != pid) throw new InvalidOperationException("Foreign native VBE menu.");
-                var items = bar.FindAll(TreeScope.Children,
+                if (bar.Cached.ProcessId != pid) throw new InvalidOperationException("Foreign native VBE menu.");
+                var items = OfficeUiSnapshot.FindAll(bar, TreeScope.Children,
                     new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.MenuItem));
                 if (items.Count > 64) throw new InvalidOperationException("Bounded native menu items.");
-                foreach (AutomationElement item in items) captions.Add(item.Current.Name);
+                foreach (AutomationElement item in items) captions.Add(item.Cached.Name);
             }
             if (!captions.Any(caption => UiLanguages.IsMenu(caption, true) || UiLanguages.IsMenu(caption, false)))
                 throw new InvalidOperationException("Native VBE menu language was not observed.");
@@ -238,7 +239,7 @@ namespace VBAi.Tests.Integration
             {
                 uint process; uint thread = GetWindowThreadProcessId(parent, out process);
                 if (process != pid || thread != ownerThread) return false;
-                var element = AutomationElement.FromHandle(parent);
+                var element = OfficeUiSnapshot.Refresh(AutomationElement.FromHandle(parent), requireObserverOwner);
                 var cls = new StringBuilder(128); GetClassName(parent, cls, cls.Capacity);
                 var title = new StringBuilder(128); GetWindowText(parent, title, title.Capacity);
                 if (recordedAncestors.Add(parent)) record(new
@@ -248,13 +249,13 @@ namespace VBAi.Tests.Integration
                     ProcessId = process,
                     NativeThread = thread,
                     Class = cls.ToString(),
-                    AutomationId = element.Current.AutomationId,
-                    Type = element.Current.ControlType.ProgrammaticName,
-                    ContainerNameMatches = element.Current.Name == "ChatToolWindow",
+                    AutomationId = element.Cached.AutomationId,
+                    Type = element.Cached.ControlType.ProgrammaticName,
+                    ContainerNameMatches = element.Cached.Name == "ChatToolWindow",
                     NativeToolCaptionMatches = title.ToString() == "VBAi",
                     Parent = GetAncestor(parent, 1).ToInt64()
                 });
-                if (element.Current.AutomationId != "ChatToolWindow" && element.Current.AutomationId != "ControlAxSourcingSite") continue;
+                if (element.Cached.AutomationId != "ChatToolWindow" && element.Cached.AutomationId != "ControlAxSourcingSite") continue;
                 // VBIDE supplies ControlAxSourcingSite as the ActiveX container's runtime
                 // name. Its immediate native tool pane must still be the exact VBAi site.
                 if (!cls.ToString().StartsWith("WindowsForms", StringComparison.Ordinal)) return false;
@@ -303,6 +304,7 @@ namespace VBAi.Tests.Integration
 
         private void Guard()
         {
+            requireObserverOwner?.Invoke();
             uint process; uint thread = GetWindowThreadProcessId(chat, out process);
             if (process != pid || thread != ownerThread || !IsWindowVisible(chat) ||
                 !OriginalHostedSiteMatches())
@@ -313,47 +315,121 @@ namespace VBAi.Tests.Integration
         /// <summary>Requires the original native control, not a replacement peer with the same automation ID.</summary>
         internal static bool FixedControlIdentityMatches(long originalHandle, long currentHandle, string id,
             string observedId, int expectedPid, uint expectedThread, int uiPid, int nativePid,
-            uint nativeThread, bool child, bool visible)
+            uint nativeThread, bool child, bool visible, bool allowHiddenObservation = false)
             => originalHandle != 0 && originalHandle == currentHandle && id == observedId && expectedPid > 0 &&
                 expectedThread != 0 && uiPid == expectedPid && nativePid == expectedPid &&
-                nativeThread == expectedThread && child && visible;
+                nativeThread == expectedThread && child && (visible || allowHiddenObservation);
 
-        internal AutomationElement Leaf(string id)
+        internal AutomationElement Leaf(string id, bool allowHiddenObservation = false, bool allowInitialAbsentStop = false)
         {
             Guard();
             AutomationElement cached;
             bool bound = fixedControls.TryGetValue(id, out cached);
             if (!bound)
             {
-                var found = root.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.AutomationIdProperty, id));
-                if (found.Count != 1) throw new InvalidOperationException("Expected one owned assistant control: " + id);
-                cached = found[0];
+                cached = FindFixedNativeLeaf(id, allowHiddenObservation, allowInitialAbsentStop);
+                if (cached == null) return null;
             }
-            var current = cached.Current;
+            // Bound peers are refreshed once per inspection; no stale state survives a poll.
+            var snapshot = bound ? OfficeUiSnapshot.Refresh(cached, Guard) : cached;
+            var current = snapshot.Cached;
             var handle = new IntPtr(current.NativeWindowHandle);
             IntPtr original = bound ? fixedHandles[id] : handle;
             string automationId = current.AutomationId;
             int uiPid = current.ProcessId;
             uint process; uint thread = GetWindowThreadProcessId(handle, out process);
             bool child = IsChild(chat, handle), visible = IsWindowVisible(handle);
-            if (!FixedControlIdentityMatches(original.ToInt64(), handle.ToInt64(), id, automationId,
-                pid, ownerThread, uiPid, (int)process, thread, child, visible))
+            if (!FixedControlIdentityMatches(original.ToInt64(), handle.ToInt64(), AssistantControlId(id), automationId,
+                pid, ownerThread, uiPid, (int)process, thread, child, visible, allowHiddenObservation))
             {
                 record(new { Phase = "FixedControlIdentityRefused", Id = id, OriginalHandle = original.ToInt64(),
-                    ObservedHandle = handle.ToInt64(), AutomationIdMatches = automationId == id,
+                    ObservedHandle = handle.ToInt64(), AutomationIdMatches = automationId == AssistantControlId(id),
                     ExpectedPid = pid, UiPid = uiPid, NativePid = process, ExpectedThread = ownerThread,
                     NativeThread = thread, OriginalParentMatches = child, NativeVisible = visible,
                     NativeWindowExists = IsWindow(handle), SentUnsettled, Rebound = false, ActionEmitted = false });
                 throw new InvalidOperationException("Fixed assistant control ownership changed: " + id);
             }
             if (!bound) { fixedControls.Add(id, cached); fixedHandles.Add(id, handle); }
-            return cached;
+            return snapshot;
+        }
+
+        /// <summary>Binds a real WinForms HWND once; the host's unrelated or virtual accessibility tree is not enumerated.</summary>
+        private AutomationElement FindFixedNativeLeaf(string id, bool allowHiddenObservation, bool allowInitialAbsentStop)
+        {
+            Guard();
+            var peers = new Dictionary<long, AutomationElement>();
+            int count = 0;
+            var timer = Stopwatch.StartNew();
+            record(new { Phase = "NativeFixedControlLookupStarted", Id = id, Utc = DateTime.UtcNow.ToString("o") });
+            EnumChildWindows(chat, (window, unused) =>
+            {
+                if (++count > 2048) return false;
+                uint process; uint thread = GetWindowThreadProcessId(window, out process);
+                if (process != pid || thread != ownerThread || (!allowHiddenObservation && !IsWindowVisible(window))) return true;
+                var name = new StringBuilder(128); GetClassName(window, name, name.Capacity);
+                if (!FixedControlClassCanMatch(id, name.ToString())) return true;
+                var element = OfficeUiSnapshot.RefreshIdentity(AutomationElement.FromHandle(window), Guard);
+                var identity = element.Cached;
+                if (identity.AutomationId != AssistantControlId(id)) return true;
+                if (identity.ProcessId != pid || unchecked((uint)identity.NativeWindowHandle) != unchecked((uint)window.ToInt64()))
+                    throw new InvalidOperationException("Native assistant HWND and UIA peer disagree.");
+                peers.Add(window.ToInt64(), element);
+                return true;
+            }, IntPtr.Zero);
+            Guard();
+            if (count > 2048) throw new InvalidOperationException("Native assistant control inventory exceeds its bound.");
+            // WinForms may defer creating a hidden Stop HWND until the first turn.
+            // Once bound, Leaf always validates the retained HWND; it never adopts
+            // a replacement or treats a missing original as idle.
+            if (allowInitialAbsentStop && InitialStopCanBeAbsent(id, peers.Count)) return null;
+            long handle = RequireUniqueFixedWindow(id, peers.Keys.ToArray());
+            var result = OfficeUiSnapshot.Refresh(peers[handle], Guard);
+            record(new { Phase = "NativeFixedControlLookupObserved", Id = id, Handle = handle,
+                ElapsedMilliseconds = timer.ElapsedMilliseconds, NativeWindows = count });
+            return result;
+        }
+
+        /// <summary>Uses native class metadata to avoid unrelated Word UIA providers while retaining every eligible peer.</summary>
+        internal static bool FixedControlClassCanMatch(string id, string nativeClass)
+        {
+            if (nativeClass == null || !nativeClass.StartsWith("WindowsForms", StringComparison.Ordinal)) return false;
+            switch (id)
+            {
+                case "scopePicker":
+                case "providerPicker":
+                case "modelPicker":
+                case "effortPicker":
+                case "modePicker":
+                case "approvalPicker":
+                    return nativeClass.StartsWith("WindowsForms10.COMBOBOX.", StringComparison.OrdinalIgnoreCase);
+                case "modelSummary":
+                case "send":
+                case "stop":
+                case "refreshModels":
+                    return nativeClass.StartsWith("WindowsForms10.BUTTON.", StringComparison.OrdinalIgnoreCase);
+                case "promptHost":
+                case "transcriptPanel":
+                    // UserControl and Panel use the WinForms Window class. Neither
+                    // can be an edit, combo or button peer; inspect every eligible
+                    // panel and still require one exact AutomationId/owned HWND.
+                    return nativeClass.StartsWith("WindowsForms10.Window.", StringComparison.OrdinalIgnoreCase);
+                default:
+                    return true;
+            }
+        }
+
+        /// <summary>Refuses absent, duplicate or handle-free controls before any action can use a peer.</summary>
+        internal static long RequireUniqueFixedWindow(string id, long[] handles)
+        {
+            if (string.IsNullOrEmpty(id) || handles == null || handles.Length != 1 || handles[0] == 0)
+                throw new InvalidOperationException("Expected one original native assistant control: " + id);
+            return handles[0];
         }
 
         internal void BindTranscript()
         {
             if (SentUnsettled) throw new InvalidOperationException("Bind the fixed transcript before sending.");
-            transcriptPanel = new IntPtr(Leaf("transcriptPanel").Current.NativeWindowHandle);
+            transcriptPanel = new IntPtr(Leaf("transcriptPanel").Cached.NativeWindowHandle);
             if (!IsChild(chat, transcriptPanel)) throw new InvalidOperationException("Transcript is outside the owned chat.");
             record(new { Phase = "NativeTranscriptBound", ProcessId = pid, Panel = transcriptPanel.ToInt64(), NativeThread = ownerThread });
         }
@@ -361,60 +437,61 @@ namespace VBAi.Tests.Integration
         internal void Click(string id)
         {
             var button = Leaf(id);
-            IntPtr target = new IntPtr(button.Current.NativeWindowHandle);
+            IntPtr target = new IntPtr(button.Cached.NativeWindowHandle);
             uint nativePid; uint nativeThread = GetWindowThreadProcessId(target, out nativePid);
             record(new
             {
                 Phase = "ButtonPreflight",
                 Id = id,
-                AutomationId = button.Current.AutomationId,
-                Name = button.Current.Name,
-                UiProcessId = button.Current.ProcessId,
+                AutomationId = button.Cached.AutomationId,
+                Name = button.Cached.Name,
+                UiProcessId = button.Cached.ProcessId,
                 NativeProcessId = nativePid,
                 NativeThread = nativeThread,
                 ExpectedNativeThread = ownerThread,
                 Handle = target.ToInt64(),
-                UiEnabled = button.Current.IsEnabled,
-                UiOffscreen = button.Current.IsOffscreen,
+                UiEnabled = button.Cached.IsEnabled,
+                UiOffscreen = button.Cached.IsOffscreen,
                 NativeVisible = IsWindowVisible(target),
                 NativeEnabled = IsWindowEnabled(target),
                 OriginalParentMatches = IsChild(chat, target)
             });
-            record(new { Phase = "ButtonIntentOnce", Id = id, Name = button.Current.Name });
-            PrivateDesktopUiAction.ClickButtonOnce(button, id, button.Current.Name, chat,
-                new IntPtr(button.Current.NativeWindowHandle), pid, ownerThread);
+            record(new { Phase = "ButtonIntentOnce", Id = id, Name = button.Cached.Name });
+            PrivateDesktopUiAction.ClickButtonOnce(button, AssistantControlId(id), button.Cached.Name, chat,
+                new IntPtr(button.Cached.NativeWindowHandle), pid, ownerThread, requireObserverOwner);
         }
 
         internal void Select(string id, string expected)
         {
             var combo = Leaf(id);
-            Wait(() => Leaf(id).Current.IsEnabled, 30, "enabled " + id);
+            Wait(() => Leaf(id).Cached.IsEnabled, 30, "enabled " + id);
             if (SelectedValue(combo) == expected) return;
-            var comboHandle = new IntPtr(combo.Current.NativeWindowHandle);
+            var comboHandle = new IntPtr(combo.Cached.NativeWindowHandle);
             Wait(() => ExactChoicePresent(id, expected), 30, "exact native choice ready " + id);
-            var expand = (ExpandCollapsePattern)combo.GetCurrentPattern(ExpandCollapsePattern.Pattern);
-            record(new { Phase = "ComboExpandIntentOnce", Id = id }); expand.Expand();
-            string desktop = OllamaOfficeDesktop.MainEnabled ? "Default" : Environment.GetEnvironmentVariable("VBAi_TEST_DESKTOP_NAME");
-            var choice = VBAi.Desktop.Helper.NativeComboListDiscovery.RequireExactItem(comboHandle, expected,
-                pid, ownerThread, desktop, thread =>
-                {
-                    if (thread != ownerThread) throw new InvalidOperationException("Foreign combo/list thread.");
-                    // Desktop identity comes from the exact owned window inventory. Querying
-                    // GetThreadDesktop for a foreign process is not a reliable proof here.
-                    Guard(); OllamaOfficeDesktop.RequireWindow(desktop, (uint)pid, true, comboHandle);
-                    return desktop;
-                }, record);
-            Guard();
-            record(new { Phase = "ComboSelectionIntentOnce", Id = id, Value = expected });
-            ((SelectionItemPattern)choice.GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
+            OfficeNativeComboSelect.Select(comboHandle, chat, pid, ownerThread, expected, Guard,
+                phase => record(new { Phase = phase, Id = id, Value = expected }));
             Wait(() => SelectedValue(Leaf(id)) == expected,
                 10, "read back " + id);
+        }
+
+        /// <summary>Focuses the exact owned selector before its single expansion and rechecks ownership between the actions.</summary>
+        /// <remarks>A failed or uncertain focus or expansion is never replayed. This uses the control's accessibility provider without keyboard or mouse synthesis.</remarks>
+        internal static void ExpandOwnedComboOnce(Action requireOwner, Action focus, Action expand, Action<string> recordIntent)
+        {
+            if (requireOwner == null || focus == null || expand == null || recordIntent == null)
+                throw new ArgumentNullException(nameof(requireOwner));
+            requireOwner();
+            recordIntent("ComboFocusIntentOnce");
+            focus();
+            requireOwner();
+            recordIntent("ComboExpandIntentOnce");
+            expand();
         }
 
         private bool ExactChoicePresent(string id, string expected)
         {
             var combo = Leaf(id);
-            var hwnd = new IntPtr(combo.Current.NativeWindowHandle);
+            var hwnd = new IntPtr(combo.Cached.NativeWindowHandle);
             uint process; uint thread = GetWindowThreadProcessId(hwnd, out process);
             if (!IsChild(chat, hwnd) || process != pid || thread != ownerThread || expected.Length > 2048)
                 throw new InvalidOperationException("Exact owned combo identity changed.");
@@ -430,17 +507,11 @@ namespace VBAi.Tests.Integration
 
         private string SelectedValue(AutomationElement combo)
         {
-            object pattern;
-            if (combo.TryGetCurrentPattern(SelectionPattern.Pattern, out pattern))
-            {
-                var selected = ((SelectionPattern)pattern).Current.GetSelection();
-                if (selected.Length == 0) return "";
-                if (selected.Length != 1 || selected[0].Current.ProcessId != pid)
-                    throw new InvalidOperationException("Ambiguous or foreign selected combo item.");
-                return selected[0].Current.Name;
-            }
-            if (combo.TryGetCurrentPattern(ValuePattern.Pattern, out pattern)) return ((ValuePattern)pattern).Current.Value;
-            throw new InvalidOperationException("Combo exposes neither exact selection nor value readback.");
+            // UIA SelectionPattern can stall on Word's hosted accessibility tree.
+            // The same original HWND exposes its actual displayed selection through
+            // bounded native read-only messages. Selection actions remain one-shot.
+            return OfficeNativeComboRead.Read(new IntPtr(combo.Cached.NativeWindowHandle), chat,
+                pid, ownerThread, Guard);
         }
 
         internal void RequireScope(string expectedLabel)
@@ -453,48 +524,104 @@ namespace VBAi.Tests.Integration
         private AutomationElement Composer()
         {
             Guard();
-            var fields = root.FindAll(TreeScope.Descendants, new AndCondition(
+            // Search only the fixed composer host; completed transcript rows must
+            // not make later composer reads traverse the whole WPF conversation.
+            var fields = OfficeUiSnapshot.FindAll(Leaf("promptHost"), TreeScope.Descendants, new AndCondition(
                 new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Edit),
-                new PropertyCondition(AutomationElement.NameProperty, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"))));
-            if (fields.Count != 1 || fields[0].Current.ProcessId != pid) throw new InvalidOperationException("Exact owned composer not found.");
+                new PropertyCondition(AutomationElement.NameProperty, UiText.Get("Your request; Enter to send, Shift+Enter for a new line"))), Guard);
+            if (fields.Count != 1 || fields[0].Cached.ProcessId != pid) throw new InvalidOperationException("Exact owned composer not found.");
             return fields[0];
         }
 
         internal void SendOnce(string prompt)
         {
             if (SentUnsettled) throw new InvalidOperationException("Prior assistant turn has no observed terminal UI.");
-            var value = (ValuePattern)Composer().GetCurrentPattern(ValuePattern.Pattern);
-            if (value.Current.Value != "") throw new InvalidOperationException("Composer is not empty; no overwrite.");
-            Exception writeError = null;
-            record(new { Phase = "ComposerSetIntentOnce", PromptSha256 = EditorDocument.Hash(prompt) });
-            try { value.SetValue(prompt); } catch (Exception error) { writeError = error; }
-            if (((ValuePattern)Composer().GetCurrentPattern(ValuePattern.Pattern)).Current.Value != prompt)
-                throw new InvalidOperationException("Composer independent readback differs; no SetValue replay.", writeError);
-            record(new { Phase = "ComposerExactReadback", ApiErrorAfterApplication = writeError != null });
-            Wait(() => !IsBusy && Leaf("send").Current.IsEnabled && !Leaf("send").Current.IsOffscreen &&
-                IsWindowEnabled(new IntPtr(Leaf("send").Current.NativeWindowHandle)),
+            var originalComposer = Composer();
+            var originalRuntimeId = originalComposer.GetRuntimeId();
+            var value = (ValuePattern)originalComposer.GetCurrentPattern(ValuePattern.Pattern);
+            Func<string> readOriginal = () =>
+            {
+                var observed = Composer();
+                if (!originalRuntimeId.SequenceEqual(observed.GetRuntimeId()))
+                    throw new InvalidOperationException("Original composer identity changed; no replacement is adopted.");
+                return ((ValuePattern)observed.GetCurrentPattern(ValuePattern.Pattern)).Current.Value;
+            };
+            WriteComposerOnce(prompt, Guard, readOriginal, value.SetValue, record);
+            Wait(() => SendReady(),
                 30, "ready original send button after composer update");
-            if (((ValuePattern)Composer().GetCurrentPattern(ValuePattern.Pattern)).Current.Value != prompt)
+            if (OfficeUiSnapshot.ReadOnce(Guard, readOriginal) != prompt)
                 throw new InvalidOperationException("Composer changed while waiting for readiness; no overwrite or send.");
             StopEmitted = false; SentUnsettled = true; Click("send");
             Wait(() => IsBusy, 10, "observe active turn");
         }
 
-        internal bool IsBusy => Leaf("send").Current.Name == UiText.Get("Stop ■");
+        /// <summary>Writes once and independently verifies the original editor; diagnostics never contain composer text.</summary>
+        internal static void WriteComposerOnce(string prompt, Action requireOwner, Func<string> read,
+            Action<string> write, Action<object> record)
+        {
+            if (prompt == null || requireOwner == null || read == null || write == null || record == null)
+                throw new ArgumentNullException(nameof(prompt));
+            if (OfficeUiSnapshot.ReadOnce(requireOwner, read) != "")
+                throw new InvalidOperationException("Composer is not empty; no overwrite.");
+            requireOwner();
+            record(new { Phase = "ComposerSetIntentOnce", PromptSha256 = EditorDocument.Hash(prompt), PromptLength = prompt.Length });
+            requireOwner();
+            Exception writeError = null;
+            var timer = Stopwatch.StartNew();
+            try { write(prompt); } catch (Exception error) { writeError = error; }
+            long writeElapsed = timer.ElapsedMilliseconds;
+            string observed;
+            try { observed = OfficeUiSnapshot.ReadOnce(requireOwner, read); }
+            catch (Exception error)
+            {
+                record(new { Phase = "ComposerReadbackFailed", ErrorType = error.GetType().FullName,
+                    ErrorHResult = error.HResult, WriteErrorType = writeError?.GetType().FullName,
+                    WriteErrorHResult = writeError?.HResult, WriteElapsedMilliseconds = writeElapsed });
+                throw;
+            }
+            bool exact = string.Equals(prompt, observed, StringComparison.Ordinal);
+            record(new { Phase = "ComposerIndependentReadback", Exact = exact, PromptLength = prompt.Length,
+                ObservedLength = observed?.Length, ObservedIsNull = observed == null,
+                PromptSha256 = EditorDocument.Hash(prompt), ObservedSha256 = observed == null ? null : EditorDocument.Hash(observed),
+                WriteErrorType = writeError?.GetType().FullName, WriteErrorHResult = writeError?.HResult,
+                WriteElapsedMilliseconds = writeElapsed, ReadElapsedMilliseconds = timer.ElapsedMilliseconds - writeElapsed });
+            if (!exact)
+                throw new InvalidOperationException("Composer independent readback differs; no SetValue replay.", writeError);
+            record(new { Phase = "ComposerExactReadback", ApiErrorAfterApplication = writeError != null });
+        }
+
+        private AssistantActionState ReadActionState(bool includeSelectors)
+        {
+            var send = Leaf("send", true).Cached;
+            var stop = Leaf("stop", true, true);
+            return new AssistantActionState
+            {
+                SendVisible = IsWindowVisible(new IntPtr(send.NativeWindowHandle)) && !send.IsOffscreen,
+                SendEnabled = send.IsEnabled && IsWindowEnabled(new IntPtr(send.NativeWindowHandle)),
+                StopVisible = stop != null && IsWindowVisible(new IntPtr(stop.Cached.NativeWindowHandle)),
+                ProviderEnabled = !includeSelectors || Leaf("providerPicker").Cached.IsEnabled,
+                ModeEnabled = !includeSelectors || Leaf("modePicker").Cached.IsEnabled
+            };
+        }
+
+        private bool SendReady() => CanSend(ReadActionState(false));
+
+        internal bool IsBusy => ReadActionState(false).StopVisible;
         internal void StopOnce()
         {
             if (StopEmitted || !IsBusy) throw new InvalidOperationException("No first Stop is available; do not replay an action.");
-            StopEmitted = true; Click("send");
+            StopEmitted = true; Click("stop");
         }
         internal bool ObserveAlreadyIdle()
         {
-            if (IsBusy || !Leaf("providerPicker").Current.IsEnabled || !Leaf("modePicker").Current.IsEnabled) return false;
+            if (!TerminalReady()) return false;
             SentUnsettled = false; return true;
         }
+        private bool TerminalReady() => CanFinish(ReadActionState(true));
+
         internal void WaitIdle(int seconds)
         {
-            Wait(() => !IsBusy && Leaf("send").Current.IsEnabled && Leaf("providerPicker").Current.IsEnabled &&
-                Leaf("modePicker").Current.IsEnabled, seconds, "observe terminal assistant UI");
+            Wait(TerminalReady, seconds, "observe terminal assistant UI");
             SentUnsettled = false;
         }
 
@@ -555,8 +682,8 @@ namespace VBAi.Tests.Integration
             {
                 if (!IsWindow(handle)) continue; // A recycled child may disappear between observations.
                 uint childPid; uint childThread = GetWindowThreadProcessId(handle, out childPid);
-                if (childPid != processId || childThread != nativeThread || !IsChild(panel, handle))
-                    throw new InvalidOperationException("Foreign native transcript child.");
+                if (!TranscriptChildCanBeObserved(processId, nativeThread, (int)childPid, childThread, IsChild(panel, handle)))
+                    continue;
                 Rect bounds;
                 if (!IsWindowVisible(handle) || (GetWindowLongPtr(handle, -16).ToInt64() & 0x800) == 0 ||
                     !GetWindowRect(handle, out bounds) || Math.Min(bounds.Right, viewport.Right) <= Math.Max(bounds.Left, viewport.Left) ||
@@ -565,8 +692,9 @@ namespace VBAi.Tests.Integration
                 if (SendMessageTimeout(handle, 0x000E, IntPtr.Zero, null, 3, 1000, out length) == IntPtr.Zero)
                 {
                     int error = Marshal.GetLastWin32Error();
-                    if (!IsWindow(handle)) continue;
-                    throw new InvalidOperationException("Bounded native transcript length read failed on a live child (Win32 " + error + ").");
+                    childThread = GetWindowThreadProcessId(handle, out childPid);
+                    RequireDeferredTranscriptRead(error, processId, nativeThread, (int)childPid, childThread, IsChild(panel, handle), "length");
+                    return new string[0]; // No partial inventory may satisfy an oracle.
                 }
                 if (length.ToInt64() < 0 || length.ToInt64() > 65536) throw new InvalidOperationException("Bounded native transcript text.");
                 // Leave room for a fragment appended between the two independent reads.
@@ -574,25 +702,72 @@ namespace VBAi.Tests.Integration
                 if (ReadTextTimeout(handle, 0x000D, new IntPtr(text.Capacity), text, 3, 1000, out copied) == IntPtr.Zero)
                 {
                     int error = Marshal.GetLastWin32Error();
-                    if (!IsWindow(handle)) continue;
-                    throw new InvalidOperationException("Bounded native transcript text read failed on a live child (Win32 " + error + ").");
+                    childThread = GetWindowThreadProcessId(handle, out childPid);
+                    RequireDeferredTranscriptRead(error, processId, nativeThread, (int)childPid, childThread, IsChild(panel, handle), "text");
+                    return new string[0];
                 }
                 if (copied.ToInt64() < 0 || copied.ToInt64() > 65536) throw new InvalidOperationException("Invalid native transcript length.");
                 if (!IsWindow(handle)) continue;
-                if (GetWindowThreadProcessId(handle, out childPid) != nativeThread || childPid != processId || !IsChild(panel, handle))
-                    throw new InvalidOperationException("Native transcript child changed during read.");
+                childThread = GetWindowThreadProcessId(handle, out childPid);
+                if (!TranscriptChildCanBeObserved(processId, nativeThread, (int)childPid, childThread, IsChild(panel, handle)))
+                    continue;
+                // Streaming and disclosure changes recycle transcript children. A
+                // missing or reparented row supplies no oracle text; a later bounded
+                // observation may read the newly rendered row. Never admit foreign
+                // ownership or a reused HWND whose role is no longer read-only text.
+                var currentClass = new StringBuilder(128); GetClassName(handle, currentClass, currentClass.Capacity);
+                if (currentClass.ToString().IndexOf("RichEdit", StringComparison.OrdinalIgnoreCase) < 0 ||
+                    !IsWindowVisible(handle) || (GetWindowLongPtr(handle, -16).ToInt64() & 0x800) == 0) continue;
                 if (text.Length > 0) texts.Add(text.ToString());
             }
             return texts.ToArray();
         }
 
+        /// <summary>Allows an unavailable read-only snapshot within the original oracle deadline; rejects foreign ownership and other native errors.</summary>
+        internal static void RequireDeferredTranscriptRead(int error, int expectedPid, uint expectedThread,
+            int actualPid, uint actualThread, bool stillChild, string phase)
+        {
+            if (!TranscriptChildCanBeObserved(expectedPid, expectedThread, actualPid, actualThread, stillChild)) return;
+            if (error == 1460) return; // ERROR_TIMEOUT: the complete observation supplies no text and cannot pass.
+            throw new InvalidOperationException("Bounded native transcript " + phase + " read failed on a live child (Win32 " + error + ").");
+        }
+
+        /// <summary>Discard recycled or detached read-only rows, while preserving strict foreign-owner rejection.</summary>
+        internal static bool TranscriptChildCanBeObserved(int expectedPid, uint expectedThread,
+            int actualPid, uint actualThread, bool stillChild)
+        {
+            if (expectedPid <= 0 || expectedThread == 0)
+                throw new InvalidOperationException("Original transcript ownership is required.");
+            if (actualPid == 0 && actualThread == 0) return false;
+            if (actualPid != expectedPid || actualThread != expectedThread)
+                throw new InvalidOperationException("Foreign native transcript child.");
+            return stillChild;
+        }
+
         internal void Wait(Func<bool> condition, int seconds, string stage)
         {
             var watch = Stopwatch.StartNew();
-            bool observed;
-            while (!(observed = condition()) && watch.Elapsed.TotalSeconds < seconds) Thread.Sleep(40);
-            if (!observed) throw new TimeoutException("Q028: " + stage + "; no action will be replayed.");
+            ObserveWithinDeadline(condition, checked(seconds * 1000L), () => watch.ElapsedMilliseconds, Thread.Sleep, stage);
             record(new { Phase = "Observed", Stage = stage, ElapsedMilliseconds = watch.ElapsedMilliseconds });
+        }
+
+        /// <summary>Rejects a late successful synchronous read; a blocked UIA call cannot silently enlarge its acceptance window.</summary>
+        internal static void ObserveWithinDeadline(Func<bool> condition, long limitMilliseconds,
+            Func<long> elapsed, Action<int> pause, string stage)
+        {
+            if (condition == null || elapsed == null || pause == null) throw new ArgumentNullException(nameof(condition));
+            if (limitMilliseconds <= 0) throw new ArgumentOutOfRangeException(nameof(limitMilliseconds));
+            while (true)
+            {
+                if (elapsed() > limitMilliseconds) break;
+                bool observed = condition();
+                long after = elapsed();
+                if (after > limitMilliseconds) break;
+                if (observed) return;
+                if (after >= limitMilliseconds) break;
+                pause((int)Math.Min(40, limitMilliseconds - after));
+            }
+            throw new TimeoutException("Q028: " + stage + "; no action will be replayed.");
         }
     }
 }

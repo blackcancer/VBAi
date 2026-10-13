@@ -81,7 +81,7 @@ namespace VBAi.Tests.Unit
             Assert.ThrowsException<InvalidOperationException>(() => EditorDocument.Validate("a\0b"));
             Assert.ThrowsException<InvalidOperationException>(() => EditorDocument.Validate(new string('a', EditorDocument.MaxLength + 1)));
         }
-        [TestMethod]
+        [STATestMethod]
         public void CleanEquivalentAndStalePlannedDraftsKeepTheirExactNativeRevision()
         {
             using (var host = new EditorFixture())

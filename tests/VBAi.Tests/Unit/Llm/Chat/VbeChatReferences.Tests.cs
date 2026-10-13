@@ -10,6 +10,22 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class VbeChatReferenceTests
     {
+        /// <summary>Every scalar field survives capture; mutations of discovery objects cannot change the snapshot.</summary>
+        [TestMethod]
+        public void ReferenceSnapshotPreservesAllCapturedScalarFieldsWithoutSharingMutableIdentity()
+        {
+            var original = new VbeChatReference { Project = "P", Module = "M", Name = "Value", Kind = "Property", ProcKind = 3,
+                DeclarationScope = "Member", DeclarationColumn = 9, StartLine = 17, EndLine = 23, Sha256 = "old" };
+            var snapshot = original.CaptureSnapshot();
+            var json = new System.Web.Script.Serialization.JavaScriptSerializer();
+            Assert.AreNotSame(original, snapshot); Assert.AreEqual(json.Serialize(original), json.Serialize(snapshot));
+            string token = snapshot.Token;
+            original.Project = "Changed"; original.Module = "Other"; original.Name = "Different"; original.Kind = "Sub";
+            original.ProcKind = 0; original.StartLine = 99; original.EndLine = 100; original.DeclarationColumn = 1; original.Sha256 = "new";
+            Assert.AreEqual(token, snapshot.Token); Assert.AreEqual("old", snapshot.Sha256);
+            Assert.AreEqual(17, snapshot.StartLine); Assert.AreEqual(23, snapshot.EndLine); Assert.AreEqual(9, snapshot.DeclarationColumn);
+        }
+
         [TestMethod]
         public void LiveContextNamesHostAndRealAnsiCodePageWithoutAssumingExcel()
         {
@@ -65,13 +81,12 @@ namespace VBAi.Tests.Unit
                 Kind = "Projet"
             };
             StringAssert.Contains(references.Resolve(project), "Module1");
-            var module = new VbeChatReference
-            {
-                Project = "VBAProject",
-                Module = "Module1",
-                Kind = "Module"
-            };
+            references.Refresh();
+            while (references.IsLoading) references.Step();
+            var module = references.CaptureSelection(references.Entries.Single(item => item.Module == "Module1" && item.Name == null));
+            string selectedSha = module.Sha256;
             string resolved = references.Resolve(module);
+            Assert.AreEqual(selectedSha, module.Sha256, "Resolution must preserve the selected revision.");
             StringAssert.Contains(resolved, "Sub Example()");
             Assert.IsFalse(string.IsNullOrWhiteSpace(module.Sha256));
             var procedure = new VbeChatReference
@@ -177,7 +192,11 @@ namespace VBAi.Tests.Unit
             item.Sha256 = "FRESH"; item.StartLine = -1; item.EndLine = 99;
             StringAssert.Contains(references.Resolve(item), "line1\nline2");
             references.Execute = request => Response.Success(new { MissingCode = true }); item.Name = null;
-            StringAssert.Contains(references.Resolve(item), "SHA-256");
+            Assert.ThrowsException<InvalidOperationException>(() => references.Resolve(item));
+            Assert.AreEqual("FRESH", item.Sha256, "A missing live revision must not overwrite the selected one.");
+            references.Execute = request => Response.Success(new { Code = "", Sha256 = "fresh" });
+            StringAssert.Contains(references.Resolve(item), "SHA-256 fresh");
+            Assert.AreEqual("FRESH", item.Sha256);
         }
 
         [TestMethod]
@@ -234,6 +253,127 @@ namespace VBAi.Tests.Unit
                 if (fail) StringAssert.Contains(references.Error, "source unavailable");
                 else { var declaration = references.Entries.Single(x => x.Name == "moduleValue"); Assert.IsNull(declaration.DeclarationScope); Assert.AreEqual("version", declaration.Sha256); }
             }
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using System;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    /// <summary>Requires the selected source revision for both modules and procedures.</summary>
+    [TestClass, TestCategory("Unit")]
+    public sealed class VbeChatReferenceRevisionTests
+    {
+        /// <summary>Pins only an unpinned whole module and detaches selection metadata from ongoing discovery.</summary>
+        [DataTestMethod]
+        [DataRow("project", null, null, false, true, 0)]
+        [DataRow("module", "old", "new", false, true, 0)]
+        [DataRow("module", null, "fresh", false, true, 1)]
+        [DataRow("module", "", "fresh", false, true, 1)]
+        [DataRow("module", " ", "fresh", false, true, 1)]
+        [DataRow("module", null, null, false, false, 1)]
+        [DataRow("module", null, " ", false, false, 1)]
+        [DataRow("module", null, "fresh", true, false, 1)]
+        [DataRow("procedure", null, "fresh", false, false, 0)]
+        [DataRow("procedure", "old", "new", false, true, 0)]
+        public void SelectionPinsLoadingModulesWithoutReplacingKnownRevisions(
+            string kind, string selectedRevision, string liveRevision, bool readFailure, bool accepted, int expectedReads)
+        {
+            int reads = 0;
+            var original = new VbeChatReference
+            {
+                Project = "P", Module = kind == "project" ? null : "M",
+                Name = kind == "procedure" ? "Value" : null,
+                Sha256 = selectedRevision, Kind = kind, StartLine = 2, EndLine = 3
+            };
+            var references = new VbeChatReferences(null);
+            references.Execute = request =>
+            {
+                reads++; Assert.AreEqual("read_module", request.Command);
+                Assert.AreEqual("P", request.Project); Assert.AreEqual("M", request.Module);
+                original.Project = "discovery update"; original.Sha256 = "discovery update";
+                return readFailure ? Response.Failure("read refused") : Response.Success(new { Code = "private source", Sha256 = liveRevision });
+            };
+            if (accepted)
+            {
+                var snapshot = references.CaptureSelection(original);
+                Assert.AreNotSame(original, snapshot);
+                Assert.AreEqual("P", snapshot.Project);
+                Assert.AreEqual(kind == "project" ? null : "M", snapshot.Module);
+                Assert.AreEqual(expectedReads == 0 ? selectedRevision : liveRevision, snapshot.Sha256);
+                Assert.AreEqual(2, snapshot.StartLine); Assert.AreEqual(3, snapshot.EndLine);
+                original.Project = "changed later"; original.Sha256 = "changed later";
+                Assert.AreEqual("P", snapshot.Project);
+                Assert.AreEqual(expectedReads == 0 ? selectedRevision : liveRevision, snapshot.Sha256);
+            }
+            else
+            {
+                var error = Assert.ThrowsException<InvalidOperationException>(() => references.CaptureSelection(original));
+                Assert.IsFalse(error.Message.Contains("private source"));
+            }
+            Assert.AreEqual(expectedReads, reads);
+            Assert.ThrowsException<ArgumentNullException>(() => references.CaptureSelection(null));
+        }
+
+        [DataTestMethod]
+        [DataRow(false, "hash", "hash", true)]
+        [DataRow(true, "hash", "HASH", true)]
+        [DataRow(false, "old", "new", false)]
+        [DataRow(true, "old", "new", false)]
+        [DataRow(false, null, "hash", false)]
+        [DataRow(false, "", "hash", false)]
+        [DataRow(true, null, "hash", false)]
+        [DataRow(true, "", "hash", false)]
+        [DataRow(false, "hash", null, false)]
+        [DataRow(false, "hash", "", false)]
+        [DataRow(true, "hash", null, false)]
+        [DataRow(true, "hash", "", false)]
+        [DataRow(false, null, null, false)]
+        [DataRow(true, null, null, false)]
+        [DataRow(false, "hash", "HASH", true)]
+        [DataRow(true, "hash", "hash", true)]
+        public void ResolutionPreservesSelectionAndRejectsStaleOrMissingRevisions(
+            bool procedure, string selectedHash, string liveHash, bool accepted)
+        {
+            int reads = 0;
+            var references = new VbeChatReferences(null);
+            references.Execute = request =>
+            {
+                reads++;
+                Assert.AreEqual("read_module", request.Command);
+                Assert.AreEqual("P", request.Project);
+                Assert.AreEqual("M", request.Module);
+                return Response.Success(new { Code = "first\r\nsecond\r\nthird", Sha256 = liveHash });
+            };
+            var item = new VbeChatReference
+            {
+                Project = "P", Module = "M", Name = procedure ? "Value" : null,
+                Kind = procedure ? "Sub" : "Module", StartLine = 2, EndLine = 2,
+                Sha256 = selectedHash
+            };
+            if (accepted)
+            {
+                string resolved = references.Resolve(item);
+                StringAssert.Contains(resolved, "second");
+                if (procedure)
+                {
+                    Assert.IsFalse(resolved.Contains("first"));
+                    Assert.IsFalse(resolved.Contains("third"));
+                }
+                else StringAssert.Contains(resolved, "first\r\nsecond\r\nthird");
+            }
+            else
+            {
+                var error = Assert.ThrowsException<InvalidOperationException>(() => references.Resolve(item));
+                StringAssert.Contains(error.Message, item.Token);
+                Assert.IsFalse(error.Message.Contains("first\r\nsecond\r\nthird"));
+            }
+            Assert.AreEqual(1, reads);
+            Assert.AreEqual(selectedHash, item.Sha256);
+            Assert.AreEqual(2, item.StartLine);
+            Assert.AreEqual(2, item.EndLine);
         }
     }
 }

@@ -49,6 +49,7 @@
   <ItemGroup>
     <AssemblyAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute"><_Parameter1>$(ProductVersion)</_Parameter1></AssemblyAttribute>
     <ProjectReference Include="../VBAi.Updater/VBAi.Updater.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../Blackcancer.ChatUI/Blackcancer.ChatUI.csproj" />
   </ItemGroup>
   <Target Name="WriteProductVersion" BeforeTargets="CoreCompile">
     <WriteCodeFragment Language="C#" OutputFile="$(IntermediateOutputPath)VbaProductVersion.g.cs" AssemblyAttributes="@(AssemblyAttribute)" />

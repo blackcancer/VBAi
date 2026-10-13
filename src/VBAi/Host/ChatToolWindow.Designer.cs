@@ -19,6 +19,7 @@ namespace VBAi
             this.SuspendLayout();
             this.siteResizeTimer.Interval = 300;
             this.siteResizeTimer.Tick += new System.EventHandler(this.SiteResizeTimer_Tick);
+            this.BackColor = System.Drawing.SystemColors.Control;
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Font = new System.Drawing.Font("Segoe UI", 9F);

@@ -58,7 +58,7 @@ namespace VBAi
             {
                 Text = prompt.Text.Trim(),
                 References = CurrentReferences(prompt.Text),
-                Attachments = draftAttachments.ToArray(),
+                Attachments = draftAttachments.Select(item => item.CaptureSnapshot()).ToArray(),
                 Memory = attachMemory.Checked ? queuedDraftMemory ?? projectMemory : null
             });
             queuedDraftMemory = null; prompt.Clear(); selectedReferences.Clear(); draftAttachments.Clear(); attachMemory.Checked = false;
@@ -84,7 +84,7 @@ namespace VBAi
                     row.Width = Math.Max(200, pendingMessagesPanel.ClientSize.Width - 24);
                     pendingMessagesPanel.Controls.Add(row);
                 }
-                pendingMessagesPanel.Visible = pendingMessagesPanel.Controls.Count > 0;
+                workspace.SetExtensionVisible(pendingMessagesPanel, pendingMessagesPanel.Controls.Count > 0);
             }
             finally { pendingMessagesPanel.ResumeLayout(true); }
         }

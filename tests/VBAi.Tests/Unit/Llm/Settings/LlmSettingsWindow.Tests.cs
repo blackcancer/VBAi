@@ -8,7 +8,6 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class HostSettingsCoverageTests
     {
-        [TestMethod]
         [STATestMethod]
         public void SettingsKeepSeparateDraftsWhenSwitchingProviders()
         {
@@ -308,7 +307,6 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class HostSettingsWindowTests
     {
-        [TestMethod]
         [STATestMethod]
         public void SettingsKeepsSeparateEndpointAndKeyDraftsWhenProviderChanges()
         {
@@ -356,7 +354,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void ProviderRowsAndUnsavedManualModelDraftsFollowTheCurrentProvider()
         {

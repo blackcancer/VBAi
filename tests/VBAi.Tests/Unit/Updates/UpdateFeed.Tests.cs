@@ -12,7 +12,7 @@ using System.Web.Script.Serialization;
 using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class UpdateFeedTests
     {
         internal sealed class Handler : HttpMessageHandler

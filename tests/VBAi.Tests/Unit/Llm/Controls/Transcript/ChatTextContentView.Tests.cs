@@ -123,37 +123,46 @@ namespace VBAi.Tests.Unit
                 finally { ChatMarkdown.CopyText = copy; }
             }
         }
+        /// <summary>Markdown uses the visible shared blocks; the retained plain activity surface is untouched.</summary>
         [STATestMethod]
         public void MarkdownDefersHeightChangesUntilAllStyledRunsAreRendered()
         {
-            using (var view = new ChatTextContentView())
+            using (var host = new MarkdownTestHost())
+            using (var view = new ChatTextContentView { Dock = DockStyle.Top })
             {
-                view.Width = 400;
-                var handle = view.content.Handle;
+                host.Controls.Add(view);
                 view.ShowPlain("seed");
-                int initialHeight = view.content.Height, changes = 0;
-                int recreated = 0;
-                view.content.HandleCreated += (s, e) => recreated++;
-                EventHandler observe = (s, e) =>
-                {
-                    changes++;
-                    Assert.AreEqual(initialHeight, view.content.Height, "Intermediate styled runs must not resize the transcript card.");
-                };
-                view.content.TextChanged += observe;
+                var handle = view.content.Handle;
+                int plainChanges = 0;
+                view.content.TextChanged += (s, e) => plainChanges++;
                 string markdown = string.Concat(System.Linq.Enumerable.Repeat("**Heading** and `code`\n\n", 100));
-                try { view.ShowMarkdown(markdown, null, reference => { }, error => Assert.Fail(error)); }
-                finally { view.content.TextChanged -= observe; }
-                Assert.IsTrue(changes > 100, "The fixture must exercise many native append operations.");
-                Assert.AreEqual(1200, view.content.Height);
-                Assert.AreEqual(1, recreated, "Enabling the scrollbar must recreate the native handle only once.");
-                StringAssert.Contains(view.content.Text, "Heading and code");
-                view.content.Select(0, 7);
-                Assert.IsTrue(view.content.SelectionFont.Bold);
+                view.ShowMarkdown(markdown, null, reference => { }, error => Assert.Fail(error));
+                host.Show(); Application.DoEvents(); view.PerformLayout();
+                var shared = view.MarkdownView;
+                Assert.IsTrue(shared.Visible, "The actual shared Markdown surface must be displayed.");
+                Assert.IsTrue(shared.IsHandleCreated);
+                Assert.IsFalse(view.content.Visible);
+                Assert.AreEqual(markdown, shared.SourceText);
+                Assert.AreEqual(100, shared.ContentPanel.Controls.Count);
+                var first = (Blackcancer.ChatUI.Views.ChatTextView)shared.ContentPanel.Controls[0];
+                StringAssert.Contains(first.Content.Text, "Heading and code");
+                first.Content.Select(0, 7);
+                Assert.IsTrue(first.Content.SelectionFont.Bold);
+                Assert.AreEqual(0, plainChanges, "Markdown must never be mirrored into a hidden legacy RichTextBox.");
+                Assert.AreEqual("seed", view.content.Text);
+                Assert.AreEqual(handle, view.content.Handle);
                 view.ShowPlain("");
+                Assert.IsFalse(shared.Visible); Assert.IsTrue(view.content.Visible);
                 Assert.AreEqual(24, view.content.Height);
                 Assert.AreEqual(RichTextBoxScrollBars.None, view.content.ScrollBars);
-                Assert.AreEqual(2, recreated, "Clearing the text must disable the scrollbar without recursive handle creation.");
             }
+        }
+
+        private sealed class MarkdownTestHost : Form
+        {
+            internal MarkdownTestHost()
+            { StartPosition = FormStartPosition.Manual; Location = new Point(-30000, -30000); ShowInTaskbar = false; ClientSize = new Size(400, 900); }
+            protected override bool ShowWithoutActivation => true;
         }
 
         [STATestMethod]

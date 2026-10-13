@@ -20,40 +20,58 @@ namespace VBAi.Tests.Integration
         internal int OwnedExitWaitMilliseconds = 5000;
         internal Action PumpWordShutdownMessages = Application.DoEvents;
         internal Func<Process, bool> ReadWordProcessExit = process => process.WaitForExit(0);
+        /// <summary>Testhost-only one-shot diagnostic; never waits for finalizers or collects inside the Office process.</summary>
+        internal Action CollectReleasedWordReferences = GC.Collect;
         private readonly int shutdownOwnerThread = Thread.CurrentThread.ManagedThreadId;
         internal Func<Process, int> ReadOwnedExitCode = process => process.ExitCode;
 
         private void RequireUsableOwnedHost()
         {
             commandContainment.RequireTerminal();
-            if (hostTeardownRefused || (shutdownEvidence != null && (!owned || (Kind == "Word" && Equals(shutdownEvidence.Record["TeardownPrepared"], true)))))
+            if (hostTeardownRefused || (shutdownEvidence != null && (!owned
+                || (Kind == "Word" && Equals(shutdownEvidence.Record["TeardownPrepared"], true))
+                || Convert.ToInt32(shutdownEvidence.Record["QuitEntries"]) != 0)))
                 throw new InvalidOperationException("The original Office ownership scope is closed or unverified; no native request, Save, Close/Quit retry or reopen is permitted.");
             RequirePrivateHostDesktop(true);
         }
 
         private bool WaitForShutdownExit(Process process, int timeout, bool externalReferencesReleased)
         {
-            if (Kind != "Word" || !ReferenceEquals(WaitForOwnedExit, DefaultOwnedExitWait) || !externalReferencesReleased)
+            if ((Kind != "Word" && Kind != "Publisher") || !ReferenceEquals(WaitForOwnedExit, DefaultOwnedExitWait) || !externalReferencesReleased)
                 return WaitForOwnedExit(process, timeout);
-            Assert.AreEqual(shutdownOwnerThread, Thread.CurrentThread.ManagedThreadId, "Word shutdown observation must stay on its owning thread.");
-            Assert.AreSame(ownedProcess, process, "Only the originally retained Word process may be observed.");
+            Assert.AreEqual(shutdownOwnerThread, Thread.CurrentThread.ManagedThreadId, "Office shutdown observation must stay on its owning thread.");
+            Assert.AreSame(ownedProcess, process, "Only the originally retained Office process may be observed.");
             Assert.AreEqual("RETURNED", shutdownEvidence.Record["QuitOutcome"]);
             Assert.IsNull(application); Assert.IsNull(document);
             string originalHandle = "0x" + unchecked((ulong)process.Handle.ToInt64()).ToString("X16");
             Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], originalHandle);
             var clock = Stopwatch.StartNew();
             int pumps = 0;
-            shutdownEvidence.Record["WordMessagePumpEnabled"] = true;
+            shutdownEvidence.Record["OwnerMessagePumpEnabled"] = true;
+            if (Kind == "Word") shutdownEvidence.Record["WordMessagePumpEnabled"] = true;
             shutdownEvidence.Record["ExitObservationThread"] = shutdownOwnerThread;
             try
             {
+                if (Kind == "Word" && Equals(shutdownEvidence.Record["PostQuitCollectionRequested"], true))
+                {
+                    shutdownEvidence.Record["PostQuitCollectionEntered"] = true;
+                    shutdownEvidence.Record["PostQuitCollectionWaitsForFinalizers"] = false;
+                    shutdownEvidence.Record["PostQuitCollectionStartedUtc"] = DateTime.UtcNow.ToString("o");
+                    // Quit returned and the fixture's external RCWs are null. The
+                    // existing five-second clock already runs; this is not a new
+                    // wait window and no native action is dispatched here.
+                    CollectReleasedWordReferences();
+                    shutdownEvidence.Record["PostQuitCollectionReturned"] = true;
+                    shutdownEvidence.Record["PostQuitCollectionElapsedMilliseconds"] = clock.ElapsedMilliseconds;
+                }
                 return WaitForWordExit(timeout, () => clock.ElapsedMilliseconds,
                     () => ReadWordProcessExit(process), () => { pumps++; PumpWordShutdownMessages(); }, Thread.Sleep);
             }
             finally
             {
                 shutdownEvidence.Record["ExitWaitElapsedMilliseconds"] = clock.ElapsedMilliseconds;
-                shutdownEvidence.Record["WordMessagePumpAttempts"] = pumps;
+                shutdownEvidence.Record["OwnerMessagePumpAttempts"] = pumps;
+                if (Kind == "Word") shutdownEvidence.Record["WordMessagePumpAttempts"] = pumps;
                 shutdownEvidence.Record["ExitWaitProcessHandle"] = originalHandle;
             }
         }
@@ -137,6 +155,10 @@ namespace VBAi.Tests.Integration
             Assert.AreEqual(shutdownEvidence.Record["ProcessStartedUtc"], ownedProcess.StartTime.ToUniversalTime().ToString("o"));
             Assert.AreEqual(shutdownEvidence.Record["OriginalProcessHandle"], "0x" + unchecked((ulong)ownedProcess.Handle.ToInt64()).ToString("X16"));
             Assert.AreEqual(shutdownEvidence.Record["ProcessImage"], ExcelOwnedProcessImage.Read(ownedProcess.Handle));
+            string collection = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_POST_QUIT_GC");
+            if (Kind == "Word" && !string.IsNullOrEmpty(collection) && collection != "1")
+                throw new InvalidOperationException("The Word post-Quit testhost collection diagnostic accepts only VBAi_TEST_WORD_POST_QUIT_GC=1; unset it for the original cleanup.");
+            shutdownEvidence.Record["PostQuitCollectionRequested"] = Kind == "Word" && collection == "1";
             shutdownEvidence.Record["WaitBoundMilliseconds"] = ResolveOwnedExitWaitBound();
             shutdownEvidence.Prepare(FlushShutdownEvidence);
         }

@@ -22,6 +22,7 @@ namespace VBAi.Tests.Integration
             int savedPid = 0;
             ExcelVbeFixture.Run(host =>
             {
+                host.EnableOwnedTeardownTrace(nameof(ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving));
                 savedPid = host.ProcessId;
                 string project = Project(host);
                 path = host.File("Q006Saved.xlsm");

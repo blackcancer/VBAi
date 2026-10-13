@@ -30,13 +30,8 @@ namespace VBAi
                 outlook = IsOutlookPathHost(hostKind, process.ProcessName);
             string path;
             if (hostKind == "Word")
-            {
-                object document = VbeProjectComponents.MatchOtherHost(project, native);
-                path = native.State(document).Path;
-                if (native.ApplicationProcessId(native.Application()) != (uint)native.CurrentProcessId ||
-                    !native.SameProject(project, native.DocumentProject(document)))
-                    throw new InvalidOperationException("The Word document identity changed while reading its host path.");
-            }
+                path = ReadWordPath(project, native, native is VbeProjectComponents.NativeOtherHostProbe probe
+                    ? probe.ReleaseAcquiredReference : VbaTestComReferences.Release);
             else path = (string)((dynamic)project).FileName;
             if (string.IsNullOrWhiteSpace(path)) return null;
             // Outlook may expose its localized project name as a nonexistent absolute
@@ -46,6 +41,42 @@ namespace VBAi
                 !native.FileExists(path))) return null;
             if (!Path.IsPathRooted(path)) throw new InvalidOperationException("The host document path is not absolute.");
             return Path.GetFullPath(path);
+        }
+
+        /// <summary>Reads the uniquely matched Word document while balancing each getter acquisition.</summary>
+        /// <param name="project">Borrowed project whose COM identity must match exactly one document.</param>
+        /// <param name="native">Current-process Word probe; both application and project identities are checked again after State.</param>
+        /// <param name="release">Balances acquisitions on the calling owner thread, never the borrowed project argument.</param>
+        /// <returns>Observed document path, including an empty path for an unsaved document.</returns>
+        internal static string ReadWordPath(object project, VbeProjectComponents.IOtherHostProbe native, Action<object> release)
+        {
+            if (project == null) throw new ArgumentNullException(nameof(project));
+            if (native == null || native.HostKind != "Word") throw new InvalidOperationException("A Word document probe is required.");
+            if (release == null) throw new ArgumentNullException(nameof(release));
+            using (var acquired = new VbaTestComReferences(release))
+            {
+                object application = acquired.Add(native.Application());
+                if (native.CurrentProcessId <= 0 || native.ApplicationProcessId(application) != (uint)native.CurrentProcessId)
+                    throw new InvalidOperationException("The application does not belong to this add-in process.");
+                var documents = native.Documents(application);
+                // Own every returned getter acquisition before inspecting any document.
+                if (documents != null) foreach (object item in documents) acquired.Add(item);
+                if (documents == null || documents.Count > 1000)
+                    throw new InvalidOperationException("The document collection is unreadable or oversized.");
+                object matched = null;
+                int matches = 0;
+                foreach (object document in documents)
+                    if (native.SameProject(project, acquired.Add(native.DocumentProject(document))))
+                    { matched = document; matches++; }
+                if (matches != 1) throw new InvalidOperationException("No unique open document shares the selected VBProject COM identity.");
+                string path = native is VbeProjectComponents.NativeOtherHostProbe pathProbe
+                    ? pathProbe.ReadWordDocumentPath(matched) : native.State(matched).Path;
+                object currentApplication = acquired.Add(native.Application());
+                if (native.ApplicationProcessId(currentApplication) != (uint)native.CurrentProcessId ||
+                    !native.SameProject(project, acquired.Add(native.DocumentProject(matched))))
+                    throw new InvalidOperationException("The Word document identity changed while reading its host path.");
+                return path;
+            }
         }
 
         /// <summary>Recognizes Outlook storage without extending the separate document-adapter catalogue.</summary>

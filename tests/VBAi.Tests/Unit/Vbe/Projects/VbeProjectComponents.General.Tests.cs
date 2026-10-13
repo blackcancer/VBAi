@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass]
+    [ToolBoundaryTestClass]
     public sealed class VbeProjectGeneralProjectTests
     {
         [TestMethod]

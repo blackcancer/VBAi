@@ -863,6 +863,27 @@ namespace VBAi
         /// <returns>JSON de la réponse d’outil.</returns>
         public async Task<string> InvokeAsync(string name, string arguments)
         {
+            // Native callers must retain their owning STA through renderer, modal
+            // and catalog awaits. Pure managed MTA callers retain the existing
+            // pipeline; its native owner checks are not bypassed or relocated.
+            var commandContext = SynchronizationContext.Current;
+            if (commandContext != null && commandContext.GetType() == typeof(SynchronizationContext))
+                commandContext = null;
+            if (Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
+                // The owner envelope includes all COM/UI work and cleanup. Publishing
+                // its completed reply must not depend on a borrowed context that may
+                // no longer pump messages; no native work follows this await.
+                return await VbeUiTask.Run(() => InvokeOwnerCoreAsync(name, arguments, commandContext)).ConfigureAwait(false);
+            return await InvokeOwnerCoreAsync(name, arguments, commandContext);
+        }
+
+        /// <summary>Runs the unchanged tool admission and dispatch pipeline within the caller's owner envelope.</summary>
+        /// <param name="name">Exact registered tool name.</param>
+        /// <param name="arguments">Original JSON arguments, revalidated by the normal dispatch guards.</param>
+        /// <param name="commandContext">Existing host command queue; awaits remain on the independent owner envelope.</param>
+        /// <returns>The original serialized tool result, without retrying a native operation.</returns>
+        private async Task<string> InvokeOwnerCoreAsync(string name, string arguments, SynchronizationContext commandContext)
+        {
             try { GuardMode(name); GuardProject(name, arguments); }
             catch (Exception ex) { return json.Serialize(Response.Failure(ex.Message)); }
             if (IsCatalogTool(name)) return await InvokeCatalogAsync(name, arguments);
@@ -1160,7 +1181,9 @@ namespace VBAi
                         throw new ArgumentException("Project and ExpectedMode=2 are required.");
                     var requestValues = new Dictionary<string, object>(values) { ["Command"] = name };
                     Request request = json.Deserialize<Request>(json.Serialize(requestValues));
-                    SynchronizationContext context = SynchronizationContext.Current ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
+                    // Preserve the host command queue independently of the context that pins async continuations.
+                    SynchronizationContext context = commandContext ?? SynchronizationContext.Current
+                        ?? throw new InvalidOperationException("The VBE UI context is unavailable.");
                     Native.EnsureNoCompileDialog();
                     Response compileResponse = null;
                     var completed = new System.Threading.ManualResetEventSlim(false);

@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -45,6 +46,12 @@ namespace VBAi
             /// <summary>Compares COM object identity rather than display names or paths.</summary>
             internal Func<object, object, bool> SameIdentity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
 
+            /// <summary>Releases exactly one acquired COM reference after its owned operation is settled.</summary>
+            internal Action<object> ReleaseAcquired = VbaTestComReferences.Release;
+
+            /// <summary>Selects one-based native workbook indexing without creating an unreleasable enumeration adapter.</summary>
+            internal Func<object, bool> IndexedCollection = Marshal.IsComObject;
+
             /// <summary>Creates and owns a separate Word coverage document copy.</summary>
             internal Func<object, string, string, VbaTestCoverageClone> CreateWord = VbaTestWordCoverageClone.CreateWord;
 
@@ -86,21 +93,30 @@ namespace VBAi
         internal static VbaTestCoverageClone CreateExcel(object project, string sourcePath, string folder, HostBoundary boundary = null)
         {
             boundary = boundary ?? new HostBoundary();
+            var acquired = new ExcelCloneReferences(boundary.ReleaseAcquired);
+            bool transferred = false;
+            try
             {
                 int processId = boundary.ReadProcessId();
                 if (!boundary.ReadProcessName().Equals("EXCEL", StringComparison.OrdinalIgnoreCase))
                     throw new InvalidOperationException("Coverage cloning requires the in-process Excel host.");
-                dynamic application = boundary.ResolveExcel(processId);
+                dynamic application = acquired.Add(boundary.ResolveExcel(processId));
                 uint owner = boundary.ReadWindowOwner(new IntPtr(Convert.ToInt64(application.Hwnd)));
                 if (owner != processId) throw new InvalidOperationException("The Excel application belongs to another PID.");
                 object source = null;
-                foreach (dynamic book in application.Workbooks)
+                dynamic books = acquired.Add((object)application.Workbooks);
+                using (var enumeration = new VbaTestComReferences(boundary.ReleaseAcquired, boundary.IndexedCollection))
+                foreach (dynamic book in enumeration.ItemsFromBorrowed((object)books))
                 {
-                    if (!boundary.SameIdentity(project, (object)book.VBProject)) continue;
+                    bool matches;
+                    using (var candidate = new VbaTestComReferences(boundary.ReleaseAcquired))
+                        matches = boundary.SameIdentity(project, candidate.Add((object)book.VBProject));
+                    if (!matches) continue;
                     if (source != null) throw new InvalidOperationException("The source workbook identity is ambiguous.");
                     if (!string.Equals(System.IO.Path.GetFullPath((string)book.FullName), System.IO.Path.GetFullPath(sourcePath), StringComparison.OrdinalIgnoreCase))
                         throw new InvalidOperationException("The source workbook path changed.");
-                    source = book;
+                    enumeration.Transfer((object)book);
+                    source = acquired.Add((object)book);
                 }
                 if (source == null) throw new InvalidOperationException("The exact source workbook is unavailable.");
                 string extension = System.IO.Path.GetExtension(sourcePath);
@@ -118,27 +134,48 @@ namespace VBAi
                     application.EnableEvents = false;
                     if ((bool)application.EnableEvents) throw new InvalidOperationException("Excel events could not be disabled for coverage preparation.");
                     ((dynamic)source).SaveCopyAs(copyPath);
-                    copy = application.Workbooks.Open(copyPath, UpdateLinks: 0, ReadOnly: false, AddToMru: false);
-                    if (boundary.SameIdentity(project, (object)((dynamic)copy).VBProject))
+                    copy = acquired.Add((object)books.Open(copyPath, UpdateLinks: 0, ReadOnly: false, AddToMru: false));
+                    object copyProject = acquired.Add((object)((dynamic)copy).VBProject);
+                    if (boundary.SameIdentity(project, copyProject))
                         throw new InvalidOperationException("Excel did not create a distinct coverage project.");
+                    transferred = true;
                     return new VbaTestCoverageClone
                     {
-                        Project = ((dynamic)copy).VBProject,
+                        Project = copyProject,
                         Path = copyPath,
                         Close = () =>
                         {
                             bool previous = (bool)application.EnableEvents;
                             try
                             {
+                                if (boundary.ReadWindowOwner(new IntPtr(Convert.ToInt64(application.Hwnd))) != processId
+                                    || boundary.SameIdentity(project, copyProject)
+                                    || !string.Equals(System.IO.Path.GetFullPath((string)((dynamic)copy).FullName), copyPath, StringComparison.OrdinalIgnoreCase))
+                                    throw new InvalidOperationException("The owned Excel copy identity changed before Close.");
                                 application.EnableEvents = false;
                                 if ((bool)application.EnableEvents) throw new InvalidOperationException("Excel events could not be disabled before closing the coverage copy.");
+                                // Verify with the live project first, then release our acquisition
+                                // before Excel decides whether its VBA project can be unloaded.
+                                acquired.ReleaseTracked(copyProject);
                                 ((dynamic)copy).Close(false);
-                                foreach (dynamic remaining in application.Workbooks)
-                                    if (boundary.SameIdentity((object)remaining, copy))
-                                        throw new InvalidOperationException("The owned copy remains open after Close returned.");
+                                using (var remainingBooks = new VbaTestComReferences(boundary.ReleaseAcquired, boundary.IndexedCollection))
+                                {
+                                    try
+                                    {
+                                        foreach (object remaining in remainingBooks.ItemsFromBorrowed((object)books))
+                                            if (boundary.SameIdentity(remaining, copy))
+                                                throw new InvalidOperationException("The owned copy remains open after Close returned.");
+                                    }
+                                    catch { remainingBooks.Retain(); throw; }
+                                }
                             }
-                            catch (Exception error) { throw new VbaTestInvocationException("Closing the owned workbook copy is uncertain. Retained path: " + copyPath + ". " + error.Message, true, error); }
-                            finally { RestoreEvents((object)application, previous, copyPath); }
+                            catch (Exception error) { acquired.Retain(); throw new VbaTestInvocationException("Closing the owned workbook copy is uncertain. Retained path: " + copyPath + ". " + error.Message, true, error); }
+                            finally
+                            {
+                                try { RestoreEvents((object)application, previous, copyPath); }
+                                catch { acquired.Retain(); throw; }
+                            }
+                            acquired.Dispose();
                         }
                     };
                 }
@@ -147,6 +184,45 @@ namespace VBAi
                     throw new VbaTestInvocationException("Coverage copy preparation is uncertain; no close or retry was attempted. Retained copy: " + copyPath + ". " + error.Message, true, error);
                 }
                 finally { RestoreEvents((object)application, events, copyPath); }
+            }
+            catch (VbaTestInvocationException) { acquired.Retain(); throw; }
+            finally { if (!transferred) acquired.Dispose(); }
+        }
+
+        /// <summary>Owns the Excel interfaces acquired by cloning until verified close or explicit uncertainty retention.</summary>
+        private sealed class ExcelCloneReferences : IDisposable
+        {
+            private readonly Action<object> release;
+            private readonly List<object> references = new List<object>();
+            private static readonly List<ExcelCloneReferences> retainedReferences = new List<ExcelCloneReferences>();
+            private bool retained, disposed;
+            internal ExcelCloneReferences(Action<object> release) { this.release = release; }
+            internal object Add(object value) { if (value != null) references.Add(value); return value; }
+            /// <summary>Releases one known acquisition before its owning workbook closes.</summary>
+            internal void ReleaseTracked(object value)
+            {
+                int index = references.FindLastIndex(item => ReferenceEquals(item, value));
+                if (index < 0) throw new InvalidOperationException("The copy project acquisition is not owned.");
+                try { release(value); references.RemoveAt(index); }
+                catch { Retain(); throw; }
+            }
+            internal void Retain()
+            {
+                if (retained) return;
+                retained = true;
+                lock (retainedReferences) retainedReferences.Add(this);
+            }
+            public void Dispose()
+            {
+                if (retained || disposed) return;
+                disposed = true;
+                for (int index=references.Count-1; index>=0; index--)
+                {
+                    object value=references[index];
+                    try { release(value); references[index]=null; }
+                    catch { Retain(); throw; }
+                }
+                references.Clear();
             }
         }
 

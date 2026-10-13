@@ -181,9 +181,24 @@ function Send-Bridge([hashtable]$request,[switch]$AllowRefusal) {
 }
 function File-Dialog([int]$command,[string]$path,[string]$action) {
     $windows=@([Q014Native]::Windows($script:hostProcess.Id)); Write-Json (Join-Path $plan.EvidenceRoot ('dialog-'+$command+'-before-'+$script:wire+'.json')) $windows
-    Check (@($windows | Where-Object {$_.Class -eq '#32770' -and $_.Visible}).Count -eq 0) 'Existing modal dialog prevents native command.'
     $root=@($windows | Where-Object {$_.Class -match '^Afx:' -and $_.Caption -match $plan.NativeFramePattern -and $_.Visible})
     Check ($root.Count -eq 1) 'Unique visible SOLIDWORKS frame required.'
+    Check $root[0].Enabled 'Disabled SOLIDWORKS frame prevents native command.'
+    foreach ($dialog in @($windows | Where-Object {$_.Class -eq '#32770' -and $_.Visible})) {
+        Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+        $readModal = [Func[long,Nullable[bool]]] {
+            param($handle)
+            $element = [System.Windows.Automation.AutomationElement]::FromHandle([IntPtr]$handle)
+            if ($null -eq $element -or $element.Current.NativeWindowHandle -ne $handle -or $element.Current.ProcessId -ne $script:hostProcess.Id) { return $null }
+            $pattern = $null
+            if (-not $element.TryGetCurrentPattern([System.Windows.Automation.WindowPattern]::Pattern,[ref]$pattern)) { return $null }
+            return $pattern.Current.IsModal
+        }
+        $modeless = [Q014Native]::IsModelessWelcome($dialog,$root[0],$windows,$readModal)
+        Write-Json (Join-Path $plan.EvidenceRoot ('dialog-'+$command+'-modality-'+$script:wire+'.json')) @{Dialog=$dialog;Frame=$root[0];ModelessWelcome=$modeless;NoInputSent=$true}
+        Check $modeless 'Existing modal or unclassified dialog prevents native command.'
+        Check ([Q014Native]::IsModelessWelcome($dialog,$root[0],[Q014Native]::Windows($script:hostProcess.Id),$readModal)) 'Welcome or frame changed during modality observation; no native command.'
+    }
     Window-Check $root[0]
     $intent=Join-Path $plan.EvidenceRoot ('native-command-'+$command+'-intent.json')
     Check (-not(Test-Path $intent)) 'Native command already claimed.'
@@ -191,9 +206,22 @@ function File-Dialog([int]$command,[string]$path,[string]$action) {
     $script:hostProcess.Refresh();Check (-not $script:hostProcess.HasExited) 'Original host exited before native file command.'
     $script:pendingFileCommand=[Q014SolidWorks]::BeginFileCommand($script:hostProcess.Id,$plan.ExpectedNativeRevision,$command)
     $deadline=[DateTime]::UtcNow.AddSeconds(20)
-    do { $dialogs=@([Q014Native]::Windows($script:hostProcess.Id) | Where-Object {$_.Class -eq '#32770' -and $_.Visible});if($dialogs.Count -ne 0){break};Start-Sleep -Milliseconds 200 } while([DateTime]::UtcNow -lt $deadline)
-    Check ($dialogs.Count -eq 1) 'The one native command did not expose a unique file dialog.'
-    Window-Check $dialogs[0];$controls=[Q014Native]::FileControls($dialogs[0].Handle,$script:hostProcess.Id)
+    $previousSnapshot=$null;$snapshot=$null;$stable=$false
+    do {
+        $script:hostProcess.Refresh();Check (-not $script:hostProcess.HasExited) 'Original host exited before file-dialog admission.'
+        $snapshot=[Q014Native]::ObserveFileDialog($script:hostProcess.Id)
+        if($snapshot){Window-Check $snapshot.Dialog}
+        Check ([DateTime]::UtcNow -lt $deadline) 'File-dialog observation exceeded admission deadline; no delivery permitted.'
+        $stable=[Q014Native]::IsStableFileDialog($previousSnapshot,$snapshot,$script:hostProcess.Id,$action)
+        if($stable){break}
+        $previousSnapshot=$snapshot;Start-Sleep -Milliseconds 100
+    } while([DateTime]::UtcNow -lt $deadline)
+    Check $stable 'The native file command did not expose stable addressed controls; no filename or validation delivered.'
+    $dialogs=@($snapshot.Dialog);$controls=@($snapshot.Filename,$snapshot.Action)
+    # Replacements are tolerated only while observing readiness, before any mutation.
+    # Once admitted, this exact dialog/control binding is retained for all deliveries.
+    $preDelivery=[Q014Native]::ObserveFileDialog($script:hostProcess.Id)
+    Check ([Q014Native]::IsStableFileDialog($snapshot,$preDelivery,$script:hostProcess.Id,$action)) 'Admitted file dialog changed before delivery; no rebind.'
     $caption=[Q014Native]::Text($controls[1]);Check ($caption.Replace('&','') -in $(if($action -eq 'Save'){@('Save','Enregistrer')}else{@('Open','Ouvrir')})) 'Unexpected dialog action.'
     if($action -eq 'Save'){Check (-not(Test-Path $path)) 'Fresh output required.'}else{Check (Test-Path $path) 'Owned input missing.'}
     [Q014Native]::Filename($controls[0],$path)

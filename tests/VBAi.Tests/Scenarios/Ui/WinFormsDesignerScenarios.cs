@@ -10,7 +10,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class WinFormsDesignerTests
     {
         /// <summary>Instancie les fenêtres principales et vérifie leurs contrôles Designer essentiels.</summary>
-        [TestMethod]
         [STATestMethod]
         public void FixedWindowsOpenWithoutStartingAnIdeSession()
         {

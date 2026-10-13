@@ -154,8 +154,8 @@ namespace VBAi.Tests.Unit
             });
         }
 
-        [STATestMethod]
-        public void WordShutdownPumpRunsOnOwnerAfterKnownQuitAndReleaseAndObservesOriginalHandle()
+        [STATestMethod, DataRow("Word"), DataRow("Publisher")]
+        public void ShutdownPumpRunsOnOwnerAfterKnownQuitAndReleaseAndObservesOriginalHandle(string kind)
         {
             WithFakeFixture((fixture, application, document, process, root) =>
             {
@@ -176,12 +176,22 @@ namespace VBAi.Tests.Unit
                     pumps++; exited = true;
                 };
                 fixture.ReadOwnedExitCode = observed => { Assert.AreSame(process, observed); return 0; };
+                // Exercise the same post-Quit observation for both hosts, without implementing fake
+                // publication persistence or creating a native Publisher process. Close/Quit remain
+                // the existing managed Word fixture operations; only their settled observer changes.
+                application.OnQuit = () => SetProperty(fixture, "Kind", kind);
                 fixture.Dispose();
                 Assert.AreEqual(1, pumps);
                 var lifecycle = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
                 Assert.AreEqual(true, lifecycle["ProcessExitObserved"]);
-                Assert.AreEqual(true, lifecycle["WordMessagePumpEnabled"]);
-                Assert.AreEqual(1, lifecycle["WordMessagePumpAttempts"]);
+                Assert.AreEqual(true, lifecycle["OwnerMessagePumpEnabled"]);
+                Assert.AreEqual(1, lifecycle["OwnerMessagePumpAttempts"]);
+                if (kind == "Word")
+                {
+                    Assert.AreEqual(true, lifecycle["WordMessagePumpEnabled"]);
+                    Assert.AreEqual(1, lifecycle["WordMessagePumpAttempts"]);
+                }
+                else Assert.IsFalse(lifecycle.ContainsKey("WordMessagePumpEnabled"));
                 Assert.AreEqual(5000, lifecycle["WaitBoundMilliseconds"]);
                 Assert.AreEqual(ownerThread, lifecycle["ExitObservationThread"]);
                 Assert.AreEqual(lifecycle["OriginalProcessHandle"], lifecycle["ExitWaitProcessHandle"]);
@@ -206,6 +216,118 @@ namespace VBAi.Tests.Unit
                 () => { elapsed = 5001; lateExit = true; }, _ => Assert.Fail("A message pump cannot extend the exit-acceptance deadline.")));
             Assert.IsTrue(OfficeVbeFixture.WaitForWordExit(5000, () => 5000, () => true,
                 () => Assert.Fail("Already-exited processes require no pump."), _ => Assert.Fail("Already-exited processes require no pause.")));
+        }
+
+        [DataTestMethod]
+        [DataRow(null, "Word", false)]
+        [DataRow("", "Word", false)]
+        [DataRow("1", "Word", true)]
+        [DataRow("1", "Publisher", false)]
+        public void PostQuitCollectionIsExplicitWordOnlyAndRunsAfterTheOriginalRelease(string configured, string kind, bool collect)
+        {
+            WithPostQuitCollection(configured, () => WithFakeFixture((fixture, application, document, process, root) =>
+            {
+                int collections = 0;
+                bool exited = false;
+                int owner = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                application.OnQuit = () => { SetProperty(fixture, "Kind", kind); Environment.SetEnvironmentVariable("VBAi_TEST_WORD_POST_QUIT_GC", null); };
+                fixture.CollectReleasedWordReferences = () =>
+                {
+                    collections++; exited = true;
+                    Assert.IsNull(Field(fixture, "application")); Assert.IsNull(Field(fixture, "document"));
+                    Assert.AreEqual(owner, System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    Assert.AreEqual(1, application.QuitCount); Assert.AreEqual(1, document.CloseCount);
+                    Assert.ThrowsException<InvalidOperationException>(() => fixture.Data("status"));
+                };
+                fixture.ReadWordProcessExit = observed => exited || !collect;
+                fixture.PumpWordShutdownMessages = () => Assert.Fail("Known synthetic exit needs no pump.");
+                fixture.ReadOwnedExitCode = observed => 0;
+                fixture.Dispose();
+                Assert.AreEqual(collect ? 1 : 0, collections);
+                var life = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                Assert.AreEqual(configured == "1", life["PostQuitCollectionRequested"], "The pre-Quit opt-in survives later environment changes.");
+                Assert.AreEqual(5000, life["WaitBoundMilliseconds"]);
+                Assert.AreEqual(true, life["ProcessExitObserved"]);
+                if (collect)
+                {
+                    Assert.AreEqual(true, life["PostQuitCollectionReturned"]);
+                    Assert.AreEqual(false, life["PostQuitCollectionWaitsForFinalizers"]);
+                }
+                else Assert.IsFalse(life.ContainsKey("PostQuitCollectionEntered"));
+            }));
+        }
+
+        [DataTestMethod]
+        [DataRow("quit")]
+        [DataRow("release")]
+        [DataRow("pending")]
+        public void UncertainQuitReleaseOrDispatchNeverStartsThePostQuitCollection(string failure)
+        {
+            WithPostQuitCollection("1", () => WithFakeFixture((fixture, application, document, process, root) =>
+            {
+                fixture.CollectReleasedWordReferences = () => Assert.Fail("Unsettled references must not be collected.");
+                if (failure == "quit") application.QuitError = new InvalidOperationException("unknown Quit outcome");
+                else if (failure == "release")
+                {
+                    fixture.ReleaseAcquiredReference = item => { if (ReferenceEquals(item, application)) throw new InvalidOperationException("release failed"); };
+                    fixture.WaitForOwnedExit = (observed, timeout) => true;
+                    fixture.ReadOwnedExitCode = observed => 0;
+                }
+                else fixture.NativeExecutionUnsettled = true;
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+            }));
+        }
+
+        [TestMethod]
+        public void PostQuitCollectionFailureRetainsTheOriginalProcessWithoutASecondQuitOrCollection()
+        {
+            WithPostQuitCollection("1", () => WithFakeFixture((fixture, application, document, process, root) =>
+            {
+                int collections = 0;
+                fixture.CollectReleasedWordReferences = () => { collections++; throw new InvalidOperationException("collection failed"); };
+                fixture.ReadWordProcessExit = observed => { Assert.Fail("Failed collection cannot start exit acceptance."); return false; };
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreSame(process, Field(fixture, "ownedProcess"));
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreEqual(1, application.QuitCount); Assert.AreEqual(1, document.CloseCount); Assert.AreEqual(1, collections);
+            }));
+        }
+
+        [TestMethod]
+        public void PostQuitCollectionTimeCountsAgainstTheSameExitObservationDeadline()
+        {
+            WithPostQuitCollection("1", () => WithFakeFixture((fixture, application, document, process, root) =>
+            {
+                fixture.OwnedExitWaitMilliseconds = 5;
+                fixture.CollectReleasedWordReferences = () => System.Threading.Thread.Sleep(20);
+                fixture.ReadWordProcessExit = observed => { Assert.Fail("Expired original window cannot start another exit read."); return true; };
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                var life = (IDictionary<string, object>)Read(Path.Combine(root, "shutdown-lifecycle.json"))["Lifecycle"];
+                Assert.AreEqual(5, life["WaitBoundMilliseconds"]);
+                Assert.AreEqual(true, life["PostQuitCollectionReturned"]);
+                Assert.AreEqual(false, life["ProcessExitObserved"]);
+            }));
+        }
+
+        [DataTestMethod]
+        [DataRow("0")]
+        [DataRow("true")]
+        [DataRow("2")]
+        public void InvalidPostQuitCollectionConfigurationRefusesBeforeCloseQuitOrCollection(string configured)
+        {
+            WithPostQuitCollection(configured, () => WithFakeFixture((fixture, application, document, process, root) =>
+            {
+                fixture.CollectReleasedWordReferences = () => Assert.Fail("Invalid scope cannot collect.");
+                Assert.ThrowsException<AssertFailedException>(() => fixture.Dispose());
+                Assert.AreEqual(0, application.QuitCount); Assert.AreEqual(0, document.CloseCount);
+            }));
+        }
+
+        private static void WithPostQuitCollection(string value, Action action)
+        {
+            string prior = Environment.GetEnvironmentVariable("VBAi_TEST_WORD_POST_QUIT_GC");
+            try { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_POST_QUIT_GC", value); action(); }
+            finally { Environment.SetEnvironmentVariable("VBAi_TEST_WORD_POST_QUIT_GC", prior); }
         }
         [TestMethod]
         public void WordShutdownPumpRejectsPauseAndExitGetterOvershootButAcceptsTheExactDeadline()

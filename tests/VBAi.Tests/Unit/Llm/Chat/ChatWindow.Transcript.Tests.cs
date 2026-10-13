@@ -7,8 +7,59 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie la mise à jour incrémentale et le rendu des entrées du transcript.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>The real message renderer must not create a link from a future prompt or conflicting attachments.</summary>
+        [STATestMethod]
+        [DataRow("future-only")]
+        [DataRow("explicit-empty")]
+        [DataRow("conflicting")]
+        [DataRow("corrupt")]
+        public void RenderedHistoricalMessageDoesNotBorrowLaterOrAmbiguousReferences(string scenario)
+        {
+            using (var window = Surfaces())
+            {
+                var first = new VbeChatReference { Project = "P", Module = "M", Name = "Calculate", Sha256 = "old" };
+                var second = new VbeChatReference { Project = "P", Module = "M", Name = "Calculate", Sha256 = "new" };
+                var entry = new ChatEntry { Speaker = "Assistant", TurnId = "old", Text = first.Token };
+                if (scenario == "explicit-empty") entry.References = new VbeChatReference[0];
+                if (scenario == "conflicting") entry.References = new[] { first, second };
+                if (scenario == "corrupt") entry.References = new[] { null, new VbeChatReference() };
+                var entries = Get<List<ChatEntry>>(window, "transcriptEntries");
+                entries.Add(entry);
+                entries.Add(new ChatEntry { Speaker = "Vous", TurnId = "new", References = new[] { second } });
+                using (var host = (ChatDesignerHost)Call(window, "RenderEntry", entry))
+                {
+                    var markdown = ((ChatMessageView)host.View).message.MarkdownView;
+                    Assert.AreEqual(entry.Text, markdown.SourceText);
+                    Assert.AreEqual(1, markdown.ContentPanel.Controls.Count);
+                    var block = (Blackcancer.ChatUI.Views.ChatTextView)markdown.ContentPanel.Controls[0];
+                    StringAssert.Contains(block.Content.Text, first.Token);
+                    var actions = (System.Collections.IList)typeof(Blackcancer.ChatUI.Views.ChatTextView)
+                        .GetField("actions", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(block);
+                    Assert.AreEqual(0, actions.Count, scenario);
+                }
+            }
+        }
+
+        /// <summary>Stored messages own their attachment snapshots even when the producer refreshes a module hash.</summary>
+        [STATestMethod, DataRow(false), DataRow(true)]
+        public void CapturedTranscriptReferencesStayDetachedFromTheirProducer(bool procedure)
+        {
+            using (var window = Surfaces())
+            {
+                var reference = new VbeChatReference { Project = "P", Module = "M", Name = procedure ? "Calculate" : null, Sha256 = "old", StartLine = 2, EndLine = 6 };
+                string token = reference.Token;
+                var references = new[] { reference };
+                var entry = new ChatEntry { Speaker = "Vous", Text = token, References = references };
+                Call(window, "AddEntry", entry);
+                var stored = Get<List<ChatEntry>>(window, "transcriptEntries")[0].References[0];
+                Assert.AreNotSame(reference, stored); Assert.AreNotSame(references, entry.References);
+                reference.Project = "Changed"; reference.Sha256 = "new"; reference.StartLine = 90;
+                references[0] = new VbeChatReference { Project = "Replacement" };
+                Assert.AreEqual(token, stored.Token); Assert.AreEqual("old", stored.Sha256); Assert.AreEqual(2, stored.StartLine);
+            }
+        }
+
         /// <summary>Met à jour les flux du transcript en place et évite de dupliquer le message final.</summary>
-        [TestMethod]
         [STATestMethod]
         public void TranscriptStreamsUpdateInPlaceAndAvoidDuplicateFinalMessage()
         {
@@ -31,7 +82,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Complète en place les résumés et entrées d’outil transmis en flux.</summary>
-        [TestMethod]
         [STATestMethod]
         public void StreamingSummaryAndToolEntriesCompleteInPlace()
         {
@@ -210,7 +260,7 @@ namespace VBAi.Tests.Unit
                 var nested = new StackPanel(); nested.Children.Add(native); nested.Children.Add(diff); nested.Children.Add(new TextBlock { Text = "ordinary" });
                 var body = new StackPanel(); body.Children.Add(nested);
                 Call(window, "DisposeEntryView", body);
-                Assert.IsTrue(card.IsDisposed); Assert.IsTrue(card.message.content.IsDisposed); Assert.IsTrue(diffChild.IsDisposed);
+                Assert.IsTrue(card.IsDisposed); Assert.IsTrue(card.message.content.IsDisposed); Assert.IsTrue(card.message.MarkdownView.IsDisposed); Assert.IsTrue(diffChild.IsDisposed);
                 Assert.AreEqual(1, body.Children.Count); Assert.AreEqual(3, nested.Children.Count);
             }
         }
@@ -228,6 +278,101 @@ namespace VBAi.Tests.Unit
                         var card = (ChatMessageView)host.View; Assert.AreEqual(turn == "assigned" ? 1 : 0, card.targets.Controls.Count);
                         Click(card.undoTurn); Assert.IsFalse(change.Restored); Assert.AreEqual(1, changes.Count);
                     }
+            }
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Windows;
+    using System.Windows.Controls;
+    using VBAi.Tests.Infrastructure;
+
+    public sealed partial class ChatWindowStateTests
+    {
+        /// <summary>The shared fixed shell preserves VBE slots, menu actions and the discrete docking backend.</summary>
+        [STATestMethod]
+        public void SharedWorkspaceKeepsVbeActionsAndActualNamedPin()
+        {
+            using (var host = new HistoryTestHost())
+            using (var window = Surfaces())
+            {
+                window.TopLevel = false; window.Dock = System.Windows.Forms.DockStyle.Fill;
+                host.Controls.Add(window); window.Show(); host.Show(); System.Windows.Forms.Application.DoEvents();
+                var workspace = Get<Blackcancer.ChatUI.Views.ChatWorkspaceView>(window, "workspace");
+                Assert.AreSame(workspace.sendButton, Get<System.Windows.Forms.Button>(window, "send"));
+                Assert.AreSame(workspace.inputTextBox, Get<Blackcancer.ChatUI.Views.ChatInputView>(window, "promptHost"));
+                Assert.IsFalse(workspace.inputTextBox.UseNativeEditor, "VBAi keeps the existing WPF composer and its reference bindings.");
+                Assert.AreSame(workspace.TranscriptHost, Get<System.Windows.Forms.Panel>(window, "transcriptPanel"));
+                Assert.AreSame(workspace.PendingMessagesHost, Get<System.Windows.Forms.FlowLayoutPanel>(window, "pendingMessagesPanel"));
+                Assert.AreSame(workspace.AdditionalContextHost, Get<System.Windows.Forms.Panel>(window, "contextPanel"));
+                foreach (string field in new[] { "methods", "compile", "changes" })
+                    Assert.AreSame(workspace.HeaderActionsHost, Get<System.Windows.Forms.Button>(window, field).Parent, field);
+                foreach (string field in new[] { "configure", "projectAccess", "resumeTurn", "refreshModels", "verifyChanges", "docking", "github", "about" })
+                    Assert.IsTrue(workspace.optionsMenu.Items.Contains(Get<System.Windows.Forms.ToolStripMenuItem>(window, field)), field);
+                Assert.AreEqual("pinButton", workspace.windowPinButton.Name);
+                Assert.AreEqual(new System.Drawing.Size(32, 30), workspace.windowPinButton.Size);
+                Assert.IsTrue(workspace.windowPinButton.IconOnly);
+                Assert.IsTrue(workspace.windowPinButton.Visible);
+                Assert.AreSame(workspace.windowPinButton, workspace.Controls.Find("pinButton", true).Single());
+                int requests = 0; window.DockRequested += () => requests++;
+                workspace.windowPinButton.PerformClick(); Assert.AreEqual(1, requests);
+                Set(window, "busy", true);
+                workspace.windowPinButton.PerformClick(); Assert.AreEqual(1, requests, "The existing busy docking guard must be preserved.");
+                Set(window, "busy", false);
+            }
+        }
+
+        /// <summary>Assistant streaming uses the visible renderer, preserves user code expansion and releases virtualized views.</summary>
+        [STATestMethod]
+        public void AssistantStreamingKeepsSharedMarkdownBlocksAndReleasesTheirViews()
+        {
+            using (var window = Surfaces())
+            {
+                const string streamId = "shared-markdown-stream";
+                string code = string.Join("\n", Enumerable.Range(0, 13).Select(i => "' line " + i));
+                string source = "**Answer**\n\n```vba\n" + code + "\n```\n\n| Item | Value |\n| --- | --- |\n| A | 1 |";
+                Call(window, "ReceiveChatUpdate", "final", streamId, source, false);
+                var entry = Get<List<ChatEntry>>(window, "transcriptEntries").Single();
+                var item = new TranscriptItem { DataContext = entry };
+                item.SetValue(TranscriptItem.RenderProperty, new Action<TranscriptItem>(i => Call(window, "RealizeEntry", i)));
+                item.SetValue(TranscriptItem.ReleaseProperty, new Action<TranscriptItem>(i => Call(window, "ReleaseEntry", i)));
+                item.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));
+                using (var host = (ChatDesignerHost)item.Content)
+                {
+                    var card = (ChatMessageView)host.View;
+                    var markdown = card.message.MarkdownView;
+                    Assert.AreSame(markdown, Get<Dictionary<string, Blackcancer.ChatUI.Views.ChatMarkdownView>>(window, "liveMarkdownViews")[streamId]);
+                    Assert.IsFalse(Get<Dictionary<string, System.Windows.Forms.RichTextBox>>(window, "liveTexts").ContainsKey(streamId));
+                    Call(window, "FlushStreamText");
+                    Assert.AreEqual(source, markdown.SourceText);
+                    var codeView = markdown.ContentPanel.Controls.OfType<Blackcancer.ChatUI.Views.ChatCodeBlockView>().Single();
+                    var table = markdown.ContentPanel.Controls.OfType<Blackcancer.ChatUI.Views.ChatTableView>().Single();
+                    StringAssert.Contains(codeView.SourceText, "' line 12");
+                    Assert.IsFalse(codeView.Expanded, "Long code defaults to collapsed before a user chooses.");
+                    Assert.AreEqual(1, table.Grid.Rows.Count);
+                    codeView.Expanded = true;
+                    const string delta = "\n\nAdditional detail";
+                    Call(window, "ReceiveChatUpdate", "final", streamId, delta, false);
+                    Assert.AreEqual(source, markdown.SourceText, "Unflushed deltas must remain batched.");
+                    Call(window, "FlushStreamText");
+                    Assert.AreEqual(source + delta, markdown.SourceText);
+                    Assert.AreSame(codeView, markdown.ContentPanel.Controls.OfType<Blackcancer.ChatUI.Views.ChatCodeBlockView>().Single());
+                    Assert.AreSame(table, markdown.ContentPanel.Controls.OfType<Blackcancer.ChatUI.Views.ChatTableView>().Single());
+                    Assert.IsTrue(codeView.Expanded);
+                    Call(window, "ReceiveChatUpdate", "final", streamId, source + delta, true);
+                    Assert.AreSame(codeView, markdown.ContentPanel.Controls.OfType<Blackcancer.ChatUI.Views.ChatCodeBlockView>().Single());
+                    Assert.IsTrue(codeView.Expanded);
+                    item.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));
+                    Assert.IsTrue(markdown.IsDisposed);
+                    Assert.IsFalse(Get<Dictionary<string, Blackcancer.ChatUI.Views.ChatMarkdownView>>(window, "liveMarkdownViews").ContainsKey(streamId));
+                    Assert.AreEqual(0, Get<Dictionary<ChatEntry, FrameworkElement>>(window, "entryViews").Count);
+                }
             }
         }
     }

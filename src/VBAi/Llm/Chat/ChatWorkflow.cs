@@ -82,6 +82,9 @@ namespace VBAi
     /// <summary>Extrait de code joint à une entrée de conversation.</summary>
     internal sealed class ChatAttachment
     {
+        /// <summary>Detaches scalar attachment data from later draft edits.</summary>
+        /// <returns>A snapshot retaining the selected text, source identity and revision.</returns>
+        internal ChatAttachment CaptureSnapshot() => (ChatAttachment)MemberwiseClone();
 
         /// <summary>Libellé affiché pour l’extrait joint.</summary>
         /// <value>Titre de la pièce jointe.</value>

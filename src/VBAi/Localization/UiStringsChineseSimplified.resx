@@ -2871,4 +2871,25 @@ QQ 附加内存
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>此模型不支持工具调用。</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>提供方未在 {0} 秒内完成回复。未自动重试任何操作。</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>使用模型默认的推理设置。</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>为此对话禁用推理。</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>模型默认设置</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>推理已关闭</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>此模型不支持所选的推理选项。</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>选择要附加到当前对话的文件。</value>
+  </data>
 </root>

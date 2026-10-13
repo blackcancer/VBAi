@@ -10,7 +10,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         /// <summary>Accepte les jetons isolés et refuse les pièces jointes dépassant la limite de contenu.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ComposerTokenBoundaryAndDraftContextLimitAreEnforced()
         {

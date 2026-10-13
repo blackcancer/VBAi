@@ -30,26 +30,32 @@ namespace VBAi
         private void CompileCoverageClone(object copiedProject)
         {
             RequireOwner();
-            dynamic runtime = null;
-            foreach (dynamic component in ((dynamic)copiedProject).VBComponents)
-                if (string.Equals((string)component.Name, VbaCoverageInstrumentation.ModuleName, StringComparison.OrdinalIgnoreCase)) runtime = component;
-            if (runtime == null) throw new InvalidOperationException("The coverage runtime module is missing before compilation.");
-            dynamic pane = runtime.CodeModule.CodePane;
-            pane.Show(); vbe.MainWindow.Visible = true; vbe.ActiveCodePane = pane; pane.Window.SetFocus();
-            RequireCompilationProject(copiedProject);
-            dynamic compile = ReadCompilationControl();
-            if (!(bool)compile.Enabled) return;
-            currentCoverageCompileGuard?.Invoke();
-            RequireCompilationProject(copiedProject);
-            compile = ReadCompilationControl();
-            if (!(bool)compile.Enabled) return;
-            try
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
             {
-                compile.Execute();
+                dynamic runtime = null;
+                foreach (dynamic component in references.Items((object)((dynamic)copiedProject).VBComponents))
+                    if (string.Equals((string)component.Name, VbaCoverageInstrumentation.ModuleName, StringComparison.OrdinalIgnoreCase)) runtime = component;
+                if (runtime == null) throw new InvalidOperationException("The coverage runtime module is missing before compilation.");
+                dynamic module = references.Add((object)runtime.CodeModule);
+                dynamic pane = references.Add((object)module.CodePane);
+                dynamic mainWindow = references.Add((object)vbe.MainWindow);
+                dynamic window = references.Add((object)pane.Window);
+                pane.Show(); mainWindow.Visible = true; vbe.ActiveCodePane = pane; window.SetFocus();
                 RequireCompilationProject(copiedProject);
+                dynamic compile = references.Add(ReadCompilationControl());
+                if (!(bool)compile.Enabled) return;
+                currentCoverageCompileGuard?.Invoke();
+                RequireCompilationProject(copiedProject);
+                compile = references.Add(ReadCompilationControl());
+                if (!(bool)compile.Enabled) return;
+                try
+                {
+                    compile.Execute();
+                    RequireCompilationProject(copiedProject);
+                }
+                catch (Exception error)
+                { throw new VbaTestInvocationException("Coverage compilation command completion is uncertain; no retry was attempted. " + error.Message, true, error); }
             }
-            catch (Exception error)
-            { throw new VbaTestInvocationException("Coverage compilation command completion is uncertain; no retry was attempted. " + error.Message, true, error); }
         }
 
         /// <summary>Waits for a later owner-thread observation that the native compile command is no longer enabled.</summary>
@@ -79,16 +85,19 @@ namespace VBAi
                 try
                 {
                     RequireOwner(); guard();
-                    RequireCompilationProject(copiedProject);
-                    dynamic compile = ReadCompilationControl();
-                    if (!(bool)compile.Enabled)
+                    using (var references = new VbaTestComReferences(ReleaseAcquired))
                     {
-                        // COM getters can pump messages; confirm authority and context after the final read.
-                        guard(); RequireCompilationProject(copiedProject);
-                        finish(null);
+                        RequireCompilationProject(copiedProject);
+                        dynamic compile = references.Add(ReadCompilationControl());
+                        if (!(bool)compile.Enabled)
+                        {
+                            // COM getters can pump messages; confirm authority and context after the final read.
+                            guard(); RequireCompilationProject(copiedProject);
+                            finish(null);
+                        }
+                        else if (CoverageCompilationClock() - started >= CompilationDeadlineMilliseconds)
+                            throw new InvalidOperationException("The coverage compiler is still enabled when observed after the three-second deadline; no tests were dispatched.");
                     }
-                    else if (CoverageCompilationClock() - started >= CompilationDeadlineMilliseconds)
-                        throw new InvalidOperationException("The coverage compiler is still enabled when observed after the three-second deadline; no tests were dispatched.");
                 }
                 catch (Exception error) { finish(error); }
             }
@@ -118,22 +127,30 @@ namespace VBAi
         private void RequireCompilationProject(object copiedProject)
         {
             RequireOwner();
-            object activeProject = (object)vbe.ActiveVBProject;
-            if (!ReferenceEquals(activeProject, copiedProject) && !VbeDebug.NativeProcedureValuesHost.SameComIdentity(activeProject, copiedProject))
-                throw new InvalidOperationException("The native compiler does not target the exact owned coverage copy.");
-            if ((int)((dynamic)copiedProject).Mode != 2)
-                throw new InvalidOperationException("The coverage compiler requires the owned project in design mode.");
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            {
+                object activeProject = references.Add((object)vbe.ActiveVBProject);
+                if (!ReferenceEquals(activeProject, copiedProject) && !VbeDebug.NativeProcedureValuesHost.SameComIdentity(activeProject, copiedProject))
+                    throw new InvalidOperationException("The native compiler does not target the exact owned coverage copy.");
+                if ((int)((dynamic)copiedProject).Mode != 2)
+                    throw new InvalidOperationException("The coverage compiler requires the owned project in design mode.");
+            }
         }
 
         /// <summary>Finds and validates the built-in VBE Compile command before it can be invoked.</summary>
         /// <returns>Native command-bar control with built-in ID 578 and no assigned macro action.</returns>
         private object ReadCompilationControl()
         {
-            dynamic compile = vbe.CommandBars.FindControl(1, 578);
-            if (compile == null || (int)compile.Id != 578 || (int)compile.Type != 1 || !(bool)compile.BuiltIn
-                || !string.IsNullOrEmpty((string)compile.OnAction))
-                throw new InvalidOperationException("The native VBA compile command is unavailable.");
-            return compile;
+            using (var references = new VbaTestComReferences(ReleaseAcquired))
+            {
+                dynamic bars = references.Add((object)vbe.CommandBars);
+                dynamic compile = references.Add((object)bars.FindControl(1, 578));
+                if (compile == null || (int)compile.Id != 578 || (int)compile.Type != 1 || !(bool)compile.BuiltIn
+                    || !string.IsNullOrEmpty((string)compile.OnAction))
+                    throw new InvalidOperationException("The native VBA compile command is unavailable.");
+                references.Transfer((object)compile);
+                return compile;
+            }
         }
 
         /// <summary>Starts a WinForms timer that invokes the polling action on the UI thread.</summary>

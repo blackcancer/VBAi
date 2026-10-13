@@ -8,7 +8,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         /// <summary>Vérifie la création du compositeur, du transcript et des modes par défaut.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ConstructorAndLocalSurfacesCreateComposerTranscriptAndModes()
         {

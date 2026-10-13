@@ -8,8 +8,16 @@ namespace VBAi.Tests.Unit
 {
     public sealed partial class LlmVbeToolsBoundaryTests
     {
-        [TestMethod]
-        public async Task GroupedOptionToolPreservesScalarValuesAndUsesOneNativeDispatch()
+        /// <summary>Pumps the owning STA while the real option-tool pipeline awaits its worker.</summary>
+        /// <param name="fixture">Fixture retaining the original native option delegates.</param>
+        /// <param name="name">Registered option command.</param>
+        /// <param name="arguments">Original option arguments.</param>
+        /// <returns>The completed response without dispatching the command twice.</returns>
+        private static string InvokeOptions(ToolFixture fixture, string name, string arguments)
+            => VBAi.Tests.Infrastructure.ModernEditorDebugFixture.Wait(fixture.Tools.InvokeAsync(name, arguments));
+
+        [WinFormsTestMethod]
+        public void GroupedOptionToolPreservesScalarValuesAndUsesOneNativeDispatch()
         {
             var fixture = new ToolFixture(); int calls = 0;
             fixture.Tools.Native.SetVbeOption = request =>
@@ -22,7 +30,7 @@ namespace VBAi.Tests.Unit
                 Assert.AreEqual("Normal Text", request.OptionChanges[2].Query);
                 return new { CommitRequested = true, DialogClosed = true };
             };
-            Success(await fixture.Tools.InvokeAsync("set_vbe_option", Json.Serialize(new
+            Success(InvokeOptions(fixture, "set_vbe_option", Json.Serialize(new
             {
                 ExpectedOptionsVersion = new string('a', 64),
                 OptionChanges = new object[] {
@@ -33,8 +41,8 @@ namespace VBAi.Tests.Unit
             Assert.AreEqual(1, calls);
         }
 
-        [TestMethod]
-        public async Task MalformedOptionGroupsAndMixedLegacyFieldsNeverReachTheNativeBoundary()
+        [WinFormsTestMethod]
+        public void MalformedOptionGroupsAndMixedLegacyFieldsNeverReachTheNativeBoundary()
         {
             var fixture = new ToolFixture(); int calls = 0;
             fixture.Tools.Native.SetVbeOption = request => { calls++; return new { }; };
@@ -47,30 +55,30 @@ namespace VBAi.Tests.Unit
                 new { Pane = "Editor", Property = "X", Value = false, Extra = true } };
             foreach (object batch in new object[] { null, "bad", new object[0], Enumerable.Repeat((object)valid, 65).ToArray() }
                 .Concat(badEntries.Select(entry => (object)new[] { entry })))
-                Failed(await fixture.Tools.InvokeAsync("set_vbe_option", Json.Serialize(new { ExpectedOptionsVersion = "revision", OptionChanges = batch })), "malformed batch");
+                Failed(InvokeOptions(fixture, "set_vbe_option", Json.Serialize(new { ExpectedOptionsVersion = "revision", OptionChanges = batch })), "malformed batch");
             foreach (string field in new[] { "Pane", "Property", "Value", "Query" })
             {
                 var args = new Dictionary<string, object> { ["ExpectedOptionsVersion"] = "revision", ["OptionChanges"] = new[] { valid }, [field] = field == "Value" ? (object)false : "legacy" };
-                Failed(await fixture.Tools.InvokeAsync("set_vbe_option", Json.Serialize(args)), "mixed " + field);
+                Failed(InvokeOptions(fixture, "set_vbe_option", Json.Serialize(args)), "mixed " + field);
             }
             foreach (string field in new[] { "Pane", "Property", "Value" })
             {
                 var args = new Dictionary<string, object>(valid) { ["ExpectedOptionsVersion"] = "revision" }; args.Remove(field);
-                Failed(await fixture.Tools.InvokeAsync("set_vbe_option", Json.Serialize(args)), "missing " + field);
+                Failed(InvokeOptions(fixture, "set_vbe_option", Json.Serialize(args)), "missing " + field);
             }
             Assert.AreEqual(0, calls);
         }
 
-        [TestMethod]
-        public async Task GroupedOptionsKeepReadOnlyAndPlanningGuards()
+        [WinFormsTestMethod]
+        public void GroupedOptionsKeepReadOnlyAndPlanningGuards()
         {
             var fixture = new ToolFixture(); int calls = 0;
             fixture.Tools.Native.SetVbeOption = request => { calls++; return new { }; };
             string args = Json.Serialize(new { ExpectedOptionsVersion = "revision", OptionChanges = new[] { new { Pane = "Editor", Property = "Auto Syntax Check", Value = false } } });
             fixture.Settings.VbeEditApproval = "ReadOnly";
-            Failed(await fixture.Tools.InvokeAsync("set_vbe_option", args), "read only");
+            Failed(InvokeOptions(fixture, "set_vbe_option", args), "read only");
             fixture.Settings.VbeEditApproval = "Automatic"; fixture.Tools.Mode = ChatMode.Plan;
-            Failed(await fixture.Tools.InvokeAsync("set_vbe_option", args), "planning");
+            Failed(InvokeOptions(fixture, "set_vbe_option", args), "planning");
             Assert.AreEqual(0, calls);
         }
     }

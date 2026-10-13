@@ -10,7 +10,7 @@ namespace VBAi.Tests.Unit
     using VBAi;
 
     /// <summary>Vérifie le décodage des flux OpenAI compatibles et Claude.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed partial class StreamTests
     {

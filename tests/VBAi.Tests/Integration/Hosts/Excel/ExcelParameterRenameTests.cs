@@ -11,7 +11,6 @@ namespace VBAi.Tests.Integration
     public sealed class ExcelParameterRenameTests
     {
         /// <summary>Compile implicitement et exécute une fonction privée renommée puis restaure la source initiale.</summary>
-        [TestMethod]
         [STATestMethod]
         public void PrivateParameterRenamePreservesNativeCallBindingAndIsUndoable()
         {

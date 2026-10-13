@@ -14,7 +14,7 @@ namespace VBAi.Tests.Unit
     using VBAi.Tests.Infrastructure;
 
     /// <summary>Vérifie les appels GitHub avec handlers mémoire et fixtures de processus sans accès réseau réel.</summary>
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed partial class GitReviewTests
     {
         /// <summary>Teste la validation des chemins, statuts HTTP, entrées, annulation et corps de création.</summary>

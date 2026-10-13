@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="$this.Text" xml:space="preserve"><value>Tableau capturé</value></data>
+  <data name="copy.Text" xml:space="preserve"><value>Copier le tableau</value></data>
+  <data name="copy.AccessibleName" xml:space="preserve"><value>Copier tout le tableau capturé au format TSV</value></data>
+  <data name="close.Text" xml:space="preserve"><value>Fermer</value></data>
+  <data name="textSizeLabel.Text" xml:space="preserve"><value>Taille du texte (pt)</value></data>
+  <data name="textSize.AccessibleName" xml:space="preserve"><value>Taille du texte de lecture en points</value></data>
+  <data name="cellLabel.Text" xml:space="preserve"><value>Texte de la cellule sélectionnée</value></data>
+  <data name="selectedCell.AccessibleName" xml:space="preserve"><value>Texte intégral de la cellule capturée sélectionnée</value></data>
+  <data name="grid.AccessibleName" xml:space="preserve"><value>Tableau capturé en lecture seule</value></data>
+  <data name="summary.Text" xml:space="preserve"><value>Snapshot capturé</value></data>
+  <data name="summaryFormat" xml:space="preserve"><value>{0} lignes · {1} colonnes · snapshot capturé</value></data>
+  <data name="note.Text" xml:space="preserve"><value>Le texte capturé, avec ses unités et valeurs inconnues, est conservé.</value></data>
+</root>

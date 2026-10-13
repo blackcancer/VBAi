@@ -36,8 +36,8 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
 
         internal static OllamaSyntheticWireCapture ForHeadlessFixture(string fixture)
         {
-            if (fixture != "cancellation-recovery" && fixture != "synthetic-tool-roundtrip")
-                throw new InvalidOperationException("Only the two synthetic headless fixtures may enable capture.");
+            if (fixture != "cancellation-recovery" && fixture != "synthetic-tool-roundtrip" && fixture != "synthetic-host-context")
+                throw new InvalidOperationException("Only explicitly declared synthetic headless fixtures may enable capture.");
             return FromEnvironment(false, fixture, Environment.GetEnvironmentVariable);
         }
 
@@ -47,7 +47,7 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
         {
             bool enabled = read(ui ? UiFlag : HeadlessFlag) == "1";
             string root = enabled ? read(ui ? UiResults : HeadlessResults) ??
-                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ui ? "ollama-ui-diagnostics" : "ollama-headless-diagnostics") : null;
+                Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, ui ? "ollama-ui-diagnostics" : "ollama-headless-diagnostics") : null;
             return new OllamaSyntheticWireCapture(enabled, true, root,
                 enabled ? OllamaQualificationEndpoint.Parse(read(OllamaQualificationEndpoint.EnvironmentName)) : null, fixture,
                 getFactory ?? (() => LlmChatClient.HttpHandlerFactory), setFactory ?? (value => LlmChatClient.HttpHandlerFactory = value), save);
@@ -61,7 +61,7 @@ namespace VBAi.Tests.Infrastructure.Diagnostics
             Enabled = enabled;
             if (!enabled) return;
             if (!syntheticFixture) throw new InvalidOperationException("Capture requires an explicitly synthetic fixture.");
-            if (fixture != "detached-ui" && fixture != "cancellation-recovery" && fixture != "synthetic-tool-roundtrip")
+            if (fixture != "detached-ui" && fixture != "cancellation-recovery" && fixture != "synthetic-tool-roundtrip" && fixture != "synthetic-host-context")
                 throw new InvalidOperationException("Unknown synthetic fixture scope.");
             if (endpoint == null || !endpoint.IsAbsoluteUri)
                 throw new InvalidOperationException("An exact canonical loopback endpoint is required.");

@@ -10,7 +10,7 @@ using System.Web.Script.Serialization;
 using VBAi.Tests.Infrastructure;
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    [ToolBoundaryTestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed partial class UpdateCoordinatorTests
     {
         [TestMethod]

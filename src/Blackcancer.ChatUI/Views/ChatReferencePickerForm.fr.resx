@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="$this.Text" xml:space="preserve"><value>Choisir des références</value></data>
+  <data name="queryLabel.Text" xml:space="preserve"><value>Recherche</value></data>
+  <data name="search.Text" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="inspect.Text" xml:space="preserve"><value>Inspecter</value></data>
+  <data name="attach.Text" xml:space="preserve"><value>Joindre au brouillon</value></data>
+  <data name="close.Text" xml:space="preserve"><value>Fermer</value></data>
+  <data name="labelColumn.Text" xml:space="preserve"><value>Référence</value></data>
+  <data name="kindColumn.Text" xml:space="preserve"><value>Type</value></data>
+  <data name="detailColumn.Text" xml:space="preserve"><value>Détails</value></data>
+  <data name="statusNote.Text" xml:space="preserve"><value>Sélectionnez une référence après recherche.</value></data>
+  <data name="explanation.Text" xml:space="preserve"><value>Inspecter lit la référence sélectionnée à votre demande. Joindre nécessite une action explicite et une validation de l’hôte.</value></data>
+</root>

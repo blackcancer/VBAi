@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Windows.Forms;
@@ -163,6 +164,228 @@ namespace VBAi.Tests.Unit
                 Call(null, "ObserveCollectionEvents", observer, (Func<object>)(() => new object()));
                 Call(null, "ObserveCollectionEvents", observer, (Func<object>)(() => null));
                 Call(null, "ObserveCollectionEvents", observer, (Func<object>)(() => { throw new IOException("closed"); }));
+            }
+        }
+
+        /// <summary>A COM callback cannot start another polling tick while the original tick owns the timer.</summary>
+        [STATestMethod]
+        public void ContextPollingRejectsReentryAndRestartsAfterCompletion()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show();
+                var timer = Get<Timer>(window, "contextMonitorTimer");
+                timer.Stop(); Set(window, "contextDirty", false);
+                int reads = 0, nested = 0;
+                runtime.Host = request =>
+                {
+                    reads++;
+                    Assert.IsTrue(Get<bool>(window, "contextMonitorReading"));
+                    Assert.IsFalse(timer.Enabled, "The timer must remain suspended while COM pumps messages.");
+                    int before = reads;
+                    Call(window, "PollContext", runtime.Session); nested++;
+                    Assert.AreEqual(before, reads, "A nested tick must return before another host read.");
+                    return Response.Success(new object[0]);
+                };
+                Call(window, "PollContext", runtime.Session);
+                Assert.AreEqual(2, reads); Assert.AreEqual(2, nested);
+                Assert.IsFalse(Get<bool>(window, "contextMonitorReading")); Assert.IsTrue(timer.Enabled);
+            }
+        }
+
+        /// <summary>A failed host read releases the guard and permits the next regular tick.</summary>
+        [STATestMethod]
+        public void ContextPollingRecoversFromAnExceptionWithoutLosingDirtyState()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show(); var timer = Get<Timer>(window, "contextMonitorTimer"); timer.Stop();
+                Set(window, "contextDirty", true);
+                runtime.Host = request => { throw new IOException("owned read failed"); };
+                Call(window, "PollContext", runtime.Session);
+                Assert.IsTrue(Get<bool>(window, "contextDirty"));
+                Assert.IsFalse(Get<bool>(window, "contextMonitorReading")); Assert.IsTrue(timer.Enabled);
+                int reads = 0;
+                runtime.Host = request => { reads++; return Response.Success(new object[0]); };
+                Call(window, "PollContext", runtime.Session);
+                Assert.IsTrue(reads > 0); Assert.IsFalse(Get<bool>(window, "contextDirty"));
+                Assert.IsFalse(Get<bool>(window, "contextMonitorReading")); Assert.IsTrue(timer.Enabled);
+            }
+        }
+
+        /// <summary>Pending scope and runtime transitions defer passive reads without clearing an event.</summary>
+        [STATestMethod]
+        public void ContextPollingDefersScopeAndRuntimeTransitions()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show(); int reads = 0;
+                runtime.Host = request => { reads++; return Response.Success(new object[0]); };
+                foreach (string field in new[] { "busy", "loadingSession", "loadingScope", "runtimeDisposed" })
+                {
+                    Set(window, field, true); Set(window, "contextDirty", true);
+                    try
+                    {
+                        Call(window, "PollContext", runtime.Session);
+                        Assert.AreEqual(0, reads, field);
+                        Assert.IsTrue(Get<bool>(window, "contextDirty"), field);
+                        Assert.IsFalse(Get<bool>(window, "contextMonitorReading"), field);
+                    }
+                    finally { Set(window, field, false); }
+                }
+            }
+        }
+
+        /// <summary>Native inspection keeps a disposable copy out of passive context acquisition.</summary>
+        [STATestMethod]
+        public void ContextPollingDefersNativeInspectionAndReconcilesAfterItsOwnerReleasesIt()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show(); Get<Timer>(window, "contextMonitorTimer").Stop();
+                Set(window, "contextDirty", true); int reads = 0;
+                runtime.Host = request => { reads++; return Response.Success(new object[0]); };
+                using (new VbeDebugInspection())
+                {
+                    Call(window, "PollContext", runtime.Session);
+                    Assert.AreEqual(false, Call(window, "RefreshAvailableScopes", runtime.Session));
+                    Assert.AreEqual(0, reads);
+                    Assert.IsTrue(Get<bool>(window, "contextDirty"));
+                    Assert.IsFalse(Get<bool>(window, "contextMonitorReading"));
+                }
+                Call(window, "PollContext", runtime.Session);
+                Assert.IsTrue(reads > 0);
+                Assert.IsFalse(Get<bool>(window, "contextDirty"));
+            }
+        }
+
+        /// <summary>Disposal pumped by the first read prevents later reads and timer resurrection.</summary>
+        [STATestMethod]
+        public void ContextPollingDoesNotReadOrRestartAfterReentrantDisposal()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show(); var timer = Get<Timer>(window, "contextMonitorTimer"); timer.Stop();
+                Set(window, "contextDirty", false); int reads = 0;
+                runtime.Host = request => { reads++; window.Dispose(); return Response.Success(new object[0]); };
+                Call(window, "PollContext", runtime.Session);
+                Assert.AreEqual(1, reads); Assert.IsTrue(window.IsDisposed);
+                Assert.IsFalse(Get<bool>(window, "contextMonitorReading")); Assert.IsFalse(timer.Enabled);
+            }
+        }
+
+        /// <summary>Every deferred read rechecks visibility and active turns after COM pumps a transition.</summary>
+        [STATestMethod]
+        public void ContextPollingStopsNativeReadsWhenATurnStartsOrTheWindowHides()
+        {
+            foreach (bool hide in new[] { false, true })
+                using (var runtime = new RuntimeScope())
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    window.Show(); var timer = Get<Timer>(window, "contextMonitorTimer"); timer.Stop();
+                    Set(window, "contextDirty", false); int reads = 0;
+                    runtime.Host = request =>
+                    {
+                        reads++;
+                        if (hide) window.Hide(); else Set(window, "busy", true);
+                        return Response.Success(new object[0]);
+                    };
+                    Call(window, "PollContext", runtime.Session);
+                    Assert.AreEqual(1, reads);
+                    Assert.IsFalse(Get<bool>(window, "contextMonitorReading")); Assert.IsTrue(timer.Enabled);
+                    Set(window, "busy", false);
+                }
+        }
+
+        /// <summary>Records when native collection acquisition begins, independently of the injected catalogue response.</summary>
+        public sealed class ContextPollingEventHost
+        {
+            /// <summary>Projects visible to the event-source resolver.</summary>
+            public readonly List<VbeSessionTests.FakeProject> Projects = new List<VbeSessionTests.FakeProject>();
+            /// <summary>Observation executed whenever a collection getter would enter native code.</summary>
+            public Action SourceObserved;
+            /// <summary>Returns the current project collection after recording the acquisition boundary.</summary>
+            public List<VbeSessionTests.FakeProject> VBProjects { get { SourceObserved?.Invoke(); return Projects; } }
+        }
+
+        /// <summary>A removed scope is reconciled before native event sources can resolve the stale selector.</summary>
+        [STATestMethod]
+        public void ContextPollingReconcilesClosedScopeBeforeNativeSourceAcquisition()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show(); Get<Timer>(window, "contextMonitorTimer").Stop();
+                Assert.IsNotNull(Get<ComboBox>(window, "scopePicker").SelectedItem);
+                var source = new ContextPollingEventHost();
+                var session = new VbeSession(source);
+                bool reconciled = false; int acquisitions = 0;
+                runtime.Host = request =>
+                {
+                    if (request.Command == "list_projects") reconciled = true;
+                    return Response.Success(new object[0]);
+                };
+                source.SourceObserved = () =>
+                {
+                    acquisitions++;
+                    Assert.IsTrue(reconciled, "Native collection acquisition must follow the catalogue refresh.");
+                    Assert.IsNull(Get<ComboBox>(window, "scopePicker").SelectedItem, "The removed scope must not reach a native resolver.");
+                };
+                Set(window, "contextDirty", true);
+                Call(window, "PollContext", session);
+                Assert.AreEqual(1, acquisitions);
+                Assert.IsFalse(Get<bool>(window, "contextDirty"));
+                Assert.IsFalse(Get<bool>(window, "contextMonitorReading"));
+            }
+        }
+
+        /// <summary>An unavailable catalogue preserves the event and does not resolve native sources from stale data.</summary>
+        [STATestMethod]
+        public void ContextPollingDefersNativeSourcesAfterFailedScopeRefresh()
+        {
+            foreach (bool invalidData in new[] { false, true })
+                using (var runtime = new RuntimeScope())
+                using (var window = LoadedWindow(runtime.Session))
+                {
+                    window.Show(); Get<Timer>(window, "contextMonitorTimer").Stop();
+                    var selected = Get<ComboBox>(window, "scopePicker").SelectedItem;
+                    int acquisitions = 0, reads = 0;
+                    var source = new ContextPollingEventHost { SourceObserved = () => acquisitions++ };
+                    runtime.Host = request => { reads++; return invalidData ? Response.Success(new { Invalid = true }) : Response.Failure("closed catalogue"); };
+                    Set(window, "contextDirty", true);
+                    Call(window, "PollContext", new VbeSession(source));
+                    Assert.AreEqual(1, reads); Assert.AreEqual(0, acquisitions);
+                    Assert.AreSame(selected, Get<ComboBox>(window, "scopePicker").SelectedItem);
+                    Assert.IsTrue(Get<bool>(window, "contextDirty"));
+                    Assert.IsFalse(Get<bool>(window, "contextMonitorReading"));
+                    Assert.IsTrue(Get<Timer>(window, "contextMonitorTimer").Enabled);
+                }
+        }
+
+        /// <summary>A project event pumped during collection acquisition forces another reconciliation before component sources.</summary>
+        [STATestMethod]
+        public void ContextPollingReconcilesAnEventRaisedDuringCollectionAcquisition()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = LoadedWindow(runtime.Session))
+            {
+                window.Show(); Get<Timer>(window, "contextMonitorTimer").Stop();
+                Set(window, "contextDirty", false);
+                int acquisitions = 0, refreshed = 0;
+                var source = new ContextPollingEventHost();
+                source.SourceObserved = () => { acquisitions++; Set(window, "contextDirty", true); };
+                runtime.Host = request => { if (request.Command == "list_projects") refreshed++; return Response.Success(new object[0]); };
+                Call(window, "PollContext", new VbeSession(source));
+                Assert.AreEqual(1, acquisitions);
+                Assert.AreEqual(2, refreshed, "One refresh precedes component acquisition; the later read is the normal global poll.");
+                Assert.IsNull(Get<ComboBox>(window, "scopePicker").SelectedItem);
+                Assert.IsFalse(Get<bool>(window, "contextDirty"));
+                Assert.IsFalse(Get<bool>(window, "contextMonitorReading"));
             }
         }
     }

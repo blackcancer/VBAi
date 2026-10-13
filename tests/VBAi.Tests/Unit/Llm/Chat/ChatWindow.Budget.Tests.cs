@@ -9,6 +9,60 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         [STATestMethod, TestCategory("Unit")]
+        public void OllamaEffortUsesTheCurrentConversationAndIsRetainedAcrossToolRounds()
+        {
+            using (var runtime = new RuntimeScope())
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama", Effort = "none" }))
+            {
+                var provider = VBAi.Tests.Infrastructure.LlmBoundaryScope.Provider("Ollama");
+                var capabilities = new LlmModelCapabilities(reasoning: true);
+                var model = new LlmModelOption("local-test", "Local test", defaultEffort: "default", efforts: OllamaReasoning.Options(capabilities), capabilities: capabilities);
+                var models = Get<System.Windows.Forms.ComboBox>(window, "modelPicker");
+                models.Items[0] = model; models.SelectedIndex = 0;
+                Get<LlmSettings>(window, "settings").SetReasoningEffort(provider, model.Id, "default");
+                Call(window, "UpdateEfforts", provider, model);
+                var efforts = Get<System.Windows.Forms.ComboBox>(window, "effortPicker");
+                Assert.IsTrue(efforts.Enabled);
+                Assert.AreEqual("none", ((LlmEffortOption)efforts.SelectedItem).Id);
+                var handler = new ChatResponseHandler("{\"choices\":[{\"finish_reason\":\"tool_calls\",\"message\":{\"role\":\"assistant\",\"tool_calls\":[{\"id\":\"one\",\"function\":{\"name\":\"status\",\"arguments\":\"{}\"}}]}}]}",
+                    "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\",\"content\":\"done\"}}]}");
+                window.HttpHandlerOverride = () => handler;
+                ChatWindow.InvokeTool = (tools, name, arguments) => { efforts.SelectedIndex = 0; return Task.FromResult("{\"Ok\":true}"); };
+                Question(window, "inspect synthetic status"); CompleteOnSta((Task)Call(window, "SendAsync"));
+                Assert.AreEqual(2, handler.Requests.Count);
+                foreach (string body in handler.Requests)
+                    Assert.AreEqual("none", ((IDictionary<string, object>)new JavaScriptSerializer().DeserializeObject(body))["reasoning_effort"]);
+                Assert.IsFalse(Get<bool>(window, "busy"));
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
+        public void OllamaReasoningRestoresPerModelDefaultsButUnknownModelsOfferNoControl()
+        {
+            using (var window = ReadyHttpWindow(new ChatSessionState { Scope = "temporary:test", Provider = "Ollama" }))
+            {
+                var provider = VBAi.Tests.Infrastructure.LlmBoundaryScope.Provider("Ollama");
+                var settings = Get<LlmSettings>(window, "settings");
+                settings.SetReasoningEffort(provider, "thinking", "none");
+                var capabilities = new LlmModelCapabilities(reasoning: true);
+                var model = new LlmModelOption("thinking", "Thinking", defaultEffort: "default", efforts: OllamaReasoning.Options(capabilities), capabilities: capabilities);
+                Call(window, "UpdateEfforts", provider, model);
+                var efforts = Get<System.Windows.Forms.ComboBox>(window, "effortPicker");
+                Assert.AreEqual("none", ((LlmEffortOption)efforts.SelectedItem).Id);
+                Get<ChatSessionState>(window, "currentSession").Effort = "default";
+                Call(window, "UpdateEfforts", provider, model);
+                Assert.AreEqual("default", ((LlmEffortOption)efforts.SelectedItem).Id);
+                foreach (var unknown in new[] { new LlmModelOption("legacy", "Legacy"), new LlmModelOption("plain", "Plain", capabilities: new LlmModelCapabilities(reasoning: false)) })
+                {
+                    Call(window, "UpdateEfforts", provider, unknown);
+                    Assert.IsFalse(efforts.Enabled); Assert.AreEqual(0, efforts.Items.Count);
+                }
+                Set(window, "currentSession", null);
+            }
+        }
+
+        [STATestMethod, TestCategory("Unit")]
         public void HttpSafetyPauseCountsIdenticalResultsNullAndMalformedResponsesAsStalledRounds()
         {
             foreach (string result in new[] { "null", "malformed", "{\"Ok\":true,\"Data\":\"same\"}" })
@@ -334,10 +388,10 @@ namespace VBAi.Tests.Unit
         public void ResumeAcceptsMatchingEffortAndSkipsUiCleanupAfterOwnedWindowDisposal()
         {
             using (var runtime = new RuntimeScope()) foreach (bool dispose in new[] { false, true })
-                using (var window = ReadyHttpWindow(new ChatSessionState { BudgetPaused = true, PausedProvider = "Ollama", PausedModel = "local-test", PausedMode = ChatMode.Agent, Mode = ChatMode.Agent, PausedTurnId = "turn", PausedEffort = "high" }))
+                using (var window = ReadyHttpWindow(new ChatSessionState { BudgetPaused = true, PausedProvider = "Ollama", PausedModel = "local-test", PausedMode = ChatMode.Agent, Mode = ChatMode.Agent, PausedTurnId = "turn", PausedEffort = "default" }))
                 {
                     var effort = Get<System.Windows.Forms.ComboBox>(window, "effortPicker");
-                    effort.Items.Add(new LlmEffortOption("high", "High")); effort.SelectedIndex = 0;
+                    effort.Items.Add(new LlmEffortOption("default", "Model default")); effort.SelectedIndex = 0;
                     var handler = new RuntimeHttpHandler { BeforeResponse = () => { if (dispose) window.Dispose(); } };
                     window.HttpHandlerOverride = () => handler;
                     CompleteOnSta((Task)Call(window, "ResumeBudgetAsync"));

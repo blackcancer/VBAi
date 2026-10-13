@@ -9,6 +9,10 @@ namespace VBAi
     /// <summary>Identifie un projet, module ou élément de code VBE et conserve son contexte de sélection.</summary>
     internal sealed class VbeChatReference
     {
+        /// <summary>Captures scalar reference metadata independently of later discovery or composer edits.</summary>
+        /// <returns>A detached snapshot retaining the current token, range and source revision.</returns>
+        internal VbeChatReference CaptureSnapshot() => (VbeChatReference)MemberwiseClone();
+
 
         /// <summary>Nom du projet associé à la référence.</summary>
         public string Project;
@@ -75,7 +79,7 @@ namespace VBAi
     }
 
     /// <summary>Charge progressivement les projets, modules et procédures disponibles pour les références de conversation.</summary>
-    internal sealed class VbeChatReferences
+    internal sealed partial class VbeChatReferences
     {
 
         /// <summary>Session VBE utilisée pour lire et naviguer dans le code.</summary>
@@ -198,6 +202,7 @@ namespace VBAi
                 if (!sourceResponse.Ok) throw new InvalidOperationException(sourceResponse.Error);
                 var sourceData = json.DeserializeObject(json.Serialize(sourceResponse.Data)) as IDictionary<string, object>;
                 string code = Field(sourceData, "Code"), sourceSha = Field(sourceData, "Sha256");
+                module.Sha256 = sourceSha;
                 foreach (var declaration in VbaDeclarationIndex.Read(code))
                     entries.Add(new VbeChatReference
                     {
@@ -275,6 +280,26 @@ namespace VBAi
             });
         }
 
+        /// <summary>Detaches a selected reference and pins a whole module that is still loading in discovery.</summary>
+        /// <param name="item">Selected catalogue item; its metadata is never modified.</param>
+        /// <returns>Detached metadata with a selected source revision when the target contains code.</returns>
+        /// <remarks>The caller must authorize project reads before selecting a source-backed reference.</remarks>
+        internal VbeChatReference CaptureSelection(VbeChatReference item)
+        {
+            if (item == null) throw new ArgumentNullException(nameof(item));
+            var snapshot = item.CaptureSnapshot();
+            if (snapshot.Module == null || !string.IsNullOrWhiteSpace(snapshot.Sha256)) return snapshot;
+            if (snapshot.Name != null)
+                throw new InvalidOperationException(snapshot.Token + UiText.Get(" changed since selection. Remove the token and select it again with #."));
+            Response response = Execute(new Request { Command = "read_module", Project = snapshot.Project, Module = snapshot.Module });
+            if (!response.Ok) throw new InvalidOperationException(response.Error);
+            var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
+            snapshot.Sha256 = Field(data, "Sha256");
+            if (string.IsNullOrWhiteSpace(snapshot.Sha256))
+                throw new InvalidOperationException(snapshot.Token + UiText.Get(" changed since selection. Remove the token and select it again with #."));
+            return snapshot;
+        }
+
         /// <summary>Résout une référence en code du projet, du module ou de la plage de procédure mémorisée.</summary>
         /// <param name="item">Référence à résoudre.</param>
         /// <returns>Texte descriptif et contenu de code associé.</returns>
@@ -298,9 +323,10 @@ namespace VBAi
             var data = json.DeserializeObject(json.Serialize(response.Data)) as IDictionary<string, object>;
             string code = Field(data, "Code");
             string sha = Field(data, "Sha256");
-            if (item.Name == null) { item.Sha256 = sha; return item.Token + " (SHA-256 " + sha + ")\n" + code; }
-            if (!string.Equals(sha, item.Sha256, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(item.Sha256) || string.IsNullOrEmpty(sha) ||
+                !string.Equals(sha, item.Sha256, StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(item.Token + UiText.Get(" changed since selection. Remove the token and select it again with #."));
+            if (item.Name == null) return item.Token + " (SHA-256 " + sha + ")\n" + code;
             string[] lines = code.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
             int start = Math.Max(1, item.StartLine);
             int end = Math.Min(lines.Length, item.EndLine);

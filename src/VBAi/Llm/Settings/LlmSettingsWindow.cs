@@ -108,7 +108,7 @@ namespace VBAi
         /// <summary>Crée et initialise la fenêtre sans paramètres persistants.</summary>
         public LlmSettingsWindow()
         {
-            InitializeComponent();
+            UiResourceReader.Apply(InitializeComponent);
             BindViews();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);
@@ -120,7 +120,7 @@ namespace VBAi
         public LlmSettingsWindow(LlmSettings settings)
         {
             this.settings = settings;
-            InitializeComponent();
+            UiResourceReader.Apply(InitializeComponent);
             BindViews();
             Icon = VbeWindowIcons.Icon("settings");
             UiText.Apply(this, null, githubToolTips);

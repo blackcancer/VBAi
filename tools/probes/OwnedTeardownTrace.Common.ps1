@@ -38,8 +38,10 @@ function Get-TeardownCommands([string]$log, [int]$targetProcessId, [string]$nonc
     # .ecxr is documented for minidumps, not this live exception event.
     # https://learn.microsoft.com/en-us/windows-hardware/drivers/debuggercmds/r--registers-
     $capture = '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .echo VBAI_TEARDOWN_REGISTER_MODE LiveEventThread; r; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; gn'
-    $forward='.echo VBAI_FIRSTCHANCE_AV_BEGIN '+$targetProcessId+' '+$nonce+'; .lastevent; .echo VBAI_FIRSTCHANCE_AV_END; gn'
+    $forward='.if (@$t19 < 4) { .echo VBAI_FIRSTCHANCE_AV_BEGIN '+$targetProcessId+' '+$nonce+'; .lastevent; .exr -1; .echo VBAI_FIRSTCHANCE_REGISTER_MODE LiveEventThread; r; kv; .echo VBAI_FIRSTCHANCE_AV_END; }; r @$t19=@$t19+1; gn'
     return ".logopen /u `"$safeLog`"`n" +
+        ".echo VBAI_TEARDOWN_MODULES_BEGIN $targetProcessId $nonce`nlm`n.echo VBAI_TEARDOWN_MODULES_END`n" +
+        'r @$t19=0' + "`n" +
         "sxe -c `"$capture`" -c2 `"$capture`" 0xc0000409`n" +
         "sxd -c `"$forward`" -c2 `"$capture`" 0xc0000005`n" +
         "sxn -c `"qd`" epr`n" +
@@ -78,6 +80,26 @@ function Test-OwnedFirstChanceAv([string]$text, [int]$targetProcessId, [string]$
     if(-not $match.Success){return $false}
     $event=[regex]::Match($match.Groups[1].Value,'(?im)^\s*Last event:\s*([0-9a-f]+)\.([0-9a-f]+):[^\r\n]*\bcode\s+c0000005\b[^\r\n]*first chance')
     return $event.Success -and [Convert]::ToInt64($event.Groups[1].Value,16) -eq $targetProcessId
+}
+# Count only executed, target-bound first-chance records with their live context.
+# A handler echo, a forwarded metadata-only event or an incomplete stack is not evidence.
+function Get-OwnedFirstChanceDetailCount([string]$text, [int]$targetProcessId, [string]$nonce) {
+    if ([string]::IsNullOrEmpty($text) -or $targetProcessId -le 0 -or $nonce -notmatch '^[a-f0-9]{32}$') { return 0 }
+    $marker='VBAI_FIRSTCHANCE_AV_BEGIN '+$targetProcessId+' '+$nonce
+    $count=0
+    foreach($match in [regex]::Matches($text,'(?ms)^'+[regex]::Escape($marker)+'\r?\n(.*?)^VBAI_FIRSTCHANCE_AV_END\r?$')) {
+        $body=$match.Groups[1].Value
+        $event=[regex]::Match($body,'(?im)^\s*Last event:\s*([0-9a-f]+)\.([0-9a-f]+):[^\r\n]*\bcode\s+c0000005\b[^\r\n]*first chance')
+        $rip=[regex]::Match($body,'(?im)^\s*rip=([0-9a-f]+)')
+        if (-not $event.Success -or [Convert]::ToInt64($event.Groups[1].Value,16) -ne $targetProcessId -or
+            $body -notmatch '(?im)^\s*ExceptionCode:\s*c0000005\b' -or
+            $body -notmatch '(?m)^VBAI_FIRSTCHANCE_REGISTER_MODE LiveEventThread\r?$' -or
+            -not $rip.Success -or [Convert]::ToUInt64($rip.Groups[1].Value,16) -eq 0 -or
+            $body -notmatch 'Child-SP\s+RetAddr' -or
+            $body -notmatch '(?im)^\s*[0-9a-f`]{8,}\s+[0-9a-f`]{8,}\s+\S') { continue }
+        $count++
+    }
+    return $count
 }
 function Test-OwnedStopBreakpoint([string]$text, [int]$targetProcessId, [string]$nonce) {
     $marker='VBAI_STOP_PROBE_BEGIN '+$nonce

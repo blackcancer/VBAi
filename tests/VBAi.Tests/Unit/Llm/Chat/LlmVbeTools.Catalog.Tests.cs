@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Script.Serialization;
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class ToolCatalogTests
     {
         private static string Name(object definition) => Convert.ToString(((Dictionary<string, object>)((Dictionary<string, object>)new JavaScriptSerializer().DeserializeObject(new JavaScriptSerializer().Serialize(definition)))["function"])["name"]);
@@ -43,7 +43,7 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
-    [Microsoft.VisualStudio.TestTools.UnitTesting.TestClass, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
+    [VBAi.Tests.Unit.ToolBoundaryTestClass, Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit")]
     public sealed class CatalogBoundaryTests
     {
         [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]

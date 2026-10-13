@@ -14,6 +14,9 @@ namespace VBAi.Tests.Unit
     {
         [DataTestMethod]
         [DataRow("Valid")]
+        [DataRow("ValidParamArray")]
+        [DataRow("ValidPersistence")]
+        [DataRow("ValidUnsigned")]
         [DataRow("WrongNonce")]
         [DataRow("WrongScenario")]
         [DataRow("WrongCandidate")]
@@ -36,11 +39,14 @@ namespace VBAi.Tests.Unit
                     ["Executable"] = @"C:\Owned\EXCEL.EXE",
                     ["AssemblyPath"] = assembly,
                     ["AssemblyMvid"] = variation == "WrongCandidate" ? Guid.NewGuid().ToString("D") : mvid,
-                    ["Scenario"] = variation == "WrongScenario" ? "UserMacro" : "NativeVariantArraysRoundTripWithBoundsAndOneInvocation"
+                    ["Scenario"] = variation == "WrongScenario" ? "UserMacro" : variation == "ValidParamArray"
+                        ? "NativeParamArrayCallsPreserveArityValuesAndSingleInvocation" : variation == "ValidPersistence"
+                        ? "ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving" : variation == "ValidUnsigned"
+                        ? "SavedUnsignedWorkbookHasNoSignatureAndPreservesSource" : "NativeVariantArraysRoundTripWithBoundsAndOneInvocation"
                 };
                 string path = Path.Combine(root, "teardown.pending.json");
                 File.WriteAllText(path, new JavaScriptSerializer().Serialize(pending), new UTF8Encoding(false));
-                string controller = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "Trace-OwnedExcelTeardown.ps1");
+                string controller = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tools", "probes", "Trace-OwnedExcelTeardown.ps1");
                 Assert.IsTrue(File.Exists(controller), "Exact controller fixture must be packaged with the tests.");
                 string command = "$ErrorActionPreference='Stop';[Console]::OutputEncoding=New-Object Text.UTF8Encoding($false); & " + Quote(controller) +
                     " -PendingReport " + Quote(path) + " -ExpectedMvid " + Quote(mvid) + " -ExpectedAssemblySha256 " + Quote(hash) +
@@ -60,8 +66,9 @@ namespace VBAi.Tests.Unit
                 {
                     var output = child.StandardOutput.ReadToEndAsync(); var error = child.StandardError.ReadToEndAsync();
                     Assert.IsTrue(child.WaitForExit(10000), "Prepare-only child timeout; preserve evidence, never kill host/debugger.");
-                    Assert.AreEqual(variation == "Valid", child.ExitCode == 0, output.Result + error.Result);
-                    if (variation == "Valid")
+                    bool valid = variation.StartsWith("Valid", StringComparison.Ordinal);
+                    Assert.AreEqual(valid, child.ExitCode == 0, output.Result + error.Result);
+                    if (valid)
                     {
                         var plan = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(output.Result);
                         Assert.AreEqual("PREPARE_ONLY", plan["Mode"]); Assert.AreEqual(0, plan["CleanupCallsIssuedByController"]);
@@ -78,7 +85,7 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void FirstAndSecondChanceUseTheSameBoundedExceptionCollector()
         {
-            string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
+            string common = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
             // Execute only the pure command generator, never start a debugger or target.
             string command = "$ErrorActionPreference='Stop'; . " + Quote(common) +
                 ";$commands=Get-TeardownCommands 'C:\\Owned\\trace.log' 424242 '0123456789abcdef0123456789abcdef';" +
@@ -88,8 +95,9 @@ namespace VBAi.Tests.Unit
                 "if($handler.Groups[1].Value -cne '.echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .lastevent; .exr -1; .echo VBAI_TEARDOWN_REGISTER_MODE LiveEventThread; r; kv; .echo VBAI_TEARDOWN_EXCEPTION_END; gn'){throw 'Collector must preserve live-event register and unhandled fatal semantics'};" +
                 "$av=[regex]::Match($commands,'(?m)^sxd -c \"([^\"]+)\" -c2 \"([^\"]+)\" 0xc0000005$');" +
                 "if(-not $av.Success -or $av.Groups[2].Value -cne $handler.Groups[1].Value){throw 'Second-chance AV collector differs'};" +
-                "if($av.Groups[1].Value -cne '.echo VBAI_FIRSTCHANCE_AV_BEGIN 424242 0123456789abcdef0123456789abcdef; .lastevent; .echo VBAI_FIRSTCHANCE_AV_END; gn'){throw 'First-chance AV must be forwarded unhandled'};" +
+                "if($av.Groups[1].Value -cne '.if (@$t19 < 4) { .echo VBAI_FIRSTCHANCE_AV_BEGIN 424242 0123456789abcdef0123456789abcdef; .lastevent; .exr -1; .echo VBAI_FIRSTCHANCE_REGISTER_MODE LiveEventThread; r; kv; .echo VBAI_FIRSTCHANCE_AV_END; }; r @$t19=@$t19+1; gn'){throw 'First-chance AV must be forwarded unhandled'};" +
                 "if($commands -notmatch '(?m)^sxn -c \"qd\" epr$'){throw 'Debugger may quit automatically only after process exit'};" +
+                "if($commands -notmatch '(?m)^\\.echo VBAI_TEARDOWN_MODULES_BEGIN 424242 0123456789abcdef0123456789abcdef\\r?\\nlm\\r?\\n\\.echo VBAI_TEARDOWN_MODULES_END\\r?$'){throw 'Exact owned module inventory must precede teardown'};" +
                 "if($commands -notmatch '(?m)^\\.echo VBAI_TEARDOWN_READY 424242 0123456789abcdef0123456789abcdef$'){throw 'Owned readiness identity missing'}";
             string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
             var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
@@ -107,10 +115,67 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        [DataTestMethod]
+        [DataRow("Complete", 1)]
+        [DataRow("MissingMode", 0)]
+        [DataRow("MissingRegisters", 0)]
+        [DataRow("MissingStack", 0)]
+        [DataRow("WrongPid", 0)]
+        [DataRow("WrongNonce", 0)]
+        [DataRow("SecondChance", 0)]
+        [DataRow("Echo", 0)]
+        [DataRow("TwoComplete", 2)]
+        [DataRow("Mixed", 1)]
+        [DataRow("Empty", 0)]
+        [DataRow("Null", 0)]
+        [DataRow("InvalidTarget", 0)]
+        [DataRow("InvalidNonce", 0)]
+        public void FirstChanceDetailsRequireExecutedOwnedLiveContext(string variation, int expected)
+        {
+            const string nonce = "0123456789abcdef0123456789abcdef";
+            string complete = "VBAI_FIRSTCHANCE_AV_BEGIN 424242 " + nonce + "\n" +
+                "Last event: 67932.abc: Access violation - code c0000005 (first chance)\n" +
+                "ExceptionCode: c0000005\nVBAI_FIRSTCHANCE_REGISTER_MODE LiveEventThread\n" +
+                "rip=0000000000123456\nChild-SP RetAddr\n0000000000001111 0000000000002222 native!Frame\n" +
+                "VBAI_FIRSTCHANCE_AV_END\n";
+            string text = complete;
+            switch (variation)
+            {
+                case "MissingMode": text = text.Replace("VBAI_FIRSTCHANCE_REGISTER_MODE LiveEventThread\n", ""); break;
+                case "MissingRegisters": text = text.Replace("rip=0000000000123456", "rip=0000000000000000"); break;
+                case "MissingStack": text = text.Replace("0000000000001111 0000000000002222 native!Frame\n", ""); break;
+                case "WrongPid": text = text.Replace("67932.abc", "67933.abc"); break;
+                case "WrongNonce": text = text.Replace(nonce, "ffffffffffffffffffffffffffffffff"); break;
+                case "SecondChance": text = text.Replace("first chance", "second chance"); break;
+                case "Echo": text = "0:000> .echo " + text; break;
+                case "TwoComplete": text += complete; break;
+                case "Mixed": text += complete.Replace("rip=0000000000123456", "rip=0000000000000000"); break;
+                case "Empty": text = ""; break;
+                case "Null": text = null; break;
+            }
+            string common = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
+            string command = "$ErrorActionPreference='Stop'; . " + Quote(common) +
+                "; $actual=Get-OwnedFirstChanceDetailCount " + (text == null ? "$null" : Quote(text)) +
+                " " + (variation == "InvalidTarget" ? "0" : "424242") + " " + Quote(variation == "InvalidNonce" ? "bad" : nonce) +
+                "; if($actual -ne " + expected + "){throw ('Unexpected qualified detail count: '+$actual)}";
+            string ps = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
+            var info = new ProcessStartInfo(ps, "-NoLogo -NoProfile -NonInteractive -EncodedCommand " + Convert.ToBase64String(Encoding.Unicode.GetBytes(command)))
+            {
+                UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true
+            };
+            info.EnvironmentVariables["PSModulePath"] = Path.Combine(Path.GetDirectoryName(ps), "Modules");
+            using (var child = Process.Start(info))
+            {
+                var output = child.StandardOutput.ReadToEndAsync(); var error = child.StandardError.ReadToEndAsync();
+                Assert.IsTrue(child.WaitForExit(10000), "Pure parser timeout; no host or debugger is involved.");
+                Assert.AreEqual(0, child.ExitCode, output.Result + error.Result);
+            }
+        }
+
         [TestMethod]
         public void OnlyExecutedExactReadinessCanArmTheOwnedDebugger()
         {
-            string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
+            string common = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
             string nonce = "0123456789abcdef0123456789abcdef";
             string line = "VBAI_TEARDOWN_READY 424242 " + nonce;
             string command = "$ErrorActionPreference='Stop'; . " + Quote(common) +
@@ -140,7 +205,7 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void PendingFaultAndEchoedStopEventsCannotAuthorizeDetachment()
         {
-            string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
+            string common = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
             string nonce = "0123456789abcdef0123456789abcdef";
             string stop = "VBAI_STOP_PROBE_BEGIN " + nonce + "\r\nLast event: 67932.1: breakpoint - code 80000003 (first chance)\r\nVBAI_STOP_PROBE_END\r\n";
             string firstAv = "VBAI_FIRSTCHANCE_AV_BEGIN 424242 " + nonce + "\r\nLast event: 67932.1: AV - code c0000005 (first chance)\r\nVBAI_FIRSTCHANCE_AV_END\r\n";
@@ -175,7 +240,7 @@ namespace VBAi.Tests.Unit
         [TestMethod]
         public void ExecutedExceptionRecordAndStackAreRequiredInsteadOfEchoedDebuggerCommands()
         {
-            string common = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
+            string common = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "tools", "probes", "OwnedTeardownTrace.Common.ps1");
             string genuine = "VBAI_TEARDOWN_EXCEPTION_BEGIN\r\nLast event: 67932.1: fatal - code c0000409 (!!! second chance !!!)\r\nExceptionCode: c0000409\r\nVBAI_TEARDOWN_REGISTER_MODE LiveEventThread\r\nrip=0000000000000010 rsp=0000000000000020\r\nChild-SP RetAddr Call Site\r\n0000000000000020 0000000000000030 module!frame\r\nVBAI_TEARDOWN_EXCEPTION_END\r\n";
             string echo = "0:000> sxe -c \".echo VBAI_TEARDOWN_EXCEPTION_BEGIN; .exr -1; kv; .echo VBAI_TEARDOWN_EXCEPTION_END\" 0xc0000409";
             string missingContext = genuine.Replace("rip=0000000000000010 rsp=0000000000000020", "Unable to get exception context, HRESULT 0x8000FFFF");

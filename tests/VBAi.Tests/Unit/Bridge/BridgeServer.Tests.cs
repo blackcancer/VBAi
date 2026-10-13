@@ -301,7 +301,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Vérifie les connexions successives, les erreurs de requête et la reprise après une erreur.</summary>
-        [TestMethod]
         [STATestMethod]
         public void PipeProcessesSuccessValidationAndMalformedJsonAcrossConnections()
         {
@@ -347,7 +346,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Refuse une exécution Immediate sans projet avant tout accès à une fenêtre native.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ImmediateCommandRejectsMissingProjectBeforeTouchingNativeWindow()
         {
@@ -365,7 +363,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void ImmediateCommandRequiresSelectedProjectPathBeforeNativeExecution()
         {
@@ -421,7 +418,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Refuse un mode invalide, un projet absent et un mode modifié avant l’exécution.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ImmediateCommandRejectsInvalidModeMissingProjectAndChangedModeWithoutExecuting()
         {

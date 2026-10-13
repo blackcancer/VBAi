@@ -21,6 +21,12 @@ namespace VBAi
         internal static LlmModelCapabilities FromCatalogue(LlmProvider provider, IDictionary<string, object> item)
         {
             if (provider == null || item == null) return Unknown;
+            if (provider.IsOllama)
+            {
+                string[] capabilities = Strings(item, "capabilities");
+                return new LlmModelCapabilities(Contains(capabilities, "tools"),
+                    Contains(capabilities, "thinking"), Contains(capabilities, "vision"));
+            }
             if (provider.Name == "OpenRouter")
             {
                 string[] parameters = Strings(item, "supported_parameters");

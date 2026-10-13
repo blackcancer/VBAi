@@ -831,7 +831,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Filtre les sessions selon le texte et l’état archivé, puis place les sessions épinglées en premier.</summary>
-        [TestMethod]
         [STATestMethod]
         public void HistoryFiltersArchivedSessionsAndOrdersPinnedFirst()
         {
@@ -867,7 +866,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Sauvegarde le titre, le brouillon et les messages de session sans stockage externe.</summary>
-        [TestMethod]
         [STATestMethod]
         public void SessionTitleAndDraftAreSavedWithoutExternalStore()
         {
@@ -893,7 +891,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Rogne le titre saisi manuellement et le limite à 120 caractères.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ManualRenameTrimsAndCapsTitle()
         {
@@ -913,7 +910,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Répare l’historique interrompu sans supprimer les messages antérieurs à l’appel d’outil incomplet.</summary>
-        [TestMethod]
         [STATestMethod]
         public void InterruptedToolHistoryDropsOnlyUnfinishedAssistantTail()
         {
@@ -931,7 +927,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Conserve les messages d’un appel d’outil dont la réponse est présente.</summary>
-        [TestMethod]
         [STATestMethod]
         public void CompletedToolHistoryIsPreserved()
         {

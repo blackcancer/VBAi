@@ -132,6 +132,26 @@ Bedrock uses the native Converse API and its bearer API key, not IAM access/secr
 keys, SigV4 or an AWS profile. Supply a model or inference-profile identifier/ARN
 available in the selected region. Custom connections currently have one profile.
 
+Local provider services must remain available for the whole conversation. VBAi
+does not start or restart Ollama, its WSL distribution or a model runner after a
+failed request. When hosting Ollama in WSL, an enabled systemd service alone does
+not keep the distribution alive; Microsoft documents this
+[WSL service lifetime](https://learn.microsoft.com/en-us/windows/wsl/systemd).
+Keep the chosen deployment running independently of VBAi and check its endpoint
+when the model catalogue cannot load. A live server does not, by itself, prove
+that a model runner has enough resources or that a conversation will complete.
+
+For Ollama, the model's advertised maximum context is distinct from the context
+allocated by the running model. VBAi uses the OpenAI-compatible endpoint, which
+does not offer a context-size parameter. If your local runner's context is too
+small for a conversation and its tools, create a separate model derived from
+your installed model with the appropriate `PARAMETER num_ctx` in its Modelfile,
+then select that derived model in the chat. Keep its value within the model's
+supported limit and your machine's available memory. VBAi does not rewrite the
+base model or server defaults. See Ollama's
+[context-size instructions](https://docs.ollama.com/api/openai-compatibility)
+and [model creation API](https://docs.ollama.com/api/create).
+
 ## Model capabilities and transport limits
 
 The model tooltip reports explicit catalogue declarations for tool calling,
@@ -151,14 +171,16 @@ qualification.
 | Mistral | Native booleans `capabilities.function_calling` and `capabilities.vision`; reasoning remains unknown. |
 | GitHub Copilot SDK | Native booleans `capabilities.supports.reasoningEffort` and `.vision`; tool support remains unknown. |
 | Codex app-server | `supportedReasoningEfforts` and explicitly returned `inputModalities`; tool support remains unknown. |
+| Ollama | The explicit `/api/tags` capability list declares `tools`, `thinking` and `vision`; absent or malformed lists remain unknown. |
 | Other catalogs and manual lists | Unknown unless their supported declaration schema is implemented. |
 
 An explicit complete list without a capability reports unsupported; an absent
 list is unknown. Codex efforts consisting only of `none` do not declare reasoning
 support. Reasoning metadata describes the provider's declared reasoning controls,
 not a guarantee that a public reasoning block will be returned. Vision metadata
-does not add an image-input workflow. VBAi does not enable new HTTP reasoning
-parameters or derive effort levels from model names.
+does not add an image-input workflow. Ollama's explicit reasoning-off choice is
+described below; other HTTP providers do not gain new reasoning controls through
+these declarations. VBAi does not derive effort levels from model names.
 
 The declarations follow the current primary schemas for
 [OpenRouter models](https://openrouter.ai/docs/guides/overview/models),
@@ -174,14 +196,26 @@ arguments are assembled before execution. Truncated or incomplete responses must
 not execute partial calls. Bedrock currently returns a complete Converse response,
 not ConverseStream. Claude's implemented response limit is 8,192 tokens.
 
+HTTP completion requests have a 120-second deadline for the entire response,
+including connection, headers and body reading. Receiving text or public
+reasoning does not reset that deadline. When it expires, VBAi reports that the
+provider did not finish in time; this is distinct from the user pressing Stop.
+Stop retains its interruption acknowledgement. Neither path automatically
+repeats a request or executes an incomplete tool call. Already applied changes
+remain reviewable in the conversation.
+
 Synthetic UI qualification can retain bounded stream metadata: chunk counters,
 whether text or tools were received, the final marker, a filtered terminal reason
 and a complete/empty/error outcome. These metadata exclude prompts, response
 content, tool names and arguments; they do not add a retry or change parsing.
 An empty terminal response remains distinct from a truncated response or a
-tool-only round. The selected Ollama configuration passes its stated live test
-scope, including the six installed Office assistants. Historical intermittent
-empty responses remain unresolved; see [qualification](release-qualification.md).
+tool-only round. Earlier Ollama profiles have passing results within their
+recorded scope; those results do not qualify a different model or DLL. The current
+Office bank still has an open Outlook chat result. Long reasoning without a text
+answer has also reproduced the deadline failure through the production client
+without Office. See [recorded validation](test-coverage.md) for the candidate and
+scenario boundaries. Historical intermittent empty responses remain unresolved;
+see [qualification](release-qualification.md).
 
 OpenAI requests include `store=false`; this is not a universal retention setting
 for every provider or a guarantee of zero retention. Provider-side data handling
@@ -200,6 +234,19 @@ captures these values when constructed, and other providers ignore them.
 Seed and context-size overrides are not sent. Model presence in the catalogue is not a guarantee of
 correct tool arguments or adherence to a request to answer without tools.
 
+When Ollama's `/api/tags` catalogue explicitly lists `thinking` for a model,
+the conversation's reasoning selector offers **Model default** and **Reasoning off**.
+Model default omits the reasoning field and leaves the server's behavior intact;
+Reasoning off sends the documented `reasoning_effort: "none"` value.
+These choices use the existing per-model default and per-conversation preference
+storage. The selected value is captured when a turn starts and retained through
+its tool rounds. Unknown or explicitly absent thinking support does not create
+reasoning choices. Unsupported saved selections are rejected before a request.
+VBAi does not infer named effort levels from model names. Older catalogues without
+capability declarations retain unknown capability state.
+See [Ollama's compatibility contract](https://docs.ollama.com/api/openai-compatibility)
+and the [0.32.0 request converter](https://github.com/ollama/ollama/blob/v0.32.0/openai/openai.go).
+
 On the tested diagnostic backend version `0.34.4`, the
 [OpenAI request converter](https://github.com/ollama/ollama/blob/v0.34.4/openai/openai.go#L644)
 sets omitted temperature and top-p to 1. Changing only those defaults in a
@@ -213,7 +260,7 @@ selected model, an explicit server context and explicit request sampling; it
 does not overwrite personal configuration. See [testing](../tests/README.md)
 and [recorded validation](test-coverage.md) for the actual observed results.
 
-The accepted isolated profile selects `qwen2.5:7b-instruct`, temperature `0`,
+The earlier accepted isolated profile selected `qwen2.5:7b-instruct`, temperature `0`,
 top-p `0.8`, server context `8192` and one parallel request. It passes exact
 synthetic tool arguments, shown chat streaming/cancellation/recovery and real
 read-only Excel inspection on the recorded candidate. These are explicit

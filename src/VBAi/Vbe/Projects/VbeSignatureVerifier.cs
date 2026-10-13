@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 
 namespace VBAi
 {
@@ -104,6 +105,9 @@ namespace VBAi
         /// <summary>Lecture du SIP enregistré, sans modification du registre.</summary>
         internal Func<Guid, string> Provider = ReadProvider;
 
+        /// <summary>Owns the current Microsoft VBA SIP when legacy per-format providers are unavailable.</summary>
+        internal OfficeVbaSignatureProvider ModernProvider = new OfficeVbaSignatureProvider();
+
         /// <summary>Vérifie le fichier sur disque sans exécuter VBA, accéder aux clés privées ou enregistrer le document.</summary>
         /// <param name="path">Chemin absolu du document Office enregistré.</param>
         /// <returns>SHA du fichier, disponibilité du SIP et résultat distinct de la présence d'une signature.</returns>
@@ -158,38 +162,57 @@ namespace VBAi
                 string hash;
                 using (var sha = SHA256.Create()) hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
                 stream.Position = 0;
-                string provider = Provider(subject);
-                if (string.IsNullOrWhiteSpace(provider) || !System.IO.Path.IsPathRooted(provider) ||
-                    !System.IO.Path.GetFileName(provider).Equals(library, StringComparison.OrdinalIgnoreCase) || !File.Exists(provider))
+                string provider = null;
+                OfficeVbaSignatureProvider.Lease modern = null;
+                try
+                {
+                    modern = ModernProvider?.TryAcquire();
+                    if (modern != null)
+                    {
+                        subject = OfficeVbaSignatureProvider.Subject;
+                        provider = modern.Path;
+                    }
+                    else
+                    {
+                        provider = Provider(subject);
+                        if (string.IsNullOrWhiteSpace(provider) || !System.IO.Path.IsPathRooted(provider) ||
+                            !System.IO.Path.GetFileName(provider).Equals(library, StringComparison.OrdinalIgnoreCase) || !File.Exists(provider))
+                        {
+                            return new
+                            {
+                                Path = path,
+                                FileSha256 = hash,
+                                Available = false,
+                                Status = "VerifierUnavailable",
+                                Trusted = (bool?)null,
+                                SignatureValid = (bool?)null,
+                                SipSubject = subject.ToString("B"),
+                                RequiredComponent = library,
+                                AlternateComponent = "mso.dll",
+                                AlternateSipSubject = OfficeVbaSignatureProvider.Subject.ToString("B"),
+                                Reason = "No verified Microsoft Office x64 VBA signature provider is available. Current Office uses the registered mso.dll VBA SIP; older versions use their per-format SIP. No certificate-only check is substituted."
+                            };
+                        }
+                    }
+                    int code = VerifyNative(path, stream.SafeFileHandle.DangerousGetHandle(), subject);
+                    bool? valid = code == 0 ? true : code == unchecked((int)0x80096010) || code == unchecked((int)0x80096004) ? (bool?)false : null;
                     return new
                     {
                         Path = path,
                         FileSha256 = hash,
-                        Available = false,
-                        Status = "VerifierUnavailable",
-                        Trusted = (bool?)null,
-                        SignatureValid = (bool?)null,
+                        Available = true,
+                        Status = Status(code),
+                        Trusted = code == 0,
+                        SignatureValid = valid,
+                        NativeStatus = "0x" + unchecked((uint)code).ToString("X8"),
                         SipSubject = subject.ToString("B"),
-                        RequiredComponent = library,
-                        Reason = "Register the Microsoft Office x64 Subject Interface Package before VBA signature verification. No certificate-only check is substituted."
+                        Provider = provider,
+                        NetworkRetrieval = false,
+                        Verification = "Windows Authenticode policy with Microsoft Office VBA SIP; strongest present VBA signature",
+                        Limit = "Saved disk file only; unsaved VBE edits are not verified. Microsoft SIP selects V3, then agile, then legacy. A nonzero policy result is never reported as valid or trusted; cached revocation may be indeterminate."
                     };
-                int code = VerifyNative(path, stream.SafeFileHandle.DangerousGetHandle(), subject);
-                bool? valid = code == 0 ? true : code == unchecked((int)0x80096010) || code == unchecked((int)0x80096004) ? (bool?)false : null;
-                return new
-                {
-                    Path = path,
-                    FileSha256 = hash,
-                    Available = true,
-                    Status = Status(code),
-                    Trusted = code == 0,
-                    SignatureValid = valid,
-                    NativeStatus = "0x" + unchecked((uint)code).ToString("X8"),
-                    SipSubject = subject.ToString("B"),
-                    Provider = provider,
-                    NetworkRetrieval = false,
-                    Verification = "Windows Authenticode policy with Microsoft Office VBA SIP; strongest present VBA signature",
-                    Limit = "Saved disk file only; unsaved VBE edits are not verified. Microsoft SIP selects V3, then agile, then legacy. A nonzero policy result is never reported as valid or trusted; cached revocation may be indeterminate."
-                };
+                }
+                finally { modern?.Dispose(); }
             }
         }
 
@@ -199,11 +222,36 @@ namespace VBAi
         /// <param name="subject">Identifiant du sujet Office SIP approprié au format.</param>
         /// <returns>Code HRESULT de la vérification de confiance native.</returns>
         private int VerifyNative(string path, IntPtr handle, Guid subject)
+            => VerifyNativeCore(path, handle, subject);
+
+        /// <summary>Verifies the provider DLL's full Authenticode policy before accepting its Microsoft publisher identity.</summary>
+        /// <param name="path">Absolute Microsoft Office module path, held read-only by the acquisition boundary.</param>
+        /// <param name="native">Optional trust-policy boundary for isolated lifetime and refusal tests.</param>
+        /// <param name="readSigner">Optional verified signer-name reader; never substitutes for policy success.</param>
+        /// <returns>True only for successful Windows file trust and the Microsoft Corporation signer.</returns>
+        internal static bool VerifyProviderModule(string path, VerifyCall native = null, Func<string, string> readSigner = null)
         {
-            IntPtr subjectBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Guid)));
+            using (var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                var verifier = new VbeSignatureVerifier { Native = native ?? WinVerifyTrust };
+                if (verifier.VerifyNativeCore(path, stream.SafeFileHandle.DangerousGetHandle(), null) != 0) return false;
+                try
+                {
+                    if (readSigner != null) return readSigner(path) == "Microsoft Corporation";
+                    using (var certificate = new X509Certificate2(X509Certificate.CreateFromSignedFile(path)))
+                        return certificate.GetNameInfo(X509NameType.SimpleName, false) == "Microsoft Corporation";
+                }
+                catch (CryptographicException) { return false; }
+            }
+        }
+
+        /// <summary>Uses an explicit VBA subject for macro verification, or automatic PE discovery for the provider DLL.</summary>
+        private int VerifyNativeCore(string path, IntPtr handle, Guid? subject)
+        {
+            IntPtr subjectBuffer = subject.HasValue ? Marshal.AllocHGlobal(Marshal.SizeOf(typeof(Guid))) : IntPtr.Zero;
             IntPtr fileBuffer = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(TrustFile)));
             var file = new TrustFile { Size = (uint)Marshal.SizeOf(typeof(TrustFile)), Path = path, Handle = handle, Subject = subjectBuffer };
-            Marshal.StructureToPtr(subject, subjectBuffer, false);
+            if (subject.HasValue) Marshal.StructureToPtr(subject.Value, subjectBuffer, false);
             Marshal.StructureToPtr(file, fileBuffer, false);
             var data = new TrustData
             {

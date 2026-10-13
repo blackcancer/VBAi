@@ -14,7 +14,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         /// <summary>Enregistre puis relit le brouillon, les messages Unicode et les entrées de la session courante.</summary>
-        [TestMethod]
         [STATestMethod]
         public void CurrentSessionPersistsDraftMessagesAndEntriesInIsolatedStore()
         {
@@ -58,7 +57,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Charge la conversation et la mémoire d’une portée puis restaure la session mise en cache.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ScopeSwitchLoadsSavedConversationAndMemoryThenRestoresCachedScope()
         {

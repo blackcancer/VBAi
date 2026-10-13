@@ -49,6 +49,16 @@ namespace VBAi
 
             /// <summary>Whether detail controls are initialized and whether an update is already in progress.</summary>
             internal bool Initialized, Updating;
+
+            /// <summary>Last successfully displayed provider values; copied fields also detect mutations of the same activity instance.</summary>
+            internal string Title, Detail, Status, CultureName;
+
+            /// <summary>Provider duration and disclosure choice displayed by the previous update.</summary>
+            internal long? DurationMs;
+            internal bool Expanded;
+
+            /// <summary>Owned detail control whose content and formatting were initialized by the previous update.</summary>
+            internal System.Windows.Forms.RichTextBox Content;
         }
 
         /// <summary>Ajoute ou actualise une étape native, sans dupliquer son identité.</summary>
@@ -80,7 +90,8 @@ namespace VBAi
             if (isNew) AddEntry(entry);
             bool textOnly = activity.Append && previous != null && previous.Kind == entry.Activity.Kind &&
                 previous.Title == entry.Activity.Title && previous.Status == entry.Activity.Status && previous.DurationMs == entry.Activity.DurationMs;
-            if (textOnly && liveTexts.TryGetValue(activity.Id, out var live) && !live.IsDisposed)
+            // Virtualized and unrealized rows need the same batching as already created text controls.
+            if (textOnly)
             {
                 pendingActivityText.Add(entry);
                 ScheduleStreamRender();
@@ -133,7 +144,13 @@ namespace VBAi
                 activityGroups.TryGetValue(entry, out var entries) && UpdateActivityGroup(group, entry, entries))
                 return;
             int index = visibleEntries.IndexOf(entry);
-            if (index >= 0) { visibleEntries.RemoveAt(index); visibleEntries.Insert(index, entry); }
+            if (index >= 0)
+            {
+                visibleEntries.RemoveAt(index);
+                // Collection observers may switch the session while the old row is being removed.
+                if (!runtimeDisposed && !IsDisposed && transcriptEntries.Contains(entry))
+                    visibleEntries.Insert(System.Math.Min(index, visibleEntries.Count), entry);
+            }
         }
 
         /// <summary>Construit un unique bloc repliable contenant les activités et résumés dans leur ordre d'origine.</summary>
@@ -281,17 +298,27 @@ namespace VBAi
         {
             var activity = entry.Activity;
             var state = (ActivityStepViewState)card.Tag;
+            bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
+            bool expanded = expandedActivitySteps.Contains(entry) || running && activity.Kind == "reasoning" && !collapsedActivitySteps.Contains(entry);
+            string cultureName = UiText.Culture.Name;
+            // Rebind the stream even when its presentation is unchanged (for example,
+            // after a virtualized group's live-text index has been rebuilt).
+            if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content;
+            if (state.Initialized && ReferenceEquals(state.Content, card.detail.content) &&
+                state.Kind == activity.Kind && state.Title == activity.Title && state.Detail == activity.Detail &&
+                state.Status == activity.Status && state.DurationMs == activity.DurationMs &&
+                state.CultureName == cultureName && state.Expanded == expanded)
+                return;
             state.Updating = true;
             try
             {
-                bool running = activity.Status == "inProgress", failed = activity.Status == "failed";
                 string status = UiText.Get(running ? "In progress" : failed ? "Failed" : activity.Status == "declined" ? "Declined" : activity.Status == "completed" ? "Completed" : activity.Status == "interrupted" ? "Interrupted" : "Cancelled");
                 if (activity.DurationMs.HasValue) status += " · " + (activity.DurationMs.Value / 1000d).ToString("0.0", UiText.Culture) + " s";
                 if (card.state.Text != status) card.state.Text = status;
                 string title = activity.DisplayTitle();
                 string detail = activity.DisplayDetail();
                 if (card.section.Title != title) card.section.Title = title;
-                if (!state.Initialized || state.Kind != activity.Kind)
+                if (!state.Initialized || state.Kind != activity.Kind || !ReferenceEquals(state.Content, card.detail.content))
                 {
                     int start = card.detail.content.SelectionStart, length = card.detail.content.SelectionLength;
                     card.detail.ShowPlain(detail, activity.Kind == "commandExecution");
@@ -299,8 +326,11 @@ namespace VBAi
                     state.Kind = activity.Kind; state.Initialized = true;
                 }
                 else SetTranscriptText(card.detail.content, detail);
-                if (!string.IsNullOrEmpty(entry.StreamId)) liveTexts[entry.StreamId] = card.detail.content;
-                card.section.Expanded = expandedActivitySteps.Contains(entry) || running && activity.Kind == "reasoning" && !collapsedActivitySteps.Contains(entry);
+                card.section.Expanded = expanded;
+                // Publish the snapshot only after all controls were updated successfully.
+                state.Content = card.detail.content;
+                state.Title = activity.Title; state.Detail = activity.Detail; state.Status = activity.Status;
+                state.DurationMs = activity.DurationMs; state.CultureName = cultureName; state.Expanded = expanded;
             }
             finally { state.Updating = false; }
         }

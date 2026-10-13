@@ -57,15 +57,21 @@ namespace VBAi
         }
 
         /// <summary>Retire à la déconnexion les seules copies de commandes marquées pour la session.</summary>
+        /// <remarks>Balances each getter acquisition on the owning thread; the caller's VBE remains borrowed.</remarks>
         internal void RemoveTemporaryToolbarCommands()
         {
-            foreach (dynamic bar in vbe.CommandBars)
-                if ((int)bar.Type == 0)
-                    for (int index = (int)bar.Controls.Count; index >= 1; index--)
+            using (var references = ReferenceScope())
+                foreach (dynamic bar in references.Items((object)vbe.CommandBars))
+                {
+                    if ((int)bar.Type != 0) continue;
+                    dynamic controls = references.Add((object)bar.Controls);
+                    for (int index = (int)controls.Count; index >= 1; index--)
                     {
-                        dynamic control = bar.Controls[index]; string tag = (string)control.Tag;
-                        if (System.Text.RegularExpressions.Regex.IsMatch(tag ?? "", @"^VBAi\.ToolbarCommand\.[0-9a-f]{32}$")) control.Delete();
+                        dynamic control = references.Add((object)controls[index]);
+                        string tag = (string)control.Tag;
+                        if (System.Text.RegularExpressions.Regex.IsMatch(tag ?? "", @"^VBAi\.ToolbarCommand\.[0-9a-f]{32}\z")) control.Delete();
                     }
+                }
         }
 
         /// <summary>Enregistre l’état et les commandes persistantes d’une barre si son profil est suivi.</summary>

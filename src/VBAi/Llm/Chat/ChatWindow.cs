@@ -4,6 +4,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Script.Serialization;
@@ -64,7 +65,8 @@ namespace VBAi
         /// <summary>Crée la fenêtre et initialise ses contrôles et ressources visuelles.</summary>
         public ChatWindow()
         {
-            InitializeComponent();
+            UiResourceReader.Apply(InitializeComponent);
+            BindSharedParts();
             pendingMessagesPanel.SizeChanged += (sender, args) => { foreach (Control row in pendingMessagesPanel.Controls) row.Width = Math.Max(200, pendingMessagesPanel.ClientSize.Width - 24); };
             Icon = VbeWindowIcons.Icon("assistant");
             github.Image = VbeWindowIcons.Image("github");
@@ -125,7 +127,7 @@ namespace VBAi
                 if (!(modelPicker.SelectedItem is LlmModelOption selectedModel) || !(providerPicker.SelectedItem is LlmProvider selectedProvider)) return;
                 if (currentSession != null)
                 {
-                    if (!restoringSelection && currentSession.Model != selectedModel.Id) currentSession.Effort = null;
+                    if (currentSession.Model != selectedModel.Id) currentSession.Effort = null;
                     currentSession.Model = selectedModel.Id;
                 }
                 if (!restoringSelection) settings.SetSelectedModel(selectedProvider, selectedModel.Id);
@@ -161,7 +163,7 @@ namespace VBAi
         {
             effortPicker.Items.Clear();
             effortPicker.Enabled = false;
-            if (!provider.IsCodex || model.Efforts.Length == 0) return;
+            if (!(provider.IsCodex || provider.IsOllama) || model.Efforts.Length == 0) return;
             foreach (var item in model.Efforts) effortPicker.Items.Add(item);
             string selected = currentSession?.Effort ?? settings.GetReasoningEffort(provider, model.Id);
             int index = Array.FindIndex(model.Efforts, item => item.Id == selected);
@@ -407,21 +409,29 @@ namespace VBAi
             if (!(modelPicker.SelectedItem is LlmModelOption selectedModel)) { SetStatus(UiText.Get("Choose an available model before sending.")); return; }
             string requestText;
             ChatAttachment[] attachments;
+            VbeChatReference[] attachedReferences;
+            ChatAttachment[] pendingDraftAttachments;
             try
             {
-                EnsureCurrentScope(); attachments = queued == null ? PrepareAttachments(question) : PrepareRequestAttachments(question, queued.References ?? new VbeChatReference[0], queued.Attachments ?? new ChatAttachment[0]);
+                EnsureCurrentScope();
+                // COM reads may pump UI callbacks. Capture once so the transcript
+                // describes the same references and drafts as the provider request.
+                attachedReferences = queued == null ? CurrentReferences(question) :
+                    (queued.References ?? new VbeChatReference[0]).Select(item => item.CaptureSnapshot()).ToArray();
+                pendingDraftAttachments = (queued == null ? draftAttachments :
+                    (IEnumerable<ChatAttachment>)(queued.Attachments ?? new ChatAttachment[0]))
+                    .Select(item => item.CaptureSnapshot()).ToArray();
+                attachments = PrepareRequestAttachments(question, attachedReferences, pendingDraftAttachments);
                 requestText = ChatCommand.Expand(question);
                 foreach (var attachment in attachments) requestText += "\n\n<context label=\"" + attachment.Label + "\">\n" + attachment.Text + "\n</context>";
             }
             catch (Exception ex) { SetStatus(UiText.Get("Context: ") + ex.Message); return; }
-            if (scopePicker.SelectedItem is MacroScope scope) requestText = UiText.Get("VBA project for this conversation: ") + scope.Label +
-                UiText.Get("\nProject identifier to use in tools: ") + scope.Project + "\n\n" + requestText;
+            if (scopePicker.SelectedItem is MacroScope scope)
+                requestText = LlmVbeContext.WithProjectScope(requestText, scope.Label, scope.Project);
             string attachedMemory = queued != null ? queued.Memory : (attachMemory.Checked == true ? queuedDraftMemory ?? projectMemory : null);
             if (!string.IsNullOrWhiteSpace(attachedMemory))
                 requestText += "\n\n<memoire-document>\n" + attachedMemory + "\n</memoire-document>";
             var selectedEffort = effortPicker.SelectedItem as LlmEffortOption;
-            var attachedReferences = queued?.References ?? CurrentReferences(question);
-            var pendingDraftAttachments = queued?.Attachments ?? draftAttachments.ToArray();
             stopRequested = false;
             activeTurnId = Guid.NewGuid().ToString("N");
             currentSession.BudgetPaused = false;
@@ -523,28 +533,112 @@ namespace VBAi
         /// <summary>One-use guard preventing runtime resources from being disposed more than once.</summary>
         private bool runtimeDisposed;
 
+        /// <summary>Temporary bounded observer supplied only while the owning add-in disposes this form.</summary>
+        private AddInShutdownDiagnostic shutdownDiagnostic;
+
+        /// <summary>Observes the existing disposal without retaining COM resources or changing its error policy.</summary>
+        /// <param name="diagnostic">Optional linked shutdown invocation; null keeps ordinary disposal unobserved.</param>
+        internal void DisposeForHostShutdown(AddInShutdownDiagnostic diagnostic)
+        {
+            var previous = shutdownDiagnostic;
+            shutdownDiagnostic = diagnostic;
+            EventHandler<FirstChanceExceptionEventArgs> firstChance = null;
+            bool subscribed = false;
+            if (diagnostic != null && previous == null)
+            {
+                int ownerThread = Thread.CurrentThread.ManagedThreadId;
+                bool reporting = false;
+                firstChance = (sender, args) =>
+                {
+                    if (Thread.CurrentThread.ManagedThreadId != ownerThread || reporting) return;
+                    reporting = true;
+                    try { shutdownDiagnostic?.ExceptionObserved(args.Exception); }
+                    finally { reporting = false; }
+                };
+            }
+            try
+            {
+                if (firstChance != null)
+                {
+                    try { AppDomain.CurrentDomain.FirstChanceException += firstChance; subscribed = true; }
+                    catch (Exception observerError) { diagnostic.ObserverFailed(observerError); }
+                }
+                Dispose(); diagnostic?.Complete();
+            }
+            catch (Exception error) { diagnostic?.Fault(error); throw; }
+            finally
+            {
+                if (subscribed)
+                {
+                    try { AppDomain.CurrentDomain.FirstChanceException -= firstChance; }
+                    catch (Exception observerError) { diagnostic.ObserverFailed(observerError); }
+                }
+                shutdownDiagnostic = previous;
+            }
+        }
+
+        /// <summary>Observes the framework's existing handle destruction during an admitted host shutdown.</summary>
+        protected override void DestroyHandle()
+        {
+            ObserveShutdownBoundary("chat.NativeHandle.Destroy", () => base.DestroyHandle());
+        }
+
+        /// <summary>Observes handle notifications without suppressing subscriber failures or creating a handle.</summary>
+        /// <param name="e">The original framework notification.</param>
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            ObserveShutdownBoundary("chat.NativeHandle.DestroyedNotification", () => base.OnHandleDestroyed(e));
+        }
+
+        /// <summary>Observes the framework's parent removal without changing embedded-window placement.</summary>
+        /// <param name="e">The original framework notification.</param>
+        protected override void OnParentChanged(EventArgs e)
+        {
+            ObserveShutdownBoundary("chat.Parent.ChangedNotification", () => base.OnParentChanged(e));
+        }
+
+        /// <summary>Runs one existing framework call with a bounded child observation only while shutdown is admitted.</summary>
+        /// <param name="stage">The framework boundary being observed.</param>
+        /// <param name="operation">The original call, invoked exactly once with its original error policy.</param>
+        private void ObserveShutdownBoundary(string stage, Action operation)
+        {
+            var previous = shutdownDiagnostic;
+            if (previous == null) { operation(); return; }
+            var child = previous.Child("Dispose");
+            shutdownDiagnostic = child;
+            try
+            {
+                child?.Enter(stage);
+                operation();
+                child?.Returned(stage);
+                child?.Complete();
+            }
+            catch (Exception error) { child?.Fault(error); throw; }
+            finally { shutdownDiagnostic = previous; }
+        }
+
         /// <summary>Saves the session and releases each resource even if another cleanup fails.</summary>
         private void DisposeRuntime()
         {
             if (runtimeDisposed) return;
             runtimeDisposed = true;
-            CleanupRuntime(() => contextMonitorTimer?.Stop());
-            CleanupRuntime(() => referenceEvents?.Dispose());
-            CleanupRuntime(() => projectEvents?.Dispose());
-            CleanupRuntime(() => componentEvents?.Dispose());
-            CleanupRuntime(SaveCurrentSession);
-            CleanupRuntime(() => streamRenderTimer?.Stop());
-            CleanupRuntime(() => pendingFollow?.Abort()); pendingFollow = null;
-            CleanupRuntime(() => saveTimer?.Stop());
-            CleanupRuntime(() => historySearchTimer?.Stop());
-            CleanupRuntime(() => projectRetryTimer?.Stop());
-            CleanupRuntime(DisposeScopeIdentities);
-            CleanupRuntime(() => persistenceWorker?.Dispose()); persistenceWorker = null;
-            CleanupRuntime(() => sessionStore?.Dispose()); sessionStore = null;
-            CleanupRuntime(() => activeHttpClient?.Dispose()); activeHttpClient = null;
-            CleanupRuntime(() => codex?.Dispose()); codex = null;
-            CleanupRuntime(() => changes?.ContextMenuStrip?.Dispose());
-            CleanupRuntime(() =>
+            CleanupRuntime("chat.Runtime.contextMonitor.Stop", () => contextMonitorTimer?.Stop());
+            CleanupRuntime("chat.Runtime.referenceEvents.Dispose", () => referenceEvents?.Dispose());
+            CleanupRuntime("chat.Runtime.projectEvents.Dispose", () => projectEvents?.Dispose());
+            CleanupRuntime("chat.Runtime.componentEvents.Dispose", () => componentEvents?.Dispose());
+            CleanupRuntime("chat.Runtime.SaveCurrentSession", SaveCurrentSession);
+            CleanupRuntime("chat.Runtime.streamRender.Stop", () => streamRenderTimer?.Stop());
+            CleanupRuntime("chat.Runtime.pendingFollow.Abort", () => pendingFollow?.Abort()); pendingFollow = null;
+            CleanupRuntime("chat.Runtime.saveTimer.Stop", () => saveTimer?.Stop());
+            CleanupRuntime("chat.Runtime.historySearch.Stop", () => historySearchTimer?.Stop());
+            CleanupRuntime("chat.Runtime.projectRetry.Stop", () => projectRetryTimer?.Stop());
+            CleanupRuntime("chat.Runtime.scopeIdentities.Dispose", DisposeScopeIdentities);
+            CleanupRuntime("chat.Runtime.persistenceWorker.Dispose", () => persistenceWorker?.Dispose()); persistenceWorker = null;
+            CleanupRuntime("chat.Runtime.sessionStore.Dispose", () => sessionStore?.Dispose()); sessionStore = null;
+            CleanupRuntime("chat.Runtime.httpClient.Dispose", () => activeHttpClient?.Dispose()); activeHttpClient = null;
+            CleanupRuntime("chat.Runtime.codex.Dispose", () => codex?.Dispose()); codex = null;
+            CleanupRuntime("chat.Runtime.changesMenu.Dispose", () => changes?.ContextMenuStrip?.Dispose());
+            CleanupRuntime("chat.Runtime.menuImages.Dispose", () =>
             {
                 foreach (ToolStripItem item in optionsMenu.Items)
                 {
@@ -553,16 +647,22 @@ namespace VBAi
                     image?.Dispose();
                 }
             });
-            CleanupRuntime(DisposeEntryViews);
-            CleanupRuntime(DisposeComposer);
+            CleanupRuntime("chat.Runtime.entryViews.Dispose", DisposeEntryViews);
+            CleanupRuntime("chat.Runtime.composer.Dispose", DisposeComposer);
         }
 
         /// <summary>Runs one cleanup action and logs its failure so later resources are still released.</summary>
+        /// <param name="stage">Fixed resource label for the optional shutdown observer.</param>
         /// <param name="cleanup">Resource cleanup callback to attempt.</param>
-        private static void CleanupRuntime(Action cleanup)
+        private void CleanupRuntime(string stage, Action cleanup)
         {
-            try { cleanup(); }
-            catch (Exception ex) { LoadLog.Write("Chat cleanup failed: " + ex.Message); }
+            shutdownDiagnostic?.Enter(stage);
+            try { cleanup(); shutdownDiagnostic?.Returned(stage); }
+            catch (Exception ex)
+            {
+                shutdownDiagnostic?.CaughtFault(stage, ex);
+                LoadLog.Write("Chat cleanup failed: " + ex.Message);
+            }
         }
     }
 }
@@ -678,8 +778,8 @@ namespace VBAi
         private void ModelSummary_Click(object sender, EventArgs e)
         {
             if (busy) return;
-            bool expanded = rootLayout.RowStyles[6].Height == 0;
-            rootLayout.RowStyles[6].Height = expanded ? providerLayout.Controls.Cast<System.Windows.Forms.Control>()
+            bool expanded = rootLayout.RowStyles[rootLayout.GetRow(providerLayout)].Height == 0;
+            rootLayout.RowStyles[rootLayout.GetRow(providerLayout)].Height = expanded ? providerLayout.Controls.Cast<System.Windows.Forms.Control>()
                 .Max(control => Math.Max(control.Height, control.GetPreferredSize(System.Drawing.Size.Empty).Height) + control.Margin.Vertical)
                 + providerLayout.Padding.Vertical + providerLayout.Margin.Vertical : 0;
             providerLayout.Visible = expanded;
@@ -696,7 +796,7 @@ namespace VBAi
             modelSummary.Text = (string.IsNullOrWhiteSpace(model) ? UiText.Get("Model") : model) +
                 (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort) +
                 (selectedModel?.Capabilities.ToolCalling == false ? " · " + UiText.Get("Text only") : "") +
-                (rootLayout.RowStyles[6].Height > 0 ? " ▴" : " ▾");
+                (rootLayout.RowStyles[rootLayout.GetRow(providerLayout)].Height > 0 ? " ▴" : " ▾");
             toolTips.SetToolTip(modelSummary, providerPicker.Text + " · " + modelPicker.Text +
                 (string.IsNullOrWhiteSpace(effort) ? "" : " · " + effort) + "\n" +
                 ModelCapabilitySummary(selectedModel?.Capabilities ?? LlmModelCapabilities.Unknown));

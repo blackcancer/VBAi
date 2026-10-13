@@ -13,7 +13,7 @@ namespace VBAi.Tests.Unit
     {
         public sealed class ProjectFixture
         {
-            public string FileName { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "disposable-transfer.xlsm");
+            public string FileName { get; set; } = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "disposable-transfer.xlsm");
             public int Mode { get; set; } = 2;
             public int Protection { get; set; }
             public ComponentsFixture VBComponents { get; } = new ComponentsFixture();

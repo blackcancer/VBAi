@@ -9,7 +9,7 @@ namespace VBAi.Tests.Unit
     using System.Threading.Tasks;
     using VBAi;
 
-    [TestClass]
+    [ToolBoundaryTestClass]
     public sealed partial class VbeSolidWorksMacroPublicationTests
     {
         [DataTestMethod, TestCategory("Unit")]

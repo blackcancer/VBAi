@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <!-- UI/COM tests use a dedicated testhost process as the isolation boundary.
+         Fixtures still require explicit provider and owner-thread teardown. -->
+    <DisableAppDomain>true</DisableAppDomain>
+    <TargetPlatform>x64</TargetPlatform>
+    <MaxCpuCount>1</MaxCpuCount>
+    <!-- Ordinary async tests run on MTA. UI tests declare their own STA fixture. -->
+    <ExecutionThreadApartmentState>MTA</ExecutionThreadApartmentState>
+  </RunConfiguration>
+</RunSettings>

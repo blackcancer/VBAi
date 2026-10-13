@@ -74,15 +74,17 @@ namespace VBAi.Tests.Integration
                enabled && !offscreen && popupVisible;
 
         internal static void ClickButtonOnce(AutomationElement item, string expectedId, string expectedName,
-            IntPtr owner, IntPtr target, int expectedProcessId, uint expectedThreadId)
+            IntPtr owner, IntPtr target, int expectedProcessId, uint expectedThreadId, Action requireObserverOwner = null)
         {
+            var snapshot = OfficeUiSnapshot.Refresh(item, requireObserverOwner);
+            var state = snapshot.Cached;
             uint pid; uint thread = GetWindowThreadProcessId(target, out pid);
             RequireDesktop(thread, (int)pid, target);
             if (!IsWindow(target) || !IsWindow(owner) ||
-                !MatchesButton(item.Current.AutomationId, expectedId, item.Current.Name, expectedName,
-                    item.Current.ControlType.ProgrammaticName, item.Current.ProcessId, (int)pid, thread,
-                    expectedProcessId, expectedThreadId, unchecked((long)(uint)item.Current.NativeWindowHandle),
-                    unchecked((long)(uint)target.ToInt64()), item.Current.IsEnabled, item.Current.IsOffscreen,
+                !MatchesButton(state.AutomationId, expectedId, state.Name, expectedName,
+                    state.ControlType.ProgrammaticName, state.ProcessId, (int)pid, thread,
+                    expectedProcessId, expectedThreadId, unchecked((long)(uint)state.NativeWindowHandle),
+                    unchecked((long)(uint)target.ToInt64()), state.IsEnabled, state.IsOffscreen,
                     IsWindowVisible(target), IsWindowEnabled(target), IsChild(owner, target)))
                 throw new InvalidOperationException("The exact owned native button changed before delivery.");
             var cls = new StringBuilder(128);
@@ -92,8 +94,16 @@ namespace VBAi.Tests.Integration
             IntPtr ignored;
             // SendMessageTimeout returns a delivery status; BM_CLICK has no result value.
             // A timeout/error leaves the click outcome uncertain and must never trigger a replay.
-            if (SendMessageTimeout(target, BmClick, IntPtr.Zero, IntPtr.Zero, SmtoAbortIfHung, 5000, out ignored) == IntPtr.Zero)
-                throw new InvalidOperationException("The exact native BM_CLICK outcome is uncertain; no replay.");
+            DeliverButtonOnce(requireObserverOwner, () =>
+                SendMessageTimeout(target, BmClick, IntPtr.Zero, IntPtr.Zero, SmtoAbortIfHung, 5000, out ignored) != IntPtr.Zero);
+        }
+
+        /// <summary>A slow preflight cannot authorize delivery after the observer owner ended; emission is never retried.</summary>
+        internal static void DeliverButtonOnce(Action requireOwner, Func<bool> deliver)
+        {
+            if (deliver == null) throw new ArgumentNullException(nameof(deliver));
+            requireOwner?.Invoke();
+            if (!deliver()) throw new InvalidOperationException("The exact native BM_CLICK outcome is uncertain; no replay.");
         }
 
         private static IntPtr NativeAncestor(AutomationElement element)

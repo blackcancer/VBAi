@@ -14,6 +14,9 @@ namespace VBAi
         /// <summary>Flow layout panel that contains this transcript view&apos;s child controls.</summary>
         private System.Windows.Forms.TableLayoutPanel layout;
 
+        /// <summary>The visible shared Markdown surface, editable in the standard Designer.</summary>
+        private Blackcancer.ChatUI.Views.ChatMarkdownView sharedMarkdown;
+
         /// <summary>Read-only selectable text surface that hosts rendered transcript content.</summary>
         internal VBAi.UiRichTextBox content;
 
@@ -41,6 +44,10 @@ namespace VBAi
             this.copySelection = new System.Windows.Forms.ToolStripMenuItem("Copy");
             this.copyCode = new System.Windows.Forms.ToolStripMenuItem("Copy code");
             this.copyMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { this.copySelection, this.copyCode });
+            this.sharedMarkdown = new Blackcancer.ChatUI.Views.ChatMarkdownView();
+            this.sharedMarkdown.Name = "sharedMarkdown";
+            this.sharedMarkdown.Dock = System.Windows.Forms.DockStyle.Top;
+            this.sharedMarkdown.Visible = false;
             this.content = new VBAi.UiRichTextBox();
             this.content.ReadOnly = true;
             this.content.BorderStyle = System.Windows.Forms.BorderStyle.None;
@@ -55,9 +62,11 @@ namespace VBAi
             this.layout.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.layout.Dock = System.Windows.Forms.DockStyle.Top;
             this.layout.ColumnCount = 1;
-            this.layout.RowCount = 1;
+            this.layout.RowCount = 2;
             this.layout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.layout.Controls.Add(this.content, 0, 0);
+            this.layout.Controls.Add(this.sharedMarkdown, 0, 1);
+            this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.AutoSize));
             this.layout.Name = "layout";
             this.layout.Padding = new System.Windows.Forms.Padding(0);

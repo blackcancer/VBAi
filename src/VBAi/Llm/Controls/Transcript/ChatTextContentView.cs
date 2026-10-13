@@ -14,6 +14,8 @@ namespace VBAi
 
         /// <summary>Tracks fonts created by this view so they can be disposed with it.</summary>
         private readonly List<Font> ownedFonts = new List<Font>();
+        private bool showingMarkdown;
+        internal Blackcancer.ChatUI.Views.ChatMarkdownView MarkdownView => sharedMarkdown;
 
         /// <summary>Suppresses intermediate resize work while Markdown or plain content is being replaced.</summary>
         private int contentUpdateDepth;
@@ -63,6 +65,9 @@ namespace VBAi
         /// <param name="code">Whether to use code formatting for the text.</param>
         internal void ShowPlain(string text, bool code = false)
         {
+            showingMarkdown = false;
+            sharedMarkdown.Visible = false;
+            content.Visible = true;
             contentUpdateDepth++;
             try
             {
@@ -133,16 +138,55 @@ namespace VBAi
         /// <param name="error">Callback used to report link and action errors.</param>
         internal void ShowMarkdown(string text, IDictionary<string, VbeChatReference> references, Action<VbeChatReference> navigate, Action<string> error)
         {
-            contentUpdateDepth++;
+            ErrorHandler = error ?? (Action<string>)LoadLog.Write;
+            var callbacks = new Dictionary<string, Action>(StringComparer.Ordinal);
+            if (references != null && navigate != null)
+                foreach (var pair in references)
+                {
+                    var captured = pair.Value;
+                    callbacks[pair.Key] = () => navigate(captured);
+                }
+            sharedMarkdown.Services = new Blackcancer.ChatUI.ChatServices
+            {
+                Translate = UiText.Get,
+                CopyText = value => ChatMarkdown.CopyText(value),
+                OpenLink = value => ChatMarkdown.OpenLink(value),
+                IsAllowedLink = SafeLinks.Allowed,
+                ColorizeCode = ColorizeVbaCode
+            };
+            sharedMarkdown.Style = new Blackcancer.ChatUI.SharedChatStyle
+            {
+                Background = UiTheme.Surface,
+                Foreground = UiTheme.Foreground,
+                CodeBackground = UiTheme.Surface,
+                Border = UiTheme.BorderFor(this),
+                BodyFont = OwnFont("Segoe UI", 9.5f, FontStyle.Regular),
+                CodeFont = OwnFont("Consolas", 9.5f, FontStyle.Regular),
+                RightToLeft = UiText.Culture.TextInfo.IsRightToLeft
+            };
+            SuspendLayout(); layout.SuspendLayout();
             try
             {
-                ErrorHandler = error;
-                content.RightToLeft = UiText.Culture.TextInfo.IsRightToLeft ? RightToLeft.Yes : RightToLeft.No;
-                actions.Clear(); content.Clear();
-                ChatNativeMarkdown.Render(this, text ?? "", references, navigate, error);
-                content.Select(0, 0);
+                showingMarkdown = true;
+                content.Visible = false;
+                sharedMarkdown.Visible = true;
+                sharedMarkdown.ShowMarkdown(text ?? "", ErrorHandler, callbacks);
             }
-            finally { contentUpdateDepth--; ResizeText(); }
+            finally { layout.ResumeLayout(true); ResumeLayout(true); }
+        }
+
+        private static void ColorizeVbaCode(RichTextBox target, string text, string language)
+        {
+            if (!string.Equals(language, "vba", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(language, "vb", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(language, "visualbasic", StringComparison.OrdinalIgnoreCase)) return;
+            int offset = 0;
+            foreach (var part in VbaSyntax.Parts(text ?? ""))
+            {
+                target.Select(offset, part.Text.Length);
+                target.SelectionColor = VbaSyntax.Color(part.Kind);
+                offset += part.Text.Length;
+            }
         }
 
         /// <summary>Returns a cached view owned font matching the requested family, size, and style.</summary>
@@ -190,7 +234,7 @@ namespace VBAi
         /// <summary>Remeasures after RichEdit and its WPF host have completed the current arrangement.</summary>
         private void QueueTextMeasurement()
         {
-            if (textMeasurementQueued || resizingText || contentUpdateDepth != 0 || content == null || content.IsDisposed || !content.IsHandleCreated || !IsHandleCreated) return;
+            if (showingMarkdown || textMeasurementQueued || resizingText || contentUpdateDepth != 0 || content == null || content.IsDisposed || !content.IsHandleCreated || !IsHandleCreated) return;
             textMeasurementQueued = true;
             BeginInvoke((Action)(() =>
             {
@@ -202,7 +246,7 @@ namespace VBAi
         /// <summary>Measures the rendered text and updates the rich text control height and scroll bars.</summary>
         private void ResizeText()
         {
-            if (resizingText || contentUpdateDepth != 0 || content == null || content.IsDisposed || !content.IsHandleCreated) return;
+            if (showingMarkdown || resizingText || contentUpdateDepth != 0 || content == null || content.IsDisposed || !content.IsHandleCreated) return;
             resizingText = true;
             try
             {

@@ -32,7 +32,13 @@ namespace VBAi.Tests.Unit
             { IsBackground = true };
             thread.SetApartmentState(ApartmentState.STA);
             thread.Start();
-            if (!thread.Join(TimeSpan.FromMinutes(2))) throw new TimeoutException("Disposable WinForms test thread timed out.");
+            if (!thread.Join(TimeSpan.FromMinutes(2)))
+            {
+                // Do not advance into another fixture while this owner still has admitted work.
+                // The original two-minute failure is retained after the original STA settles.
+                thread.Join();
+                throw new TimeoutException("Disposable WinForms test thread timed out.");
+            }
             if (failure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
             return results;
         }

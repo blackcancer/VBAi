@@ -8,7 +8,7 @@ using System.Windows.Forms;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class LlmVbaTestingBoundaryTests
     {
         private readonly JavaScriptSerializer json = new JavaScriptSerializer();

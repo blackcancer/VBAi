@@ -372,8 +372,14 @@ namespace VBAi.Tests.Unit
             var f = new AsyncAccessFixture();
             var confirmation = AttachAccessConfirmation(f);
             f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(80);
+            var elapsed = TimeSpan.Zero;
+            f.Service.AccessSaveElapsedOverride = () => elapsed;
             confirmation.PromptRemainsAfterEnqueue = promptRemains;
-            if (promptRemains) confirmation.AfterEnqueue = () => f.Probe.Project.Saved = true;
+            confirmation.AfterEnqueue = () =>
+            {
+                if (promptRemains) f.Probe.Project.Saved = true;
+                elapsed = TimeSpan.FromMilliseconds(81);
+            };
             dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
             Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(1, confirmation.ConfirmEntries);
@@ -389,11 +395,34 @@ namespace VBAi.Tests.Unit
             var f = new AsyncAccessFixture();
             var confirmation = AttachAccessConfirmation(f);
             f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(1);
+            f.Service.AccessSaveElapsedOverride = () => TimeSpan.FromMilliseconds(2);
             dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
             Assert.IsFalse((bool)result.Verified); Assert.IsTrue((bool)result.Uncertain);
             Assert.AreEqual(1, f.Probe.Attempts); Assert.AreEqual(0, confirmation.ConfirmEntries);
             Assert.AreEqual(0, (int)result.ConfirmationAttempts);
             Assert.IsFalse((bool)result.ConfirmationQueued); Assert.IsTrue((bool)result.ConfirmationPending);
+        }
+
+        /// <summary>Confirmation at or after the declared deadline is refused; a preceding confirmation can be verified.</summary>
+        [AccessStaTestMethod]
+        [DataRow(60), DataRow(80), DataRow(81)]
+        public void AccessConfirmationUsesTheSameDeadlineAtItsImmediateNativeBoundary(int milliseconds)
+        {
+            var f = new AsyncAccessFixture();
+            var confirmation = AttachAccessConfirmation(f);
+            var elapsed = TimeSpan.Zero;
+            f.Service.AccessSaveVerificationTimeout = TimeSpan.FromMilliseconds(80);
+            f.Service.AccessSaveElapsedOverride = () => elapsed;
+            confirmation.BeforeContextCheck = () => elapsed = TimeSpan.FromMilliseconds(milliseconds);
+            confirmation.AfterEnqueue = () => f.Probe.Project.Saved = true;
+            dynamic result = CompleteAccessSave(f.SaveAsync(f.Probe.Request()));
+            bool admitted = milliseconds < 80;
+            Assert.AreEqual(admitted, (bool)result.Verified);
+            Assert.AreEqual(!admitted, (bool)result.Uncertain);
+            Assert.AreEqual(1, f.Probe.Attempts, "The initial native Save is never replayed.");
+            Assert.AreEqual(1, confirmation.ConfirmEntries);
+            Assert.AreEqual(admitted ? 1 : 0, (int)result.ConfirmationAttempts);
+            Assert.AreEqual(admitted, (bool)result.ConfirmationQueued);
         }
 
         /// <summary>A known failure from the initial native call cannot be converted into another native confirmation.</summary>

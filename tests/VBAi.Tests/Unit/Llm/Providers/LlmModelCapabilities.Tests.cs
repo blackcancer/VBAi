@@ -26,6 +26,21 @@ namespace VBAi.Tests.Unit
         }
 
         [TestMethod]
+        public void OllamaUsesItsExplicitCapabilityListWithoutModelNameHeuristics()
+        {
+            var provider = LlmBoundaryScope.Provider("Ollama");
+            var positive = LlmModelCapabilities.FromCatalogue(provider, Json(new { name = "arbitrary", capabilities = new[] { "tools", "thinking", "vision", "completion" } }));
+            Assert.AreEqual((bool?)true, positive.ToolCalling); Assert.AreEqual((bool?)true, positive.Reasoning); Assert.AreEqual((bool?)true, positive.Vision);
+            foreach (object item in new object[] { new { capabilities = new string[0] }, new { name = "thinking-tools-vision", capabilities = new[] { "completion" } } })
+            {
+                var negative = LlmModelCapabilities.FromCatalogue(provider, Json(item));
+                Assert.AreEqual((bool?)false, negative.ToolCalling); Assert.AreEqual((bool?)false, negative.Reasoning); Assert.AreEqual((bool?)false, negative.Vision);
+            }
+            foreach (object item in new object[] { new { name = "qwen3.5:9b" }, new { capabilities = "thinking" }, new { capabilities = new object[] { "thinking", null } }, new { capabilities = new object[] { "thinking", 1 } } })
+                Unknown(LlmModelCapabilities.FromCatalogue(provider, Json(item)));
+        }
+
+        [TestMethod]
         public void OpenRouterReadsItsCompleteExplicitListsAndNeverInfersFromModelName()
         {
             var provider = LlmBoundaryScope.Provider("OpenRouter");

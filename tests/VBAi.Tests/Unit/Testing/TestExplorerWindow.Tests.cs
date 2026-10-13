@@ -515,7 +515,7 @@ namespace VBAi.Tests.Unit
                 window.RunScopeAsync().GetAwaiter().GetResult();
                 var tree = Field<TreeView>(window, "testTree");
                 tree.SelectedNode = tree.Nodes[0].Nodes[0].Nodes[0];
-                string directory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-explorer-ui");
+                string directory = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "test-explorer-ui");
                 Directory.CreateDirectory(directory);
                 foreach (var choice in new[] { ThemeChoice.Light, ThemeChoice.Dark })
                 {

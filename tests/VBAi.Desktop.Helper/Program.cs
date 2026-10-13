@@ -32,6 +32,7 @@ namespace VBAi.Desktop.Helper
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
             try
             {
+                if (args.Length == 2 && args[0] == "--observe-word-chat") return OfficeChatObserverEntry.Run(args[1]);
                 if (args.Length == 2 && args[0] == "--run-plan") return RunPlan(args[1]);
                 return Run(args);
             }

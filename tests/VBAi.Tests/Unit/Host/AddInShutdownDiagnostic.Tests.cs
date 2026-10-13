@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -70,6 +71,51 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed class AddInShutdownDiagnosticTests
     {
+        [TestMethod, DataRow(false), DataRow(true)]
+        public void ObservedExceptionDoesNotFinishOrFaultTheActiveDiagnosticStage(bool com)
+        {
+            var observation = new ShutdownDiagnosticTestData.Observation();
+            var root = observation.Begin();
+            root.ExceptionObserved(null);
+            root.Enter("ExistingOperation");
+            Exception failure = com ? (Exception)new System.Runtime.InteropServices.COMException("Caught existing operation") : new IOException("Caught existing operation");
+            root.ExceptionObserved(failure);
+            root.Returned("ExistingOperation"); root.Complete();
+            Assert.IsFalse(root.DiagnosticFailed); Assert.AreEqual(5, observation.Events.Count);
+            var row = (Dictionary<string, object>)observation.Events[2];
+            Assert.AreEqual("ExceptionObserved", row["Phase"]); Assert.AreEqual("ExistingOperation", row["Stage"]);
+            Assert.IsNull(row["FaultCaught"]); Assert.AreEqual(com, row["ErrorIsComException"]);
+            StringAssert.Contains((string)row["Error"], failure.Message);
+            Assert.AreEqual("Returned", ((Dictionary<string, object>)observation.Events[3])["Phase"]);
+            Assert.IsNull(((Dictionary<string, object>)observation.Events[4])["Stage"]);
+            root.ExceptionObserved(new IOException("Already completed"));
+            Assert.AreEqual(5, observation.Events.Count);
+        }
+
+        [TestMethod, DataRow(false), DataRow(true)]
+        public void ObserverFailureDisablesOnlyObservationAndPreservesItsOriginalError(bool errorPresent)
+        {
+            var observation = new ShutdownDiagnosticTestData.Observation(); var root = observation.Begin();
+            Exception failure = errorPresent ? new IOException("Observer subscription unavailable") : null;
+            root.ObserverFailed(failure);
+            Assert.AreEqual(errorPresent, root.DiagnosticFailed); Assert.AreSame(failure, root.PublicationError);
+            root.Enter("ExistingOperation"); root.Returned("ExistingOperation"); root.Complete();
+            Assert.AreEqual(errorPresent ? 1 : 4, observation.Events.Count);
+        }
+
+        [DataTestMethod]
+        [DataRow("EXCEL", true), DataRow("excel", true), DataRow("WINWORD", true), DataRow("winword", true)]
+        [DataRow("SLDWORKS", true), DataRow("sldworks", true)]
+        [DataRow(null, false), DataRow("", false), DataRow("WINWORD.EXE", false), DataRow(" WINWORD", false)]
+        [DataRow("WINWORD ", false), DataRow("POWERPNT", true), DataRow("testhost", false)]
+        [DataRow("SLDWORKS.EXE", false), DataRow(" SLDWORKS", false), DataRow("SLDWORKS ", false)]
+        [DataRow("SLDWORKS_TEST", false), DataRow("SLDWORK\u0405", false)]
+        public void CleanupObservationAdmitsOnlyExactOwnedQualificationProcessNames(string processName, bool allowed)
+        {
+            Action run = () => AddInShutdownDiagnostic.RequireObservedHostProcessName(processName);
+            if (allowed) run(); else Assert.ThrowsException<InvalidOperationException>(run);
+        }
+
         [DataTestMethod, DataRow(null), DataRow(""), DataRow(" ")]
         public void DisabledObservationReturnsWithoutAnyRuntimeSession(string setting)
         {
@@ -253,6 +299,79 @@ namespace VBAi.Tests.Unit
             foreach (string link in observed)
                 Assert.ThrowsException<InvalidOperationException>(() => AddInShutdownDiagnostic.RequireNoReparse(path,
                     current => current == link ? FileAttributes.ReparsePoint : FileAttributes.Normal));
+        }
+
+        [DataTestMethod, DataRow(0), DataRow(128), DataRow(16), DataRow(1024)]
+        public void SuccessfulNativeAttributesIgnoreTheStaleLastErrorAndPreserveEveryFlag(int attributes)
+        {
+            Assert.AreEqual((FileAttributes)attributes, AddInShutdownDiagnostic.InterpretNativeAttributes((uint)attributes, 5));
+        }
+
+        [DataTestMethod, DataRow(2), DataRow(3)]
+        public void NativeMissingFileAndDirectoryAreToleratedWithoutManagedExceptions(int error)
+        {
+            Assert.AreEqual((FileAttributes)0, AddInShutdownDiagnostic.InterpretNativeAttributes(uint.MaxValue, error));
+        }
+
+        [DataTestMethod, DataRow(0), DataRow(1), DataRow(5), DataRow(32), DataRow(123), DataRow(206)]
+        public void OtherNativeAttributeFailuresRemainFailuresWithTheirExactErrorCode(int error)
+        {
+            var failure = Assert.ThrowsException<Win32Exception>(() => AddInShutdownDiagnostic.InterpretNativeAttributes(uint.MaxValue, error));
+            Assert.AreEqual(error, failure.NativeErrorCode);
+        }
+
+        [DataTestMethod, DataRow(2), DataRow(3)]
+        public void AbsentLeafDoesNotConcealAnExistingLinkedParent(int missingError)
+        {
+            string path = @"C:\Qualification\Diagnostic\000001.json.tmp";
+            string parent = Path.GetDirectoryName(path);
+            var observed = new List<string>();
+            Assert.ThrowsException<InvalidOperationException>(() => AddInShutdownDiagnostic.RequireNoReparse(path, current =>
+            {
+                observed.Add(current);
+                return AddInShutdownDiagnostic.InterpretNativeAttributes(current == path ? uint.MaxValue : (uint)FileAttributes.ReparsePoint, missingError);
+            }));
+            CollectionAssert.AreEqual(new[] { path, parent }, observed);
+        }
+
+        [DataTestMethod, DataRow(false), DataRow(true)]
+        public void InaccessibleLeafOrParentStopsAdmissionRatherThanBeingTreatedAsMissing(bool parentFailure)
+        {
+            string path = @"C:\Qualification\Diagnostic\000001.json.tmp";
+            var observed = new List<string>();
+            var failure = Assert.ThrowsException<Win32Exception>(() => AddInShutdownDiagnostic.RequireNoReparse(path, current =>
+            {
+                observed.Add(current);
+                return AddInShutdownDiagnostic.InterpretNativeAttributes(uint.MaxValue, parentFailure && current == path ? 2 : 5);
+            }));
+            Assert.AreEqual(5, failure.NativeErrorCode);
+            Assert.AreEqual(parentFailure ? 2 : 1, observed.Count);
+        }
+
+        [TestMethod]
+        public void AtomicPublicationDoesNotGenerateFirstChanceMissingPathExceptions()
+        {
+            using (var directory = new ShutdownDiagnosticTestData.DirectoryScope())
+            {
+                int thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                int missingExceptions = 0;
+                EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> observe = (sender, args) =>
+                {
+                    if (System.Threading.Thread.CurrentThread.ManagedThreadId == thread &&
+                        (args.Exception is FileNotFoundException || args.Exception is DirectoryNotFoundException)) missingExceptions++;
+                };
+                AppDomain.CurrentDomain.FirstChanceException += observe;
+                try
+                {
+                    for (int sequence = 1; sequence <= 3; sequence++)
+                        AddInShutdownDiagnostic.Publish(directory.Root, sequence, new { Sequence = sequence }, sequence == 3);
+                }
+                finally { AppDomain.CurrentDomain.FirstChanceException -= observe; }
+                Assert.AreEqual(0, missingExceptions, "Expected absent publication paths must not trigger a debugger exception notification.");
+                Assert.AreEqual(3, Directory.GetFiles(directory.Root, "*.json").Length);
+                Assert.IsTrue(File.Exists(Path.Combine(directory.Root, "000003.json.ready")));
+                Assert.AreEqual(0, Directory.GetFiles(directory.Root, "*.tmp").Length);
+            }
         }
 
         [DataTestMethod, DataRow("outside"), DataRow("traversal"), DataRow("nonce"), DataRow("relative"), DataRow("unc")]

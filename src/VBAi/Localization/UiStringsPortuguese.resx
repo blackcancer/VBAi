@@ -2871,4 +2871,25 @@ Conexão pelo Git Credential Manager; a identidade dos commits é configurada no
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>Este modelo não suporta chamadas de ferramentas.</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>O provedor não concluiu a resposta em {0} segundos. Nenhuma ação foi repetida automaticamente.</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>Usar o raciocínio padrão do modelo.</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>Desativar o raciocínio para esta conversa.</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>Padrão do modelo</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>Raciocínio desativado</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>Este modelo não oferece suporte à opção de raciocínio selecionada.</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>Escolha um arquivo para anexar à conversa atual.</value>
+  </data>
 </root>

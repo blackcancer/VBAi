@@ -9,6 +9,78 @@ namespace VBAi.Tests.Unit
 {
     public sealed partial class VbeTestExplorerServiceTests
     {
+        /// <summary>Temporary copy creation, execution and close must never let passive Monaco navigation retain their modules.</summary>
+        [STATestMethod]
+        public void CoverageSuspendsAutomaticNavigationThroughAllCopyBoundariesAndRestoresItsPriorScope()
+        {
+            foreach (bool nested in new[] { false, true })
+            foreach (string outcome in new[] { "pass", "factory", "compile", "cancel", "unknown", "close", "closeUnknown", "guard", "snapshot" })
+            using (var fixture = new Fixture())
+            using (var coverage = new CoverageFixture(fixture))
+            using (var cancellation = new CancellationTokenSource())
+            using (var prior = nested ? new VbeDebugInspection() : null)
+            {
+                int owner = Thread.CurrentThread.ManagedThreadId;
+                var observations = new List<string>();
+                Action<string> observe = phase =>
+                {
+                    Assert.AreEqual(owner, Thread.CurrentThread.ManagedThreadId, outcome + ": " + phase);
+                    Assert.IsTrue(VbeDebugInspection.IsActive, outcome + ": " + phase);
+                    observations.Add(phase);
+                };
+                var factory = fixture.Service.CreateCoverageClone;
+                fixture.Service.CreateCoverageClone = (project, path, folder) =>
+                {
+                    observe("Create");
+                    if (outcome == "factory") throw new InvalidOperationException("Copy creation refused");
+                    var copy = factory(project, path, folder);
+                    var close = copy.Close;
+                    copy.Close = () => { observe("Close"); close(); };
+                    return copy;
+                };
+                var compile = fixture.Service.CompileCoverageProject;
+                fixture.Service.CompileCoverageProject = project =>
+                {
+                    observe("Compile");
+                    if (outcome == "compile") throw new InvalidOperationException("Compilation refused");
+                    if (outcome == "cancel") cancellation.Cancel();
+                    compile(project);
+                };
+                coverage.UnknownTest = outcome == "unknown";
+                coverage.CloseError = outcome == "close" ? (Exception)new InvalidOperationException("Close refused")
+                    : outcome == "closeUnknown" ? new VbaTestInvocationException("Close completion lost", true) : null;
+                coverage.AfterTest = () => observe("Test");
+                coverage.BeforeSnapshotReturn = () =>
+                {
+                    observe("Snapshot");
+                    if (outcome == "snapshot") throw new InvalidOperationException("Snapshot refused");
+                };
+                var catalog = fixture.Catalog();
+                Action guard = () =>
+                {
+                    observe("Guard");
+                    if (outcome == "guard" && observations.Contains("Compile"))
+                        throw new InvalidOperationException("Authority revoked");
+                };
+                var method = typeof(VbeTestExplorerService).GetMethod("ExecuteCoverageAsync",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                var task = (System.Threading.Tasks.Task<VbaTestRun>)method.Invoke(fixture.Service,
+                    new object[] { catalog, catalog.Tests.ToArray(), (Action<VbaTestResult>)(_ => observe("Progress")), cancellation.Token, guard });
+                var run = Pump(task);
+                Assert.AreEqual(nested, VbeDebugInspection.IsActive, "Coverage must restore the prior nesting depth: " + outcome);
+                Assert.AreEqual(outcome == "unknown" || outcome == "closeUnknown" || outcome == "snapshot", run.OutcomeUnknown, outcome);
+                Assert.AreEqual(outcome != "factory" && outcome != "unknown" && outcome != "snapshot", observations.Contains("Close"), outcome);
+                Assert.AreEqual(outcome == "pass", run.Coverage.Available && run.Coverage.Complete, outcome);
+                if (outcome == "pass")
+                {
+                    Assert.IsTrue(observations.Contains("Snapshot"));
+                    Assert.IsTrue(observations.Contains("Test"));
+                    Assert.IsTrue(run.Results.All(result => result.Outcome == VbaTestOutcome.Passed));
+                }
+            }
+            Assert.IsFalse(VbeDebugInspection.IsActive, "Every nested and failed path must release its owner-thread suspension.");
+        }
+
         [STATestMethod]
         public void CoverageRuntimeWordLeasesReleaseKnownAndRetainUncertainCompletion()
         {

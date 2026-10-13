@@ -59,6 +59,21 @@ in [recorded validation](../docs/test-coverage.md).
 
 ## Synthetic Ollama scenarios
 
+`OllamaHostContextTests` complements transport-only checks with the production
+developer instructions, encoding/mode wrappers and eight core tool schemas. Its
+six synthetic document identifiers exercise an interrupted-conversation history,
+up to four distinct read-only preflight inspections (`status`, `list_projects`,
+`list_modules`, `discover_tools`), one exact module read (directly or through
+the normal catalog gateway), and a random marker supplied only in that read's
+synthetic result. Each response may request only one inspection; duplicates,
+recursive gateways, writes, incorrect selectors and further calls after the
+module result fail the scenario. The sequence is bounded to six responses.
+Discovery uses the production schema catalog; other results are synthetic.
+No application is opened,
+no file is read and no native tool is dispatched. A passing result checks model
+compliance with that context; it does not qualify an Office host or UI rendering.
+Keep profile failures and valid gateway calls distinct when reviewing results.
+
 `VBAi_RUN_OLLAMA_TESTS=1` enables `TestCategory=Ollama` against the loopback
 server through the production HTTP client. `VBAi_TEST_OLLAMA_MODEL` selects an
 already-installed model (default `qwen2.5:7b-instruct`). The shared selector applies
@@ -98,6 +113,15 @@ provider qualification: the original scalar, tool, UI and native readback
 assertions remain required. The qualification requests do not add `logprobs` or
 `top_logprobs`; controls using those diagnostic fields remain separate protocol
 experiments and cannot replace the unmodified qualification request.
+
+An explicit `VBAi_TEST_OLLAMA_REASONING_EFFORT=none` profile exercises the
+conversation's reasoning-off behavior. `default`, or an absent variable, preserves
+the server default. Other values are rejected. The headless fixture reads the
+exact selected model's catalogue declarations before creating a client with
+reasoning disabled; another model's capability cannot authorize that selection.
+The prompts, cancellation/content oracles and 120-second deadline stay unchanged.
+Reasoning defaults and reasoning-off profiles have independent results; a pass
+under one does not qualify the other.
 
 Passive synthetic body capture requires a separate explicit flag. For the two
 headless scenarios, set `VBAi_OLLAMA_HEADLESS_CAPTURE_WIRE=1` and optionally

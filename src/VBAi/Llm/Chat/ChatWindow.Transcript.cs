@@ -57,6 +57,10 @@ namespace VBAi
         /// <summary>Champs texte matérialisés pour afficher le texte des flux actifs.</summary>
         private readonly Dictionary<string, System.Windows.Forms.RichTextBox> liveTexts = new Dictionary<string, System.Windows.Forms.RichTextBox>();
 
+        // Assistant streams use the visible common block UI; activities retain plain text.
+        private readonly Dictionary<string, Blackcancer.ChatUI.Views.ChatMarkdownView> liveMarkdownViews =
+            new Dictionary<string, Blackcancer.ChatUI.Views.ChatMarkdownView>();
+
         /// <summary>Boutons de restauration associés aux changements de code visibles.</summary>
         private readonly Dictionary<CodeChange, System.Windows.Forms.Button> rollbackButtons = new Dictionary<CodeChange, System.Windows.Forms.Button>();
 
@@ -136,7 +140,7 @@ namespace VBAi
             {
                 entryViews.Remove(entry);
                 ReleaseActivityTexts(entry);
-                if (entry.StreamId != null) liveTexts.Remove(entry.StreamId);
+                if (entry.StreamId != null) { liveTexts.Remove(entry.StreamId); liveMarkdownViews.Remove(entry.StreamId); }
                 if (entry.FormCut != null) formCutButtons.Remove(entry.FormCut);
                 if (entry.Change != null) { rollbackButtons.Remove(entry.Change); changeStates.Remove(entry.Change); }
             }
@@ -168,7 +172,7 @@ namespace VBAi
             while (start > 0 && start < transcriptEntries.Count &&
                 CanGroupActivities(transcriptEntries[start - 1], transcriptEntries[start])) start--;
             firstLoadedEntry = start;
-            visibleEntries.Clear(); entryViews.Clear(); liveTexts.Clear(); rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear();
+            visibleEntries.Clear(); entryViews.Clear(); liveTexts.Clear(); liveMarkdownViews.Clear(); rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear();
             if (start > 0) visibleEntries.Add(earlierEntries);
             activityGroups.Clear(); activityOwners.Clear();
             ChatEntry previous = null;
@@ -182,7 +186,7 @@ namespace VBAi
             pendingFollow?.Abort(); pendingFollow = null;
             DisposeEntryViews();
             visibleEntries.Clear(); firstLoadedEntry = 0;
-            transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear();
+            transcriptEntries.Clear(); entryViews.Clear(); liveEntries.Clear(); liveTexts.Clear(); liveMarkdownViews.Clear();
             activityGroups.Clear(); activityOwners.Clear(); expandedActivityGroups.Clear(); collapsedActivityGroups.Clear(); expandedActivitySteps.Clear(); collapsedActivitySteps.Clear();
             rollbackButtons.Clear(); changeStates.Clear(); formCutButtons.Clear(); followConversation = true;
         }
@@ -221,6 +225,7 @@ namespace VBAi
         {
             if (conversationItems == null) return;
             if (entry.TurnId == null) entry.TurnId = activeTurnId;
+            entry.References = entry.References?.Select(reference => reference?.CaptureSnapshot()).ToArray();
             if (transcriptEntries.Count == 0) visibleEntries.Clear();
             var previous = transcriptEntries.LastOrDefault();
             transcriptEntries.Add(entry);
@@ -248,19 +253,10 @@ namespace VBAi
 
             card.fork.Click += (s, e) => ForkChat(entry);
 
+            var refs = ChatTranscriptReferences.Resolve(transcriptEntries, entry);
+            card.message.ShowMarkdown(entry.Text ?? "", refs, NavigateReference, SetStatus);
             if (!string.IsNullOrEmpty(entry.StreamId) && !completedStreams.Contains(entry.StreamId))
-            {
-
-                card.message.ShowPlain(entry.Text); liveTexts[entry.StreamId] = card.message.content;
-
-            }
-            else
-            {
-
-                var refs = transcriptEntries.SelectMany(x => x.References ?? new VbeChatReference[0]).GroupBy(x => x.Token).ToDictionary(x => x.Key, x => x.Last());
-
-                card.message.ShowMarkdown(entry.Text ?? "", refs, NavigateReference, SetStatus);
-            }
+                liveMarkdownViews[entry.StreamId] = card.message.MarkdownView;
 
             card.memory.Visible = !string.IsNullOrWhiteSpace(entry.AttachedMemory);
 
@@ -279,10 +275,10 @@ namespace VBAi
 
                 row.text.ShowPlain(attachment.Text, !string.IsNullOrEmpty(attachment.Module)); row.open.Visible = !string.IsNullOrEmpty(attachment.Module);
 
-                row.open.Click += (s, e) => NavigateAttachment(attachment); card.attachments.Controls.Add(row);
+                row.open.Click += (s, e) => ShowAttachmentPreview(attachment); card.attachments.Controls.Add(row);
             }
 
-            foreach (var reference in entry.References ?? new VbeChatReference[0])
+            foreach (var reference in (entry.References ?? new VbeChatReference[0]).Where(value => value != null && !string.IsNullOrWhiteSpace(value.Project)))
             {
 
                 var row = new ChatLinkView(); row.link.Text = reference.Token; row.link.Click += (s, e) => NavigateReference(reference);
@@ -425,7 +421,9 @@ namespace VBAi
                 if (!string.IsNullOrWhiteSpace(text)) entry.Text = text;
                 completedStreams.Add(id);
                 if (kind == "final") streamedFinalText = entry.Text;
-                RefreshVisibleActivity(entry);
+                if (liveMarkdownViews.TryGetValue(id, out var markdown) && !markdown.IsDisposed)
+                    markdown.CompleteMarkdown(entry.Text ?? "");
+                else RefreshVisibleActivity(entry);
             }
             else
             {
@@ -454,8 +452,13 @@ namespace VBAi
         /// <param name="text">Current full transcript text, not only the latest fragment.</param>
         private void PublishStreamText(ChatEntry entry, string text)
         {
-            if (entry.StreamId == null || !liveTexts.TryGetValue(entry.StreamId, out var live)) return;
-            SetTranscriptText(live, text);
+            if (entry.StreamId == null) return;
+            if (liveMarkdownViews.TryGetValue(entry.StreamId, out var markdown) && !markdown.IsDisposed)
+            {
+                markdown.UpdateMarkdown(text);
+                return;
+            }
+            if (liveTexts.TryGetValue(entry.StreamId, out var live)) SetTranscriptText(live, text);
         }
 
         /// <summary>Publishes a realized plain-text snapshot without rewriting an unchanged prefix or resizing intermediate content.</summary>
@@ -486,13 +489,24 @@ namespace VBAi
                 PublishStreamText(pair.Key, pair.Key.Text);
             }
             pendingStreamText.Clear();
-            foreach (var entry in pendingActivityText)
-            {
-                PublishStreamText(entry, entry.Activity?.DisplayDetail() ?? "");
-                // Refresh public-summary headings once per frame without recycling realized controls.
-                if (entry.Activity?.Kind == "reasoning") RefreshStreamedActivityHeading(entry);
-            }
+            var activities = pendingActivityText.ToArray();
             pendingActivityText.Clear();
+            var refreshedOwners = new HashSet<ChatEntry>();
+            foreach (var entry in activities)
+            {
+                if (!transcriptEntries.Contains(entry)) continue;
+                if (entry.StreamId != null && liveTexts.TryGetValue(entry.StreamId, out var live) && !live.IsDisposed)
+                {
+                    PublishStreamText(entry, entry.Activity?.DisplayDetail() ?? "");
+                    // Refresh public-summary headings once per frame without recycling realized controls.
+                    if (entry.Activity?.Kind == "reasoning") RefreshStreamedActivityHeading(entry);
+                }
+                else
+                {
+                    var owner = activityOwners.TryGetValue(entry, out var group) ? group : entry;
+                    if (refreshedOwners.Add(owner)) RefreshVisibleActivity(owner);
+                }
+            }
             FollowLatest();
         }
 

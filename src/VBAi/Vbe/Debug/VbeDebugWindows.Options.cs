@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -208,7 +208,7 @@ namespace VBAi
                 if (element.Current.NativeWindowHandle != handle.ToInt64() || element.Current.Name != name || element.Current.ControlType != ControlType.ComboBox ||
                     element.Current.IsOffscreen || element.Current.IsPassword || !IsColorPalette(name))
                     throw new InvalidOperationException("The exact native code-category palette identity changed.");
-                var control = new OptionsControl { Name = name, Type = "ControlType.ComboBox", Visible = true, Enabled = element.Current.IsEnabled };
+                var control = new OptionsControl { Name = name, Type = "ControlType.ComboBox", Visible = true, Enabled = element.Current.IsEnabled && OptionsWindowEnabled(handle) };
                 ReadOptionsCombo(handle, control);
                 return control;
             }

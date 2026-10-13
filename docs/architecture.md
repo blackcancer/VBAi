@@ -190,6 +190,52 @@ application out of provider protocols and reusable editor code where possible.
 
 ## Threading and mutation lifecycle
 
+### Owned asynchronous event lifetime
+
+`VbeUiTask` installs a private synchronization context on the calling VBE STA.
+Its dispatcher remains alive until the initiating task and asynchronous event
+handlers admitted through `OperationStarted`/`OperationCompleted` have settled.
+Completion rechecks pending handlers after a drain signal, so a newly admitted
+handler cannot be abandoned before cleanup resumes. Awaited continuations remain
+on that STA; the context does not reroute native work to a worker thread or
+discard callbacks posted after disposal.
+
+Dispatcher cleanup and synchronous terminal publication belong to the returned
+operation task. Arbitrary unawaited tasks are not covered by event accounting;
+their callers must retain an explicit task lifetime. Managed regressions check
+the dispatcher contract separately from native host shutdown qualification.
+
+### Connection failure and shutdown cleanup
+
+If `OnConnection` fails, `AddInStartupFailure` attempts logging, reporting and
+resource cleanup independently. It retains the original initialization exception
+and any distinct recovery failures in order. A diagnostic failure cannot prevent
+rollback or replace the original failure.
+
+`AddInShutdownCleanup` attempts independent resources in their established order
+and retains unexpected failures until the sequence finishes. Resource fields are
+cleared after their single disposal attempt, including when disposal fails, so a
+later shutdown callback cannot implicitly retry a native close. Reentrant cleanup
+is guarded. Existing native-window exception policies remain specific to each
+window. Clearing a managed reference does not prove successful native release;
+failed or uncertain cleanup still requires its own host evidence.
+
+### Binary Git object reads
+
+For a nonempty VBA package, `MacroGitRepository.Read` reads the root tree,
+a sized, NUL-delimited VBA tree and one ordered `cat-file --batch` reply. This
+bounds process starts for that read independently of its file count. Module and
+UserForm resource bodies remain binary; metadata decoding does not re-encode
+their contents. `GitBlobBatch` checks object identity, type, size, delimiters,
+ordering and complete reply consumption against the reviewed tree before
+package validation. Existing package size and shape guards still apply.
+
+The batch operates on immutable object identities and does not cache mutable
+project revisions or remove import admission checks. Native mutation ownership,
+source/revision revalidation and approval remain in their existing dispatch
+paths. Implemented batching and managed regressions do not qualify native host
+imports or establish a general latency guarantee.
+
 ### Git imports from an owned modal window
 
 Checkpoint restoration, branch switching, module restoration, pull, merge
@@ -198,8 +244,16 @@ the action arguments and expected revision while holding its repository lease.
 Import admission follows the actual return of its modal call on the original
 owner STA. The owner, project and revision are revalidated before dispatch, and
 the exact owner is checked again immediately before the first native mutation.
-The window, dispatcher and lease remain alive through operation cleanup and
-terminal presentation. A pending or failed native mutation is not replayed.
+The window remains alive through operation cleanup and terminal presentation.
+The repository lease is released when the work finishes; request completion
+follows cleanup and publication of the terminal state. A pending or failed
+native mutation is not replayed.
+
+The Git action returns its private STA task directly. Its terminal callback runs
+synchronously on that STA after dispatcher cleanup, including when cleanup
+fails. It does not depend on a continuation returning to the caller's ambient
+modal context. Distinct operation, cleanup and publication failures are retained
+together. This lifecycle contract is tested separately from real-host acceptance.
 
 Add-in menus and Chat use the same owner lease to prevent overlapping Git
 sessions. Their complete callbacks, including disposal and error presentation,
@@ -239,6 +293,32 @@ Copying is not an external-system sandbox. See the
 COM/VBE, WinForms and WebView2 calls stay on their owning UI/STA threads. Background
 work prepares diffs, indexes snapshots, performs Git/network I/O and persists
 eligible data without treating COM objects as thread-safe values.
+
+Saved Office macro signature verification prefers the dedicated VBA SIP registered
+by current x64 Office installations. The add-in validates all three VBA-specific
+registration roles, resolves the exact `mso.dll` path, requires successful Windows
+Authenticode policy and the Microsoft publisher, and checks its registered exports.
+One module acquisition and a read-only file lock remain alive through verification
+and WinTrust state closure. Neither registry entries nor DLL search settings are
+changed. Older per-format providers remain a fallback only when the current
+provider is unavailable; a native verification failure never selects another SIP.
+This implementation does not itself establish signed-file or host qualification.
+
+Excel application resolution uses NativeOM document windows from the exact host
+process before the registered application fallback. Each temporary document-window
+interface and rejected application acquisition is released on the calling thread.
+Only the application whose native window belongs to the expected PID transfers
+to the caller, which owns its eventual release. A failed release stops resolution;
+it does not trigger another document probe or the compatibility fallback.
+
+The chat embeds native WinForms message cards inside a virtualized WPF
+transcript. Each card's native window is clipped to its scrolling viewport and
+rectangular ancestors with `ClipToBounds` enabled. The region is calculated in physical
+screen pixels, refreshed on layout and removed with the native host; WPF margins
+alone cannot constrain these child windows. The composer uses an opaque theme
+background to avoid showing content beneath its WPF text editor. These rendering
+  mechanisms remain on the owning UI thread and do not move VBE work to background
+threads. Host qualification is recorded separately in the testing evidence.
 
 Before an edit, resolve identity, verify permissions/mode/protection and compare
 the expected revision. Apply the operation, re-read the result and record recovery

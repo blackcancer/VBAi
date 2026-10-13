@@ -32,22 +32,25 @@ namespace VBAi
             if (busy || closing || IsDisposed || !Ready || !WorkspaceHosted ||
                 VbeDebugInspection.IsActive || debugCommands.CurrentCount == 0) return false;
             busy = true;
+            IEditorModule module = null;
             try
             {
-                var module = ReadActiveModule();
+                module = ReadActiveModule();
                 if (module == null) { lastFollowedNativeModule = null; return false; }
                 // Native activation follows transitions. A Monaco tab selection must remain
                 // usable while the unchanged backing VBE pane is still active.
                 if (!Visible || SameEditorModule(lastFollowedNativeModule, module)) return false;
-                if (SameEditorModule(Current?.Module, module)) { lastFollowedNativeModule = module; return false; }
+                if (SameEditorModule(Current?.Module, module)) { lastFollowedNativeModule = Current.Module; return false; }
                 await CaptureDocuments(); // Preserve the latest unsynchronized draft before switching tabs.
                 if (closing || IsDisposed || !Ready || !Visible || debugCommands.CurrentCount == 0 || VbeDebugInspection.IsActive)
                     return false;
                 // WebView capture yields. Never open a stale component after navigation,
                 // a designer activation, protection or mode changes during that boundary.
-                if (!SameEditorModule(module, ReadActiveModule())) return false;
-                await OpenModuleCore(module, false);
-                lastFollowedNativeModule = module;
+                var verified = ReadActiveModule();
+                try { if (!SameEditorModule(module, verified)) return false; }
+                finally { if (!ReferenceEquals(verified, module)) ReleaseUnadoptedModule(verified); }
+                var document = await OpenModuleCore(module, false);
+                lastFollowedNativeModule = document.Module;
                 return true;
             }
             catch (Exception error)
@@ -55,8 +58,19 @@ namespace VBAi
                 LoadLog.Write("Monaco active module observation refused: " + error.GetType().Name);
                 return false;
             }
-            finally { busy = false; }
+            finally { try { ReleaseUnadoptedModule(module); } finally { busy = false; } }
         }
+
+        /// <summary>Reports whether a live document has adopted this exact adapter instance.</summary>
+        /// <param name="module">Possibly null adapter whose ownership is being checked.</param>
+        /// <returns>True only for an exact adopted adapter, not for a matching component probe.</returns>
+        internal bool OwnsModule(IEditorModule module) =>
+            module != null && System.Linq.Enumerable.Any(documents.Values, document => ReferenceEquals(document.Module, module));
+
+        /// <summary>Releases a transient adapter only when no open document has adopted it.</summary>
+        /// <param name="module">Possibly null incoming or validation-only adapter.</param>
+        internal void ReleaseUnadoptedModule(IEditorModule module)
+        { if (!OwnsModule(module)) (module as EditorVbeModule)?.Dispose(); }
 
         /// <summary>Compares exact adapter/component identities; mutable display names never identify a document.</summary>
         /// <param name="first">First adapter module identity.</param>

@@ -84,7 +84,7 @@ namespace VBAi.Tests
 
         private static string FindController()
         {
-            foreach (string start in new[] { AppDomain.CurrentDomain.BaseDirectory, Environment.CurrentDirectory })
+            foreach (string start in new[] { VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, Environment.CurrentDirectory })
                 for (var directory = new DirectoryInfo(start); directory != null; directory = directory.Parent)
                 {
                     string candidate = Path.Combine(directory.FullName, "tools", "probes", "Trace-NativeUserFormExport.ps1");

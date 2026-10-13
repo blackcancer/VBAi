@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 namespace VBAi.Tests.Unit.Updates
 {
-    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    [ToolBoundaryTestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed partial class WebViewRuntimePrerequisiteTests
     {
         [TestMethod]

@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -8,6 +10,44 @@ namespace VBAi.Tests.Unit
 {
     public sealed partial class GitWindowCoverageTests
     {
+        /// <summary>An expired fixture deadline stays failed while the original owner continues to drain its admitted task.</summary>
+        [WinFormsTestMethod]
+        [DataRow("success"), DataRow("failure"), DataRow("cancel")]
+        public void ExpiredFixtureDeadlineKeepsTheOwnerAliveUntilOriginalCompletion(string outcome)
+        {
+            using (var fixture = new Fixture())
+            using (var timer = new System.Windows.Forms.Timer { Interval = 40 })
+            {
+                var pending = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var lateFailure = new ApplicationException("original deferred failure");
+                fixture.OperationDeadlineMilliseconds = 1;
+                int completions = 0;
+                timer.Tick += (sender, args) =>
+                {
+                    timer.Stop(); completions++;
+                    Assert.IsFalse(fixture.Window.IsDisposed);
+                    if (outcome == "failure") pending.SetException(lateFailure);
+                    else if (outcome == "cancel") pending.SetCanceled();
+                    else pending.SetResult(true);
+                };
+                timer.Start();
+                Exception observed = null;
+                try { fixture.Pump(pending.Task); }
+                catch (Exception error) { observed = error; }
+                Assert.AreEqual(1, completions);
+                Assert.IsTrue(pending.Task.IsCompleted);
+                Assert.IsNotNull(observed, "A late successful completion must not erase the expired deadline.");
+                if (outcome == "success") Assert.IsInstanceOfType(observed, typeof(TimeoutException));
+                else
+                {
+                    var failures = ((AggregateException)observed).Flatten().InnerExceptions;
+                    Assert.IsTrue(failures.Any(error => error is TimeoutException));
+                    if (outcome == "failure") Assert.IsTrue(failures.Contains(lateFailure));
+                    else Assert.IsTrue(failures.Any(error => error is TaskCanceledException));
+                }
+            }
+        }
+
         [WinFormsTestMethod]
         [DataRow("checkpoint_restore")]
         [DataRow("branch_switch")]
@@ -33,10 +73,40 @@ namespace VBAi.Tests.Unit
         public void DriftOrUncertainNativeFailureAfterActualModalReturnCannotReplayImport(string fault)
         { ExerciseHandoff("checkpoint_restore", fault); }
 
-        private static void ExerciseHandoff(string action, string fault)
+        [WinFormsTestMethod]
+        [DataRow("checkpoint_restore", null)]
+        [DataRow("branch_switch", null)]
+        [DataRow("module_restore", null)]
+        [DataRow("pull", null)]
+        [DataRow("merge_complete", null)]
+        [DataRow("rollback", null)]
+        [DataRow("checkpoint_restore", "identity")]
+        [DataRow("branch_switch", "identity")]
+        [DataRow("module_restore", "identity")]
+        [DataRow("pull", "identity")]
+        [DataRow("merge_complete", "identity")]
+        [DataRow("rollback", "identity")]
+        [DataRow("checkpoint_restore", "native-uncertain")]
+        [DataRow("branch_switch", "native-uncertain")]
+        [DataRow("module_restore", "native-uncertain")]
+        [DataRow("pull", "native-uncertain")]
+        [DataRow("merge_complete", "native-uncertain")]
+        [DataRow("rollback", "native-uncertain")]
+        public void EachModalImportPublishesItsTerminalStateWithoutAnAmbientContinuation(string action, string fault)
+        { ExerciseHandoff(action, fault, true); }
+
+        /// <summary>Models a modal callback whose ambient context stops dispatching after the callback returns.</summary>
+        private sealed class NonReturningHandoffContext : SynchronizationContext
+        {
+            private int posts;
+            internal int Posts => Volatile.Read(ref posts);
+            public override void Post(SendOrPostCallback callback, object state) { Interlocked.Increment(ref posts); }
+        }
+
+        private static void ExerciseHandoff(string action, string fault, bool loseCallerContext = false)
         {
             using (var f = new Fixture())
-            using (var timer = new Timer { Interval = 10 })
+            using (var timer = new System.Windows.Forms.Timer { Interval = 10 })
             {
                 string initial = f.Git.Seed(); var target = f.Git.Snapshot("2");
                 string commit = f.Git.Commit(target, initial), name = null, path = null;
@@ -60,11 +130,21 @@ namespace VBAi.Tests.Unit
                     return ((global::FakeProject)value).FileName;
                 }));
                 Task operation = null; int shows = 0, admissions = 0; bool showReturned = false;
+                var lostContext = new NonReturningHandoffContext();
                 timer.Tick += (sender, args) =>
                 {
                     if (!f.Window.Modal) return;
                     if (shows == 2) { f.Window.Close(); return; }
-                    if (operation == null) operation = (Task)f.Call("RunGitAction", action, name, "merge", null, path);
+                    if (operation == null)
+                    {
+                        var previous = SynchronizationContext.Current;
+                        try
+                        {
+                            if (loseCallerContext) SynchronizationContext.SetSynchronizationContext(lostContext);
+                            operation = (Task)f.Call("RunGitAction", action, name, "merge", null, path);
+                        }
+                        finally { SynchronizationContext.SetSynchronizationContext(previous); }
+                    }
                     else if (operation.IsCompleted && !f.Get<bool>("running")) f.Window.Close();
                 };
                 var session = new GitModalSession(() =>
@@ -111,6 +191,8 @@ namespace VBAi.Tests.Unit
                 try { f.Pump(VbeUiTask.Run(async () => { await session.RunAsync(); return true; })); }
                 finally { f.Window.DetachModalSession(session); }
                 Assert.AreEqual(2, shows);
+                if (loseCallerContext) Assert.AreEqual(0, lostContext.Posts,
+                    "Neither terminal publication nor the returned Git task may depend on the ambient modal callback context.");
                 Assert.AreEqual(fault == null || fault == "native-uncertain" || fault == "owner-before-import" ? 3 : 1, admissions);
                 Assert.AreEqual(fault == null || fault == "native-uncertain" ? 1 : 0, f.Git.Host.VBComponents.ImportAttempts);
                 if (fault == null) { Assert.IsTrue(f.Git.Project.Capture().SameAs(target)); Assert.IsTrue(executingReads > 0); Assert.IsFalse(f.Git.Repository.RecoveryPending); }

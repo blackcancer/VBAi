@@ -14,7 +14,7 @@ namespace VBAi.Tests.Unit
         {
             foreach (string name in new[] { "assistant", "github", "settings" })
             foreach (int size in new[] { 16, 20, 24, 32, 48 })
-            using (var source = System.Drawing.Image.FromFile(System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "IconSources", name + ".png")))
+            using (var source = System.Drawing.Image.FromFile(System.IO.Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "IconSources", name + ".png")))
             using (var icon = VbeWindowIcons.Icon(name))
             using (var small = new System.Drawing.Icon(icon, size, size))
             using (var actual = small.ToBitmap())

@@ -39,12 +39,11 @@ namespace VBAi
                         AcceptsReturn = true,
                         TextWrapping = System.Windows.TextWrapping.Wrap,
                         VerticalScrollBarVisibility = System.Windows.Controls.ScrollBarVisibility.Auto,
-                        BorderThickness = new System.Windows.Thickness(0),
-                        Background = System.Windows.Media.Brushes.Transparent
+                        BorderThickness = new System.Windows.Thickness(0)
                     };
-                    host.Child = editor;
                     ApplyEditorAppearance();
                     previewPanel.Visible = false;
+                    host.Child = editor;
                     host.Visible = true;
                     host.BringToFront();
                 }
@@ -90,10 +89,16 @@ namespace VBAi
         /// <param name="e">Données de changement de couleur.</param>
         protected override void OnForeColorChanged(System.EventArgs e) { base.OnForeColorChanged(e); ApplyEditorAppearance(); }
 
+        /// <summary>Updates the opaque editor background when the host theme changes.</summary>
+        /// <param name="e">Background change notification on the owning UI thread.</param>
+        protected override void OnBackColorChanged(System.EventArgs e) { base.OnBackColorChanged(e); ApplyEditorAppearance(); }
+
         /// <summary>Met à jour le padding, la police, la couleur et le correcteur du contrôle WPF, s’il est créé.</summary>
         private void ApplyEditorAppearance()
         {
             if (previewPanel != null) previewPanel.Padding = inputPadding;
+            if (host != null) host.BackColor = BackColor;
+            if (previewEditor != null) previewEditor.BackColor = BackColor;
             if (editor == null) return;
             var hint = UiText.Get("Write your request. Enter sends it; Shift+Enter adds a line. Use # or @ to reference VBA code and / to see chat commands.");
             editor.ToolTip = hint;
@@ -103,6 +108,7 @@ namespace VBAi
             editor.FontWeight = Font.Bold ? System.Windows.FontWeights.Bold : System.Windows.FontWeights.Normal;
             editor.FontStyle = Font.Italic ? System.Windows.FontStyles.Italic : System.Windows.FontStyles.Normal;
             editor.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(ForeColor.R, ForeColor.G, ForeColor.B));
+            editor.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(BackColor.R, BackColor.G, BackColor.B));
             editor.Padding = new System.Windows.Thickness(inputPadding.Left, inputPadding.Top, inputPadding.Right, inputPadding.Bottom);
             editor.SpellCheck.IsEnabled = spellCheckEnabled;
         }

@@ -2871,4 +2871,25 @@
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>هذا النموذج لا يدعم استدعاء الأدوات.</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>لم يُكمل المزوّد استجابته خلال {0} ثانية. لم تتم إعادة تنفيذ أي إجراء تلقائيًا.</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>استخدام إعداد الاستدلال الافتراضي للنموذج.</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>تعطيل الاستدلال لهذه المحادثة.</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>إعداد النموذج الافتراضي</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>الاستدلال معطّل</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>هذا النموذج لا يدعم خيار الاستدلال المحدد.</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>اختر ملفًا لإرفاقه بالمحادثة الحالية.</value>
+  </data>
 </root>

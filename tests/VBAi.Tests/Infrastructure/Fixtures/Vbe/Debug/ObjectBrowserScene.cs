@@ -40,7 +40,7 @@ namespace VBAi.Tests.Unit
             }
             internal NativeDebugScene.Window Add(AutomationNode node, string kind = "ListBox")
             {
-                var host = new AutomationHost(node); hosts.Add(host);
+                var host = new AutomationHost(node, noActivate: true); hosts.Add(host);
                 var window = Native.Add(kind, node.Name, Pane); window.Handle = host.Handle; return window;
             }
             public void Dispose()

@@ -10,7 +10,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class GitWindowStateTests
     {
         /// <summary>Efface l’aperçu précédent lorsqu’un changement est sélectionné sans snapshot disponible.</summary>
-        [TestMethod]
         [STATestMethod]
         public void SelectingChangeWithoutSnapshotClearsPreviousPreview()
         {

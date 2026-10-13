@@ -40,15 +40,21 @@ namespace VBAi.Tests.Unit
         [STATestMethod]
         public void ExternalProgressWindowCancellationPersistsWithoutLaunchingAnything()
         {
+            int processExitBefore = Environment.ExitCode;
+            int? ownedExit = null;
             using (var scope = new UpdateScope())
             using (var window = new UpdateProgressWindow())
             {
+                window.SetExitCode = code => ownedExit = code;
                 var job = UpdateInstallerRunnerTests.Job(scope); job.Culture = "fr-FR";
                 window.Configure(scope.Root, job, false);
                 Assert.AreEqual("Mises à jour VBAi", window.Text);
                 LlmBoundaryScope.Call(window, "Close_Click", null, EventArgs.Empty);
                 Assert.AreEqual("Update cancelled.", UpdateInstallJob.Load(scope.Root).Status);
+                Assert.AreEqual(1, ownedExit, "Cancellation must report failure to the owned updater result observer.");
+                Assert.AreEqual(processExitBefore, Environment.ExitCode, "A synthetic updater flow must not change the test process exit code.");
             }
+            Assert.AreEqual(processExitBefore, Environment.ExitCode, "Disposing the synthetic progress window must preserve the test process exit code.");
         }
         [STATestMethod]
         public void ProgressConfigurationSupportsCurrentCultureRtlAndForegroundOrBackgroundVisibility()

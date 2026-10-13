@@ -33,16 +33,16 @@ namespace VBAi
         private static readonly Guid ClickInterface = new Guid("000C0351-0000-0000-C000-000000000046");
 
         /// <summary>Bouton VBAi ajouté au menu View du VBE.</summary>
-        private readonly object viewButton;
+        private object viewButton;
 
         /// <summary>Bouton VBAi ajouté au menu Tools du VBE.</summary>
-        private readonly object settingsButton;
+        private object settingsButton;
 
         /// <summary>Gestionnaire COM du bouton assistant.</summary>
-        private readonly ClickHandler viewHandler;
+        private ClickHandler viewHandler;
 
         /// <summary>Gestionnaire COM du bouton de paramètres.</summary>
-        private readonly ClickHandler settingsHandler;
+        private ClickHandler settingsHandler;
 
         /// <summary>Boutons GitHub et commandes ajoutés aux menus contextuels de l’éditeur.</summary>
         private readonly List<Tuple<object, ClickHandler>> editorButtons = new List<Tuple<object, ClickHandler>>();
@@ -61,6 +61,16 @@ namespace VBAi
 
         /// <summary>Empêche la suppression répétée des commandes et images.</summary>
         private bool disposed;
+
+        /// <summary>Owns each native getter and button acquisition until menu shutdown.</summary>
+        private readonly VbaTestComReferences nativeReferences;
+
+        /// <summary>Tracks buttons before metadata or event registration can fail.</summary>
+        private readonly List<object> createdButtons = new List<object>();
+
+        /// <summary>Owning STA identity; no COM cleanup is dispatched from another thread.</summary>
+        private readonly int ownerThread;
+
 
         /// <summary>Signature du gestionnaire de clic Office avec indicateur d’annulation par défaut.</summary>
         /// <param name="control">Bouton Office qui a déclenché l’événement.</param>
@@ -95,134 +105,148 @@ namespace VBAi
         /// <param name="showCrashReport">Action facultative ouvrant le rapport de problème.</param>
         /// <param name="showUpdates">Action facultative ouvrant les mises à jour.</param>
         /// <param name="showHelp">Opens local help; null uses the packaged guide.</param>
+        /// <param name="releaseAcquired">Balances one getter acquisition without finalizing borrowed owners.</param>
+        /// <param name="indexedCollection">Identifies native one-based collections; defaults to COM collection detection.</param>
         internal VbeMenu(object vbe, Action showAssistant, Action showSettings, Action showGitHub,
             Action<string> editorAction, Action<object, Guid, int, Delegate> subscribe,
-            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon, Action showAbout = null, Action showCrashReport = null, Action showUpdates = null, Action showHelp = null)
+            Action<object, Guid, int, Delegate> unsubscribe, Action<object, Type> applyIcon, Action showAbout = null, Action showCrashReport = null, Action showUpdates = null, Action showHelp = null,
+            Action<object> releaseAcquired = null, Func<object, bool> indexedCollection = null)
         {
-            this.subscribe = subscribe ?? SubscribeDefault;
-            this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
-                ComEventsHelper.Remove(button, iid, dispid, handler));
-            this.applyIcon = applyIcon ?? SetIcon;
-            dynamic view = FindMenu(vbe, true);
-            dynamic tools = FindMenu(vbe, false);
-            viewButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-            settingsButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-            ((dynamic)viewButton).Caption = UiText.Get("VBAi assistant");
-            ((dynamic)viewButton).Tag = "VBAi.Assistant";
-            ((dynamic)settingsButton).Caption = UiText.Get("VBAi settings…");
-            ((dynamic)settingsButton).Tag = "VBAi.Settings";
-            ((dynamic)viewButton).TooltipText = UiText.Get("Open VBAi — Your AI agent for VBA");
-            ((dynamic)settingsButton).TooltipText = UiText.Get("Configure providers and the GitHub account");
-            viewHandler = (object control, ref bool cancel) => { cancel = true; showAssistant(); };
-            settingsHandler = (object control, ref bool cancel) => { cancel = true; showSettings(); };
+            ownerThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+            nativeReferences = new VbaTestComReferences(releaseAcquired,
+                indexedCollection ?? (Func<object, bool>)Marshal.IsComObject);
             try
             {
-                this.subscribe(viewButton, ClickInterface, 1, viewHandler);
-                this.subscribe(settingsButton, ClickInterface, 1, settingsHandler);
-                this.applyIcon(viewButton, typeof(ChatWindow));
-                this.applyIcon(settingsButton, typeof(LlmSettingsWindow));
-                if (editorAction != null)
+                this.subscribe = subscribe ?? SubscribeDefault;
+                this.unsubscribe = unsubscribe ?? ((button, iid, dispid, handler) =>
+                    ComEventsHelper.Remove(button, iid, dispid, handler));
+                this.applyIcon = applyIcon ?? SetIcon;
+                dynamic view = FindPopupInScope(vbe, true, false, nativeReferences);
+                dynamic tools = FindPopupInScope(vbe, false, false, nativeReferences);
+                viewButton = CreateNativeButton((object)view);
+                settingsButton = CreateNativeButton((object)tools);
+                ((dynamic)viewButton).Caption = UiText.Get("VBAi assistant");
+                ((dynamic)viewButton).Tag = "VBAi.Assistant";
+                ((dynamic)settingsButton).Caption = UiText.Get("VBAi settings…");
+                ((dynamic)settingsButton).Tag = "VBAi.Settings";
+                ((dynamic)viewButton).TooltipText = UiText.Get("Open VBAi — Your AI agent for VBA");
+                ((dynamic)settingsButton).TooltipText = UiText.Get("Configure providers and the GitHub account");
+                viewHandler = (object control, ref bool cancel) => { cancel = true; showAssistant(); };
+                settingsHandler = (object control, ref bool cancel) => { cancel = true; showSettings(); };
+                try
                 {
-                    object modernButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                    ((dynamic)modernButton).Caption = UiText.Get("VBAi editor");
-                    ((dynamic)modernButton).Tag = "VBAi.ModernEditor";
-                    ((dynamic)modernButton).TooltipText = UiText.Get("Open active module");
-                    ClickHandler modernHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/editor"); };
-                    editorButtons.Add(Tuple.Create(modernButton, modernHandler));
-                    dynamic testsButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                    testsButton.Caption = UiText.Get("VBAi test explorer…");
-                    testsButton.Tag = "VBAi.Tests";
-                    ClickHandler testsHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/tests"); };
-                    editorButtons.Add(Tuple.Create((object)testsButton, testsHandler));
-                    this.subscribe((object)testsButton, ClickInterface, 1, testsHandler);
-                    this.applyIcon((object)testsButton, typeof(AboutWindow));
-                    this.subscribe(modernButton, ClickInterface, 1, modernHandler);
-                    this.applyIcon(modernButton, typeof(AboutWindow));
+                    this.subscribe(viewButton, ClickInterface, 1, viewHandler);
+                    this.subscribe(settingsButton, ClickInterface, 1, settingsHandler);
+                    this.applyIcon(viewButton, typeof(ChatWindow));
+                    this.applyIcon(settingsButton, typeof(LlmSettingsWindow));
+                    if (editorAction != null)
+                    {
+                        object modernButton = CreateNativeButton((object)view);
+                        ((dynamic)modernButton).Caption = UiText.Get("VBAi editor");
+                        ((dynamic)modernButton).Tag = "VBAi.ModernEditor";
+                        ((dynamic)modernButton).TooltipText = UiText.Get("Open active module");
+                        ClickHandler modernHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/editor"); };
+                        editorButtons.Add(Tuple.Create(modernButton, modernHandler));
+                        dynamic testsButton = CreateNativeButton((object)view);
+                        testsButton.Caption = UiText.Get("VBAi test explorer…");
+                        testsButton.Tag = "VBAi.Tests";
+                        ClickHandler testsHandler = (object control, ref bool cancel) => { cancel = true; editorAction("/tests"); };
+                        editorButtons.Add(Tuple.Create((object)testsButton, testsHandler));
+                        this.subscribe((object)testsButton, ClickInterface, 1, testsHandler);
+                        this.applyIcon((object)testsButton, typeof(AboutWindow));
+                        this.subscribe(modernButton, ClickInterface, 1, modernHandler);
+                        this.applyIcon(modernButton, typeof(AboutWindow));
+                    }
+                    object gitButton = CreateNativeButton((object)view);
+                    ((dynamic)gitButton).Caption = "GitHub VBAi…";
+                    ((dynamic)gitButton).Tag = "VBAi.GitHub";
+                    ((dynamic)gitButton).TooltipText = UiText.Get("Synchronize the active VBA project and manage its branches and checkpoints");
+                    ClickHandler gitHandler = (object control, ref bool cancel) => { cancel = true; showGitHub(); };
+                    editorButtons.Add(Tuple.Create(gitButton, gitHandler));
+                    this.subscribe(gitButton, ClickInterface, 1, gitHandler);
+                    this.applyIcon(gitButton, typeof(GitWindow));
+                    if (showUpdates != null)
+                    {
+                        object updateButton = CreateNativeButton((object)tools);
+                        ((dynamic)updateButton).Caption = UiText.Get("VBAi updates");
+                        ((dynamic)updateButton).Tag = "VBAi.Updates";
+                        ((dynamic)updateButton).TooltipText = UiText.Get("Check for updates");
+                        ClickHandler updateHandler = (object control, ref bool cancel) => { cancel = true; showUpdates(); };
+                        editorButtons.Add(Tuple.Create(updateButton, updateHandler));
+                        this.subscribe(updateButton, ClickInterface, 1, updateHandler);
+                        this.applyIcon(updateButton, typeof(UpdateWindow));
+                    }
+                    if (showCrashReport != null)
+                    {
+                        object reportButton = CreateNativeButton((object)tools);
+                        ((dynamic)reportButton).Caption = UiText.Get("Report an issue");
+                        ((dynamic)reportButton).Tag = "VBAi.CrashReport";
+                        ((dynamic)reportButton).TooltipText = UiText.Get("GitHub first; Outlook if unavailable.");
+                        ClickHandler reportHandler = (object control, ref bool cancel) => { cancel = true; showCrashReport(); };
+                        editorButtons.Add(Tuple.Create(reportButton, reportHandler));
+                        this.subscribe(reportButton, ClickInterface, 1, reportHandler);
+                        this.applyIcon(reportButton, typeof(CrashReportWindow));
+                    }
+                    dynamic help = FindPopupInScope(vbe, false, true, nativeReferences);
+                    if (help != null)
+                    {
+                        object helpButton = CreateNativeButton((object)help);
+                        ((dynamic)helpButton).Caption = "VBAi · " + UiText.Get("User guide");
+                        ((dynamic)helpButton).Tag = "VBAi.Help";
+                        ((dynamic)helpButton).TooltipText = UiText.Get("Open the local VBAi user guide in the interface language");
+                        ClickHandler helpHandler = (object control, ref bool cancel) => { cancel = true; (showHelp ?? (() => UiHelp.Open(null)))(); };
+                        editorButtons.Add(Tuple.Create(helpButton, helpHandler));
+                        this.subscribe(helpButton, ClickInterface, 1, helpHandler);
+                        this.applyIcon(helpButton, typeof(AboutWindow));
+                    }
+                    if (showAbout != null)
+                    {
+                        object aboutButton = CreateNativeButton((object)tools);
+                        ((dynamic)aboutButton).Caption = UiText.Get("About VBAi");
+                        ((dynamic)aboutButton).Tag = "VBAi.About";
+                        ((dynamic)aboutButton).TooltipText = UiText.Get("Version, technical details and project resources");
+                        ClickHandler aboutHandler = (object control, ref bool cancel) => { cancel = true; showAbout(); };
+                        editorButtons.Add(Tuple.Create(aboutButton, aboutHandler));
+                        this.subscribe(aboutButton, ClickInterface, 1, aboutHandler);
+                        this.applyIcon(aboutButton, typeof(AboutWindow));
+                    }
                 }
-                object gitButton = view.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                ((dynamic)gitButton).Caption = "GitHub VBAi…";
-                ((dynamic)gitButton).Tag = "VBAi.GitHub";
-                ((dynamic)gitButton).TooltipText = UiText.Get("Synchronize the active VBA project and manage its branches and checkpoints");
-                ClickHandler gitHandler = (object control, ref bool cancel) => { cancel = true; showGitHub(); };
-                editorButtons.Add(Tuple.Create(gitButton, gitHandler));
-                this.subscribe(gitButton, ClickInterface, 1, gitHandler);
-                this.applyIcon(gitButton, typeof(GitWindow));
-                if (showUpdates != null)
+                catch
                 {
-                    object updateButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                    ((dynamic)updateButton).Caption = UiText.Get("VBAi updates");
-                    ((dynamic)updateButton).Tag = "VBAi.Updates";
-                    ((dynamic)updateButton).TooltipText = UiText.Get("Check for updates");
-                    ClickHandler updateHandler = (object control, ref bool cancel) => { cancel = true; showUpdates(); };
-                    editorButtons.Add(Tuple.Create(updateButton, updateHandler));
-                    this.subscribe(updateButton, ClickInterface, 1, updateHandler);
-                    this.applyIcon(updateButton, typeof(UpdateWindow));
+                    Dispose();
+                    throw;
                 }
-                if (showCrashReport != null)
+                try
                 {
-                    object reportButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                    ((dynamic)reportButton).Caption = UiText.Get("Report an issue");
-                    ((dynamic)reportButton).Tag = "VBAi.CrashReport";
-                    ((dynamic)reportButton).TooltipText = UiText.Get("GitHub first; Outlook if unavailable.");
-                    ClickHandler reportHandler = (object control, ref bool cancel) => { cancel = true; showCrashReport(); };
-                    editorButtons.Add(Tuple.Create(reportButton, reportHandler));
-                    this.subscribe(reportButton, ClickInterface, 1, reportHandler);
-                    this.applyIcon(reportButton, typeof(CrashReportWindow));
+                    if (editorAction != null)
+                    {
+                        foreach (dynamic bar in nativeReferences.Items((object)((dynamic)vbe).CommandBars))
+                        {
+                            string name = Normalize((string)bar.Name);
+                            if (name != "code window" && name != "code window (break)" && name != "fenêtre code") continue;
+                            foreach (var action in new[] { "/expliquer", "/corriger", "/refactoriser" })
+                            {
+                                string command = action;
+                                object button = CreateNativeButton((object)bar);
+                                ((dynamic)button).Caption = "VBAi · " + UiText.Get(action == "/expliquer" ? "Explain" : action == "/corriger" ? "Fix" : "Refactor");
+                                ((dynamic)button).Tag = "VBAi." + action.Substring(1);
+                                ClickHandler handler = (object control, ref bool cancel) => { cancel = true; editorAction(command); };
+                                editorButtons.Add(Tuple.Create(button, handler));
+                                this.subscribe(button, ClickInterface, 1, handler);
+                                this.applyIcon(button, typeof(ChatWindow));
+                            }
+                        }
+                    }
                 }
-                dynamic help = FindHelpMenu(vbe);
-                if (help != null)
+                catch (Exception ex)
                 {
-                    object helpButton = help.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                    ((dynamic)helpButton).Caption = "VBAi · " + UiText.Get("User guide");
-                    ((dynamic)helpButton).Tag = "VBAi.Help";
-                    ((dynamic)helpButton).TooltipText = UiText.Get("Open the local VBAi user guide in the interface language");
-                    ClickHandler helpHandler = (object control, ref bool cancel) => { cancel = true; (showHelp ?? (() => UiHelp.Open(null)))(); };
-                    editorButtons.Add(Tuple.Create(helpButton, helpHandler));
-                    this.subscribe(helpButton, ClickInterface, 1, helpHandler);
-                    this.applyIcon(helpButton, typeof(AboutWindow));
-                }
-                if (showAbout != null)
-                {
-                    object aboutButton = tools.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                    ((dynamic)aboutButton).Caption = UiText.Get("About VBAi");
-                    ((dynamic)aboutButton).Tag = "VBAi.About";
-                    ((dynamic)aboutButton).TooltipText = UiText.Get("Version, technical details and project resources");
-                    ClickHandler aboutHandler = (object control, ref bool cancel) => { cancel = true; showAbout(); };
-                    editorButtons.Add(Tuple.Create(aboutButton, aboutHandler));
-                    this.subscribe(aboutButton, ClickInterface, 1, aboutHandler);
-                    this.applyIcon(aboutButton, typeof(AboutWindow));
+                    LoadLog.Write("VBE editor context menus unavailable: " + ex.ToString());
                 }
             }
             catch
             {
                 Dispose();
                 throw;
-            }
-            try
-            {
-                if (editorAction != null)
-                {
-                    foreach (dynamic bar in ((dynamic)vbe).CommandBars)
-                    {
-                        string name = Normalize((string)bar.Name);
-                        if (name != "code window" && name != "code window (break)" && name != "fenêtre code") continue;
-                        foreach (var action in new[] { "/expliquer", "/corriger", "/refactoriser" })
-                        {
-                            string command = action;
-                            object button = bar.Controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true);
-                            ((dynamic)button).Caption = "VBAi · " + UiText.Get(action == "/expliquer" ? "Explain" : action == "/corriger" ? "Fix" : "Refactor");
-                            ((dynamic)button).Tag = "VBAi." + action.Substring(1);
-                            ClickHandler handler = (object control, ref bool cancel) => { cancel = true; editorAction(command); };
-                            editorButtons.Add(Tuple.Create(button, handler));
-                            this.subscribe(button, ClickInterface, 1, handler);
-                            this.applyIcon(button, typeof(ChatWindow));
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LoadLog.Write("VBE editor context menus unavailable: " + ex.ToString());
             }
         }
 
@@ -277,40 +301,72 @@ namespace VBAi
         /// <returns>Menu VBE correspondant à la langue et au type demandés.</returns>
         private static dynamic FindMenu(object application, bool view)
         {
-            foreach (dynamic bar in ((dynamic)application).CommandBars)
-            {
-                int type;
-                try { type = (int)bar.Type; } catch { continue; }
-                if (type != 1) continue; // msoBarTypeMenuBar
-                foreach (dynamic item in bar.Controls)
-                {
-                    string name;
-                    try { name = Normalize((string)item.Caption); } catch { continue; }
-                    if (UiLanguages.IsMenu(name, view)) return item;
-                }
-            }
-            throw new InvalidOperationException("VBE menu not found: " + (view ? "View" : "Tools"));
+            return AcquirePopup(application, view, false);
         }
 
-        /// <summary>Finds the native Help or question-mark menu without creating a replacement menu.</summary>
-        /// <param name="application">VBE owning the menu bar.</param>
-        /// <returns>The existing Help popup, or null if a host does not expose it.</returns>
+        /// <summary>Returns one acquired popup; its caller owns the returned acquisition.</summary>
         private static object FindHelpMenu(object application)
+        {
+            return AcquirePopup(application, false, true);
+        }
+
+        /// <summary>Balances discovery even if releasing an unrelated getter fails.</summary>
+        private static object AcquirePopup(object application, bool view, bool help)
+        {
+            using (var resultOwner = new VbaTestComReferences())
+            {
+                object result;
+                using (var discovery = new VbaTestComReferences())
+                {
+                    result = FindPopupInScope(application, view, help, discovery);
+                    if (result != null)
+                    {
+                        discovery.Transfer(result);
+                        resultOwner.Add(result);
+                    }
+                }
+                if (result != null) resultOwner.Transfer(result);
+                return result;
+            }
+        }
+
+        /// <summary>Uses one-based native collections; the borrowed VBE is never acquired.</summary>
+        internal static object FindPopupInScope(object application, bool view, bool help, VbaTestComReferences references)
         {
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
                 "?", "help", "aide", "ayuda", "hilfe", "ajuda", "guida", "ヘルプ", "도움말",
                 "帮助", "說明", "说明", "справка", "تعليمات", "مساعدة", "सहायता"
             };
-            foreach (dynamic bar in ((dynamic)application).CommandBars)
+            foreach (dynamic bar in references.Items((object)((dynamic)application).CommandBars))
             {
                 try { if ((int)bar.Type != 1) continue; } catch { continue; }
-                foreach (dynamic item in bar.Controls)
+                foreach (dynamic item in references.Items((object)bar.Controls))
                 {
-                    try { if (names.Contains(UiLanguages.NormalizeMenu((string)item.Caption))) return item; }
-                    catch { }
+                    string name;
+                    try { name = Normalize((string)item.Caption); } catch { continue; }
+                    if (help ? names.Contains(UiLanguages.NormalizeMenu(name)) : UiLanguages.IsMenu(name, view))
+                        return item;
                 }
             }
-            return null;
+            if (help) return null;
+            throw new InvalidOperationException("VBE menu not found: " + (view ? "View" : "Tools"));
+        }
+
+        /// <summary>Records both Controls and Add acquisitions before configuring the new button.</summary>
+        private object CreateNativeButton(object popup)
+        {
+            dynamic controls = nativeReferences.Add((object)((dynamic)popup).Controls);
+            object button = nativeReferences.Add((object)controls.Add(1, Missing.Value, Missing.Value, Missing.Value, true));
+            createdButtons.Add(button);
+            return button;
+        }
+
+        /// <summary>Attempts one deletion per distinct created button, including partial construction.</summary>
+        private static void DeleteButtonOnce(object button, List<object> visited)
+        {
+            if (button == null || visited.Exists(item => ReferenceEquals(item, button))) return;
+            visited.Add(button);
+            ((dynamic)button).Delete();
         }
 
         /// <summary>Normalise une légende de menu pour comparaison sans casse ni esperluette.</summary>
@@ -325,25 +381,36 @@ namespace VBAi
         public void Dispose()
         {
             if (disposed) return;
+            if (ownerThread != 0 && ownerThread != System.Threading.Thread.CurrentThread.ManagedThreadId)
+                throw new InvalidOperationException("VBE menu cleanup must remain on its owning thread.");
             disposed = true;
+            var deletedButtons = new List<object>();
             foreach (var item in editorButtons)
             {
                 try { unsubscribe(item.Item1, ClickInterface, 1, item.Item2); } catch { }
-                try { ((dynamic)item.Item1).Delete(); } catch { }
+                try { DeleteButtonOnce(item.Item1, deletedButtons); } catch { }
             }
             editorButtons.Clear();
             if (viewButton != null)
             {
                 try { if (viewHandler != null) unsubscribe(viewButton, ClickInterface, 1, viewHandler); } catch { }
-                try { ((dynamic)viewButton).Delete(); } catch { }
+                try { DeleteButtonOnce(viewButton, deletedButtons); } catch { }
             }
             if (settingsButton != null)
             {
                 try { if (settingsHandler != null) unsubscribe(settingsButton, ClickInterface, 1, settingsHandler); } catch { }
-                try { ((dynamic)settingsButton).Delete(); } catch { }
+                try { DeleteButtonOnce(settingsButton, deletedButtons); } catch { }
             }
+            foreach (var button in createdButtons)
+                try { DeleteButtonOnce(button, deletedButtons); } catch { }
+            createdButtons.Clear();
+            viewButton = null;
+            settingsButton = null;
+            viewHandler = null;
+            settingsHandler = null;
             foreach (var image in menuImages) image.Dispose();
             menuImages.Clear();
+            nativeReferences?.Dispose();
         }
     }
 }

@@ -15,6 +15,9 @@ namespace VBAi
         /// <summary>Bounds read-only verification after Access returns from its single native Save command.</summary>
         internal TimeSpan AccessSaveVerificationTimeout = TimeSpan.FromSeconds(3);
 
+        /// <summary>Optional deterministic managed-test clock; null keeps the native verification stopwatch.</summary>
+        internal Func<TimeSpan> AccessSaveElapsedOverride;
+
         /// <summary>Injects the dialog boundary in managed tests; production binds the exact native VBE owner.</summary>
         internal Func<IntPtr, int, IEnumerable<AccessSaveApprovedComponent>, IAccessSaveConfirmation> AccessSaveConfirmationFactory = null;
         // Bridge, editor and chat share the same native VBE owner thread, across service instances.
@@ -102,6 +105,7 @@ namespace VBAi
                     dynamic initial = SaveOtherHost(request, false, native, application);
                     if (!(bool)initial.Verified && (string)initial.Reason != "Save verification failed: ProjectSaved.") return initial;
                     var elapsed = Stopwatch.StartNew();
+                    Func<TimeSpan> readElapsed = AccessSaveElapsedOverride ?? (() => elapsed.Elapsed);
                     try
                     {
                         while (true)
@@ -134,7 +138,7 @@ namespace VBAi
                                 var candidate = confirmation?.Observe();
                                 if (candidate != null)
                                 {
-                                    if (elapsed.Elapsed >= AccessSaveVerificationTimeout)
+                                    if (readElapsed() >= AccessSaveVerificationTimeout)
                                         throw new InvalidOperationException("Access Save confirmation remains pending; no confirmation or Save is retried.");
                                     if (confirmation.ConfirmationAttempts == 0)
                                         confirmation.Confirm(candidate, () =>
@@ -156,14 +160,14 @@ namespace VBAi
                                                 if (confirmedState.ReadOnly || !OtherHostSamePath(confirmedState.Path, path) ||
                                                     !OtherHostProjectPathMatches(projectObject, path, "Access") || confirmedState.Format != format ||
                                                     !native.FileExists(path) || native.FileLength(path) < 1 ||
-                                                    elapsed.Elapsed >= AccessSaveVerificationTimeout)
+                                                    readElapsed() >= AccessSaveVerificationTimeout)
                                                     throw new InvalidOperationException("Access Save confirmation path, writable state or deadline changed.");
                                                 request.RevalidateSaveAuthorization?.Invoke();
                                             }
                                             finally { ReleaseAccessObservation(confirmedDocument); }
                                         }, () =>
                                         {
-                                            if (elapsed.Elapsed >= AccessSaveVerificationTimeout)
+                                            if (readElapsed() >= AccessSaveVerificationTimeout)
                                                 throw new InvalidOperationException("Access Save confirmation delivery deadline expired; no native confirmation was queued.");
                                         });
                                     // Enqueue is not persistence. Yield for native processing and verify all guards again.
@@ -171,7 +175,7 @@ namespace VBAi
                                 }
                                 if (!(bool)project.Saved)
                                 {
-                                    if (elapsed.Elapsed < AccessSaveVerificationTimeout) continue;
+                                    if (readElapsed() < AccessSaveVerificationTimeout) continue;
                                     throw new InvalidOperationException("Access Save verification timed out: ProjectSaved remains false.");
                                 }
                                 return new
@@ -195,7 +199,7 @@ namespace VBAi
                                     NativeQualification = "NOT_RUN",
                                     PersistenceReopenVerified = false,
                                     Verification = "DeferredOwnerThreadSavedReadback",
-                                    VerificationMilliseconds = elapsed.ElapsedMilliseconds,
+                                    VerificationMilliseconds = (long)readElapsed().TotalMilliseconds,
                                     ConfirmationAttempts = confirmation?.ConfirmationAttempts ?? 0,
                                     ConfirmationQueued = confirmation?.ConfirmationQueued ?? false,
                                     ConfirmationPending = confirmation?.ConfirmationPending ?? false,

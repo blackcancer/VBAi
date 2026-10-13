@@ -131,7 +131,19 @@ namespace VBAi.Tests.Unit
         {
             internal readonly System.Collections.Generic.Queue<System.Action> Pending = new System.Collections.Generic.Queue<System.Action>();
             public override void Post(System.Threading.SendOrPostCallback callback, object state) { Pending.Enqueue(() => callback(state)); }
-            internal void Drain() { int limit = 100; while (Pending.Count > 0 && limit-- > 0) Pending.Dequeue()(); Assert.IsTrue(limit > 0); }
+            internal void Drain()
+            {
+                // Explicit STA contract tests must also process the actual owner dispatcher.
+                // Managed MTA fixtures retain their deterministic queued-callback drain.
+                bool sta = System.Threading.Thread.CurrentThread.GetApartmentState() == System.Threading.ApartmentState.STA;
+                int limit = 100;
+                for (int pass = 0; pass < (sta ? 2 : 1); pass++)
+                {
+                    if (sta) System.Windows.Forms.Application.DoEvents();
+                    while (Pending.Count > 0 && limit-- > 0) Pending.Dequeue()();
+                }
+                Assert.IsTrue(limit > 0);
+            }
         }
         private static string InvokeSaveContract(ToolFixture fixture, string arguments)
         {
@@ -519,7 +531,7 @@ namespace VBAi.Tests.Unit
     using VBAi;
 
     /// <summary>Vérifie les validations asynchrones des outils de débogage VBE.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeAsyncValidationTests
     {
@@ -726,7 +738,7 @@ namespace VBAi.Tests.Unit
     using VBAi;
 
     /// <summary>Vérifie les schémas publiés et les règles de validation des outils VBE.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolContractTests
     {
@@ -971,12 +983,11 @@ namespace VBAi.Tests.Unit
     using VBAi.Tests.Infrastructure;
 
     /// <summary>Vérifie les frontières injectables des outils VBE et leurs matrices de validation.</summary>
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed partial class LlmVbeToolsBoundaryTests
     {
         /// <summary>Vérifie les types, champs requis, valeurs blanches et dispatch hôte du contrat.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ContractMatrixChecksRequiredTypesWhitespaceOptionalFieldsAndHostDispatch()
         {
@@ -1212,7 +1223,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Vérifie le travail UI différé de compilation et distingue délais, diagnostics et erreurs.</summary>
-        [TestMethod]
         [STATestMethod]
         public void CompileMatrixUsesPostedUiWorkAndDistinguishesTimeoutDiagnosisAndErrors()
         {
@@ -1222,27 +1232,27 @@ namespace VBAi.Tests.Unit
                 var tools = Create();
                 SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
                 const string args = "{\"Project\":\"P\",\"ExpectedMode\":2}";
-                Assert.AreEqual(true, Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult())["Compiled"]);
+                Assert.AreEqual(true, Data(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", args)))["Compiled"]);
                 tools.Native.AwaitCompileDialog = completed => { Assert.IsTrue(completed.Wait(5000)); return "compile diagnostic"; };
-                var data = Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult());
+                var data = Data(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", args)));
                 Assert.AreEqual(false, data["Compiled"]); Assert.AreEqual("NativeDiagnosticCaptured", data["Verification"]);
                 tools.Execute = r => Response.Success(new { Executed = false, Available = false, Capability = "Absent", Reason = "not available" });
-                data = Data(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult());
+                data = Data(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", args)));
                 Assert.AreEqual(false, data["Compiled"]); Assert.AreEqual("NativeCompileAbsent", data["Verification"]);
-                tools.Execute = r => Response.Failure("compile failure"); Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "compile failure");
+                tools.Execute = r => Response.Failure("compile failure"); Failed(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", args)), "compile failure");
                 tools.Execute = r => { throw new InvalidOperationException("compile exception"); };
-                Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "compile exception");
+                Failed(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", args)), "compile exception");
                 var deferred = new DeferredContext();
                 SynchronizationContext.SetSynchronizationContext(deferred);
                 int lateExecutions = 0;
                 tools.Execute = r => { lateExecutions++; return VbeToolBoundaryFixture.Execute(r); };
                 tools.Native.AwaitCompileDialog = completed => null;
-                Failed(tools.InvokeAsync("compile_project", args).GetAwaiter().GetResult(), "timeout");
+                Failed(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", args)), "timeout");
                 deferred.ReleasePending();
                 Assert.AreEqual(0, lateExecutions, "A cancelled queued callback must never compile later.");
                 SynchronizationContext.SetSynchronizationContext(new ImmediateContext());
                 foreach (string invalid in new[] { "[]", "{}", "{\"ExpectedMode\":2}", "{\"Project\":\"P\"}", "{\"Project\":1,\"ExpectedMode\":2}", "{\"Project\":\" \",\"ExpectedMode\":2}", "{\"Project\":\"P\",\"ExpectedMode\":\"2\"}", "{\"Project\":\"P\",\"ExpectedMode\":1}" })
-                    Failed(tools.InvokeAsync("compile_project", invalid).GetAwaiter().GetResult(), invalid);
+                    Failed(ModernEditorDebugFixture.Wait(tools.InvokeAsync("compile_project", invalid)), invalid);
             }
             finally { SynchronizationContext.SetSynchronizationContext(prior); }
         }

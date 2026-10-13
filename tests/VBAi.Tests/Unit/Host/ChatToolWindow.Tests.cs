@@ -11,6 +11,126 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class ChatToolWindowCoverageTests
     {
+        private sealed class UnavailableBackgroundParent : Control
+        {
+            internal bool Unavailable;
+            internal int Reads;
+            public override Color BackColor
+            {
+                get
+                {
+                    if (Unavailable) { Reads++; throw new InvalidComObjectException("Ancestor background has detached."); }
+                    return base.BackColor;
+                }
+                set { base.BackColor = value; }
+            }
+        }
+
+        /// <summary>Exercises the actual framework paint path with an unavailable inherited background, without a native host or message-loop exception.</summary>
+        [STATestMethod]
+        [DataRow(false, false), DataRow(true, false), DataRow(false, true), DataRow(true, true)]
+        public void OwnedBackgroundAvoidsUnavailableAncestorDuringActualFrameworkPainting(bool handle, bool dark)
+        {
+            using (var parent = new UnavailableBackgroundParent())
+            using (var tool = new ChatToolWindow())
+            using (var bitmap = new Bitmap(24, 24))
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                parent.Controls.Add(tool);
+                if (handle) { var ignored = tool.Handle; }
+                Color expected = dark ? Color.FromArgb(30, 30, 30) : SystemColors.Control;
+                if (dark) tool.BackColor = expected;
+                parent.Unavailable = true;
+                try
+                {
+                    Assert.AreEqual(expected, tool.BackColor);
+                    var paint = typeof(Control).GetMethod("OnPaintBackground", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+                    paint.Invoke(tool, new object[] { new PaintEventArgs(graphics, new Rectangle(0, 0, 24, 24)) });
+                    // OnPaintBackground asks GetClientRect(InternalHandle). Without
+                    // an HWND the rectangle is empty; it must not create a window
+                    // merely to draw this synthetic paint notification.
+                    Assert.AreEqual(handle ? expected.ToArgb() : 0, bitmap.GetPixel(12, 12).ToArgb());
+                    Assert.AreEqual(0, parent.Reads); Assert.AreEqual(handle, tool.IsHandleCreated);
+                }
+                finally { parent.Unavailable = false; }
+            }
+        }
+
+        /// <summary>The native container copies its form's local background when attaching a chat or test explorer.</summary>
+        [STATestMethod, DataRow(false), DataRow(true)]
+        public void AttachedSurfaceOwnsItsFormsBackgroundInsteadOfTheActiveXAmbientColor(bool dark)
+        {
+            using (var tool = new ChatToolWindow())
+            using (var child = new Form { BackColor = dark ? Color.FromArgb(30, 30, 30) : Color.White })
+            {
+                var ignored = tool.Handle;
+                tool.Attach(child);
+                Assert.AreEqual(child.BackColor, tool.BackColor);
+                Assert.AreSame(tool, child.Parent);
+                tool.StopSiteTrackingForShutdown(); child.Dispose();
+                Assert.IsFalse(tool.IsDisposed);
+            }
+        }
+
+        /// <summary>Shutdown leaves the child attached for disposal; ordinary detach still restores its floating layout.</summary>
+        [STATestMethod]
+        [DataRow(false, false)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(true, true)]
+        public void DetachmentSeparatesShutdownLifetimeFromFloatingPlacement(bool shutdown, bool handleCreated)
+        {
+            using (var tool = new ChatToolWindow())
+            using (var child = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None, Dock = DockStyle.Fill })
+            {
+                tool.Controls.Add(child);
+                if (handleCreated) { var handle = child.Handle; child.Show(); }
+                int creations = 0, destruction = 0;
+                bool visible = child.Visible;
+                child.HandleCreated += (sender, args) => creations++;
+                child.HandleDestroyed += (sender, args) => destruction++;
+                var timer = LlmBoundaryScope.Get<Timer>(tool, "siteResizeTimer"); timer.Start();
+                if (shutdown) tool.StopSiteTrackingForShutdown(); else tool.Detach(child);
+                Assert.IsFalse(timer.Enabled);
+                if (shutdown) Assert.AreSame(tool, child.Parent); else Assert.IsNull(child.Parent);
+                Assert.AreEqual(shutdown && visible, child.Visible);
+                Assert.AreEqual(!shutdown, child.TopLevel);
+                Assert.AreEqual(shutdown ? FormBorderStyle.None : FormBorderStyle.Sizable, child.FormBorderStyle);
+                Assert.AreEqual(shutdown ? DockStyle.Fill : DockStyle.None, child.Dock);
+                if (shutdown) { Assert.AreEqual(0, creations); Assert.AreEqual(0, destruction); }
+            }
+        }
+
+        /// <summary>Only the owned form is disposed; its native site and unrelated children retain their ownership.</summary>
+        [STATestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void ShutdownTrackingLeavesChildRemovalToItsDisposalAndDoesNotDisposeTheNativeSite(bool shown)
+        {
+            using (var tool = new ChatToolWindow())
+            using (var child = new Form { TopLevel = false, FormBorderStyle = FormBorderStyle.None })
+            using (var unrelated = new Panel())
+            {
+                tool.Controls.Add(child); tool.Controls.Add(unrelated);
+                if (shown) child.Show();
+                int parentChanges = 0, visibilityChanges = 0;
+                child.ParentChanged += (sender, args) =>
+                {
+                    parentChanges++;
+                    Assert.IsTrue(child.Disposing || child.IsDisposed, "Parent removal belongs to disposal, after its lifetime guard is set.");
+                };
+                child.VisibleChanged += (sender, args) => visibilityChanges++;
+                var timer = LlmBoundaryScope.Get<Timer>(tool, "siteResizeTimer"); timer.Start();
+                tool.StopSiteTrackingForShutdown();
+                Assert.AreEqual(0, parentChanges); Assert.AreEqual(0, visibilityChanges);
+                Assert.AreSame(tool, child.Parent); Assert.IsFalse(timer.Enabled);
+                child.Dispose();
+                Assert.IsTrue(child.IsDisposed); Assert.IsNull(child.Parent);
+                Assert.IsFalse(tool.Controls.Contains(child)); Assert.IsFalse(tool.IsDisposed);
+                Assert.AreSame(tool, unrelated.Parent); Assert.IsFalse(unrelated.IsDisposed);
+            }
+        }
+
         /// <summary>Preserves focus events while tolerating a detached native ActiveX site.</summary>
         [STATestMethod]
         public void LostFocusToleratesDetachedSiteWithoutRepeatingTheNotification()

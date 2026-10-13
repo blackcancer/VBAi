@@ -413,3 +413,236 @@ namespace VBAi.Tests.Unit
         }
     }
 }
+
+namespace VBAi.Tests
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Threading;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+
+    /// <summary>Balances menu getters, partial construction and event-source lifetime.</summary>
+    [TestClass, TestCategory("Unit")]
+    public sealed class VbeMenuComOwnershipTests
+    {
+        [DataTestMethod]
+        [DataRow(false, false, "Tools")]
+        [DataRow(true, false, "View")]
+        [DataRow(false, true, "?")]
+        [DataRow(false, true, "&Aide")]
+        [DataRow(false, true, "帮助")]
+        public void PopupDiscoveryOwnsEveryGetterButBorrowsTheVbe(bool view, bool help, string caption)
+        {
+            var graph = new MenuOwnershipGraph();
+            graph.Help.Caption = help ? caption : "?";
+            object result;
+            using (var references = graph.Scope())
+            {
+                result = VbeMenu.FindPopupInScope(graph, view, help, references);
+                Assert.AreSame(help ? graph.Help : view ? graph.View : graph.Tools, result);
+                Assert.AreEqual(0, graph.Released.Count);
+            }
+            graph.VerifyBalanced();
+            Assert.IsFalse(graph.Released.Contains(graph));
+        }
+
+        [DataTestMethod]
+        [DataRow("count")]
+        [DataRow("negative")]
+        [DataRow("item")]
+        [DataRow("missing")]
+        public void PopupRefusalReleasesEverySuccessfulAcquisition(string failure)
+        {
+            var graph = new MenuOwnershipGraph();
+            if (failure == "count") graph.Bars.FailCount = true;
+            if (failure == "negative") graph.Bars.ReportedCount = -1;
+            if (failure == "item") graph.Bars.FailingIndex = 1;
+            if (failure == "missing") graph.MenuBar.Children.Values.Clear();
+            using (var references = graph.Scope())
+                Assert.ThrowsException<InvalidOperationException>(() => VbeMenu.FindPopupInScope(graph, true, false, references));
+            graph.VerifyBalanced();
+        }
+
+        [TestMethod]
+        public void InvalidBarsAndCaptionsAreSkippedAndMissingHelpIsOptional()
+        {
+            var graph = new MenuOwnershipGraph();
+            var broken = new MenuOwnershipGraph.Bar(graph) { FailType = true };
+            graph.Bars.Values.Insert(0, broken);
+            var malformed = new MenuOwnershipGraph.Popup(graph, "Ignored") { FailCaption = true };
+            graph.MenuBar.Children.Values.Insert(0, malformed);
+            graph.MenuBar.Children.Values.Remove(graph.Help);
+            using (var references = graph.Scope())
+            {
+                Assert.AreSame(graph.Tools, VbeMenu.FindPopupInScope(graph, false, false, references));
+                Assert.IsNull(VbeMenu.FindPopupInScope(graph, false, true, references));
+            }
+            graph.VerifyBalanced();
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void CreatedMenusRetainAllButtonsUntilOwningThreadDisposal(bool optionalCommands)
+        {
+            var graph = new MenuOwnershipGraph();
+            var subscribed = new List<object>();
+            var removed = new List<object>();
+            var menu = graph.Create(optionalCommands, subscribed, removed);
+            Assert.AreEqual(0, graph.Released.Count);
+            Assert.AreEqual(graph.Buttons.Count, subscribed.Count);
+            Assert.AreEqual(optionalCommands ? 12 : 4, graph.Buttons.Count);
+            foreach (var callback in graph.Callbacks) callback.DynamicInvoke(new object[] { null, false });
+            Assert.AreEqual(graph.Buttons.Count, graph.CallbackEntries);
+            menu.Dispose();
+            menu.Dispose();
+            Assert.AreEqual(subscribed.Count, removed.Count);
+            Assert.IsTrue(graph.Buttons.All(button => button.DeleteCount == 1));
+            graph.VerifyBalanced();
+        }
+
+        [DataTestMethod]
+        [DataRow(1, "caption")]
+        [DataRow(2, "tag")]
+        [DataRow(3, "caption")]
+        [DataRow(4, "tooltip")]
+        public void MetadataFailureDeletesTheNewButtonAndReleasesItsGetter(int button, string field)
+        {
+            var graph = new MenuOwnershipGraph { FailingButton = button, FailingField = field };
+            Assert.ThrowsException<InvalidOperationException>(() => graph.Create(false));
+            Assert.IsTrue(graph.Buttons.All(item => item.DeleteCount == 1));
+            graph.VerifyBalanced();
+        }
+
+        [DataTestMethod]
+        [DataRow(1)]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(4)]
+        public void SubscriptionFailureCleansTheCompletePartialConstructionOnce(int failure)
+        {
+            var graph = new MenuOwnershipGraph { FailingSubscription = failure };
+            Assert.ThrowsException<InvalidOperationException>(() => graph.Create(false));
+            Assert.IsTrue(graph.Buttons.All(item => item.DeleteCount == 1));
+            graph.VerifyBalanced();
+        }
+
+        [DataTestMethod]
+        [DataRow("Code Window")]
+        [DataRow("Code Window (Break)")]
+        [DataRow("Fenêtre code")]
+        public void LocalizedContextMenusUseTheSameOwnedCollectionPath(string caption)
+        {
+            var graph = new MenuOwnershipGraph();
+            ((MenuOwnershipGraph.Bar)graph.Bars.Values[1]).Name = caption;
+            var menu = graph.Create(true);
+            Assert.AreEqual(12, graph.Buttons.Count);
+            menu.Dispose();
+            graph.VerifyBalanced();
+        }
+
+        [TestMethod]
+        public void FailedContextSubscriptionPreservesMainCommandsAndReleasesThePartialButton()
+        {
+            var graph = new MenuOwnershipGraph { FailingSubscription = 10 };
+            var menu = graph.Create(true);
+            Assert.AreEqual(10, graph.Buttons.Count);
+            menu.Dispose();
+            Assert.IsTrue(graph.Buttons.All(button => button.DeleteCount == 1));
+            graph.VerifyBalanced();
+        }
+
+        [TestMethod]
+        public void DeleteFailureDoesNotCauseAnotherDeletionAttempt()
+        {
+            var graph = new MenuOwnershipGraph();
+            var menu = graph.Create(false);
+            graph.FailDelete = true;
+            menu.Dispose();
+            menu.Dispose();
+            Assert.IsTrue(graph.Buttons.All(button => button.DeleteCount == 1));
+            graph.VerifyBalanced();
+        }
+
+        [TestMethod]
+        public void MissingRequiredMenuReleasesDiscoveryWithoutCreatingButtons()
+        {
+            var graph = new MenuOwnershipGraph();
+            graph.MenuBar.Children.Values.Remove(graph.Tools);
+            Assert.ThrowsException<InvalidOperationException>(() => graph.Create(false));
+            Assert.AreEqual(0, graph.Buttons.Count);
+            graph.VerifyBalanced();
+        }
+
+        [TestMethod]
+        public void DisposalFromAnotherThreadRefusesBeforeAnyNativeCleanup()
+        {
+            var graph = new MenuOwnershipGraph();
+            var menu = graph.Create(false);
+            Exception error = null;
+            var thread = new Thread(() => { try { menu.Dispose(); } catch (Exception failure) { error = failure; } });
+            thread.Start();
+            Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(5)));
+            Assert.IsInstanceOfType<InvalidOperationException>(error);
+            Assert.AreEqual(0, graph.Released.Count);
+            Assert.IsTrue(graph.Buttons.All(button => button.DeleteCount == 0));
+            menu.Dispose();
+            graph.VerifyBalanced();
+        }
+
+        [TestMethod]
+        public void ReleaseFailureIsRetainedAndNeverRetriedByRepeatedDisposal()
+        {
+            var graph = new MenuOwnershipGraph();
+            var menu = graph.Create(false);
+            graph.FailRelease = true;
+            Assert.ThrowsException<InvalidOperationException>(() => menu.Dispose());
+            int calls = graph.Released.Count;
+            menu.Dispose();
+            Assert.AreEqual(calls, graph.Released.Count);
+            Assert.AreEqual(1, calls);
+            Assert.IsTrue(graph.Buttons.All(button => button.DeleteCount == 1));
+        }
+    }
+}
+
+namespace VBAi.Tests.Unit
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+
+    public sealed partial class VbeMenuLifecycleTests
+    {
+        /// <summary>Default classification remains available with either release boundary.</summary>
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void DefaultCollectionClassifierConstructsAndCleansMenus(bool recordRelease)
+        {
+            var host = Host();
+            var released = new List<object>();
+            int removed = 0;
+            var menu = new VbeMenu(host, () => { }, () => { }, () => { }, null,
+                (button, iid, dispid, callback) => { },
+                (button, iid, dispid, callback) => removed++,
+                (button, type) => { },
+                releaseAcquired: recordRelease ? new Action<object>(value => released.Add(value)) : null);
+            var buttons = host.CommandBars[0].Controls.Items.SelectMany(popup => popup.Controls.Items).ToArray();
+            Assert.AreEqual(3, buttons.Length);
+            Assert.IsTrue(buttons.Any(button => button.Tag == "VBAi.Assistant"));
+            Assert.IsTrue(buttons.Any(button => button.Tag == "VBAi.Settings"));
+            Assert.IsTrue(buttons.Any(button => button.Tag == "VBAi.GitHub"));
+            menu.Dispose();
+            menu.Dispose();
+            Assert.AreEqual(buttons.Length, removed);
+            Assert.IsTrue(buttons.All(button => button.DeleteCount == 1));
+            Assert.IsFalse(released.Contains(host));
+            if (recordRelease) Assert.IsTrue(buttons.All(button => released.Contains(button)));
+        }
+    }
+}

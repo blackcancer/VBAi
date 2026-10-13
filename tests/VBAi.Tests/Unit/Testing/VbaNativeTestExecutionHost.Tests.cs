@@ -8,7 +8,7 @@ using System.Windows.Forms;
 namespace VBAi.Tests.Unit
 {
     [TestClass, TestCategory("Unit")]
-    public sealed class VbaNativeTestExecutionHostTests
+    public sealed partial class VbaNativeTestExecutionHostTests
     {
         public sealed class DiagnosticProject
         {
@@ -164,9 +164,10 @@ namespace VBAi.Tests.Unit
         private sealed class Probe : VbaNativeTestExecutionHost.IProbe
         {
             internal Action OnPrepare, OnRevalidate, OnExecute, OnReadMode;
+            internal object Prepared = new object();
             internal int Mode = 2, Invocations;
             public void RequireOwner(object vbe) { }
-            public object Prepare(object vbe, object project, string source) { OnPrepare?.Invoke(); return new object(); }
+            public object Prepare(object vbe, object project, string source) { OnPrepare?.Invoke(); return Prepared; }
             public void Revalidate(object vbe, object project, object prepared) { OnRevalidate?.Invoke(); }
             public void Execute(object prepared) { Invocations++; OnExecute?.Invoke(); }
             public int ReadMode(object project) { OnReadMode?.Invoke(); return Mode; }
@@ -343,7 +344,25 @@ namespace VBAi.Tests.Unit
             {
                 f.Native.OnExecute = () => { }; f.Host.VerificationTimeout = TimeSpan.Zero;
                 var task = f.Start();
-                Assert.IsTrue(Assert.ThrowsException<VbaTestInvocationException>(() => task.GetAwaiter().GetResult()).Uncertain);
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => task.GetAwaiter().GetResult());
+                Assert.IsTrue(error.Uncertain);
+                StringAssert.Contains(error.Message, "Observed project mode=2; correlated verdict=False; callback fault=False; native dispatch entered=True");
+                Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.InvokeAsync(f.Catalog, f.Test, "Test"));
+                Assert.ThrowsException<InvalidOperationException>(() => new VbaTestRuntime());
+                Assert.AreEqual(1, f.Native.Invocations);
+            }
+        }
+
+        [TestMethod]
+        public void ReceivedCallbackAtRunningModeDeadlineReportsNativeExecutionStillUnsettled()
+        {
+            using (var f = new Fixture())
+            {
+                f.Native.Mode = 0; f.Host.VerificationTimeout = TimeSpan.Zero;
+                var task = f.Start();
+                var error = Assert.ThrowsException<VbaTestInvocationException>(() => task.GetAwaiter().GetResult());
+                Assert.IsTrue(error.Uncertain);
+                StringAssert.Contains(error.Message, "Observed project mode=0; correlated verdict=True; callback fault=False; native dispatch entered=True");
                 Assert.ThrowsException<VbaTestInvocationException>(() => f.Host.InvokeAsync(f.Catalog, f.Test, "Test"));
                 Assert.ThrowsException<InvalidOperationException>(() => new VbaTestRuntime());
                 Assert.AreEqual(1, f.Native.Invocations);
@@ -888,7 +907,7 @@ namespace VBAi.Tests.Unit
             internal readonly VbaNativeTestWindowFocusTests.Windows Windows = new VbaNativeTestWindowFocusTests.Windows();
             internal readonly NativeModule Module;
             internal readonly VbaNativeTestExecutionHost.NativeProbe Probe;
-            internal NativeFixture()
+            internal NativeFixture(Action<object> releaseAcquired = null)
             {
                 var pane = new SelectionPane(Editor); pane.StartLine = 1; pane.EndLine = 1; pane.StartColumn = pane.EndColumn = 1;
                 Module = new NativeModule { CodePane = pane, ProcBodyLine = new SelectionBodyLine(pane) };
@@ -899,7 +918,7 @@ namespace VBAi.Tests.Unit
                 Editor.ActiveVBProject = Project; Editor.ActiveWindow = pane.Window;
                 Editor.VBProjects = new object[] { new object(), Project };
                 Editor.CommandBars = new NativeCommandBars();
-                Probe = new VbaNativeTestExecutionHost.NativeProbe(Windows, ReferenceEquals);
+                Probe = new VbaNativeTestExecutionHost.NativeProbe(Windows, ReferenceEquals, releaseAcquired);
             }
             internal object Prepare() => Probe.Prepare(Editor, Project, Module.Lines.Source);
         }

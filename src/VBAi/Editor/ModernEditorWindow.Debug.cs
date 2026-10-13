@@ -25,18 +25,21 @@ namespace VBAi
         /// <summary>Orders user/native commands without collapsing repeated toggles or steps.</summary>
         /// <param name="message">Renderer command and request identifier to execute in order.</param>
         /// <returns>A task completed after native execution, observation scheduling, and any renderer completion reply.</returns>
-        private async Task EditorCommand(EditorMessage message)
+        private Task EditorCommand(EditorMessage message)
         {
-            var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
-            await debugCommands.WaitAsync();
-            try { await ExecuteEditorCommand(message); }
-            finally
+            return VbeUiTask.RunAsync(async () =>
             {
-                debugCommands.Release();
-                SchedulePostStepObservation();
-                Measure("debug." + message.name, timing);
-                if (message.request > 0 && Ready && !closing && !IsDisposed) await Script("commandFinished", message.request);
-            }
+                var timing = PerformanceSample == null ? null : System.Diagnostics.Stopwatch.StartNew();
+                await debugCommands.WaitAsync();
+                try { await ExecuteEditorCommand(message); }
+                finally
+                {
+                    debugCommands.Release();
+                    SchedulePostStepObservation();
+                    Measure("debug." + message.name, timing);
+                    if (message.request > 0 && Ready && !closing && !IsDisposed) await Script("commandFinished", message.request);
+                }
+            });
         }
 
         /// <summary>Starts pending observation only after user commands release their gate and busy state.</summary>
@@ -85,25 +88,28 @@ namespace VBAi
 
         /// <summary>Actualise l’état d’exécution affiché dans Monaco lorsque change le mode du projet.</summary>
         /// <returns>Tâche terminée après la mise à jour de l’état d’exécution.</returns>
-        private async Task ObserveDebugMode()
+        private Task ObserveDebugMode()
         {
-            if (VbeDebugInspection.IsActive || busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
-            int mode = (int)((dynamic)native.Project).Mode;
-            if (mode != 1)
+            return VbeUiTask.RunAsync(async () =>
             {
-                if (lastDebugMode != mode) await ExecutionState(null, 0, false);
-                lastDebugMode = mode; lastDebugPosition = null; return;
-            }
-            string position = DebugPosition(native);
-            if (lastDebugMode == mode && lastDebugPosition == position)
-            {
-                if (lastDebugDocument != null && documents.TryGetValue(lastDebugDocument, out var doc) &&
-                    !doc.Dirty && !doc.Conflict && lastExecutionVersion != versions[doc.Id])
-                { await Script("execution", doc.Id, lastExecutionLine, false); lastExecutionVersion = versions[doc.Id]; }
-                return;
-            }
-            await EditorCommand(new EditorMessage { id = Current.Id, version = versions[Current.Id], name = "show_next_statement" });
-            lastDebugMode = mode; lastDebugPosition = DebugPosition(native);
+                if (VbeDebugInspection.IsActive || busy || Current == null || !(Current.Module is EditorVbeModule native)) return;
+                int mode = (int)((dynamic)native.Project).Mode;
+                if (mode != 1)
+                {
+                    if (lastDebugMode != mode) await ExecutionState(null, 0, false);
+                    lastDebugMode = mode; lastDebugPosition = null; return;
+                }
+                string position = DebugPosition(native);
+                if (lastDebugMode == mode && lastDebugPosition == position)
+                {
+                    if (lastDebugDocument != null && documents.TryGetValue(lastDebugDocument, out var doc) &&
+                        !doc.Dirty && !doc.Conflict && lastExecutionVersion != versions[doc.Id])
+                    { await Script("execution", doc.Id, lastExecutionLine, false); lastExecutionVersion = versions[doc.Id]; }
+                    return;
+                }
+                await EditorCommand(new EditorMessage { id = Current.Id, version = versions[Current.Id], name = "show_next_statement" });
+                lastDebugMode = mode; lastDebugPosition = DebugPosition(native);
+            });
         }
 
         /// <summary>Valide puis exécute une commande de compilation ou de débogage sur le projet courant.</summary>
@@ -156,14 +162,18 @@ namespace VBAi
                     {
                         dynamic pane = ((dynamic)native.Vbe).ActiveCodePane;
                         var target = native.Sibling((string)pane.CodeModule.Parent.Name);
+                        try
+                        {
                         if (!target.IsComponent((object)pane.CodeModule.Parent)) throw new InvalidOperationException("The compiler selection belongs to a different project.");
                         int line = 1, column = 1, endLine = 1, endColumn = 1;
                         pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
                         var doc = await OpenModule(target);
-                        if (doc.Dirty || doc.Conflict || EditorDocument.Normalize(target.Read()) != doc.Text)
+                        if (doc.Dirty || doc.Conflict || EditorDocument.Normalize(doc.Module.Read()) != doc.Text)
                         { SetResultStatus(diagnostic); return; } // Never underline an uncompiled draft.
                         await Script("diagnostics", doc.Id, versions[doc.Id], new[] { new { message = diagnostic, startLineNumber = line, startColumn = column, endLineNumber = endLine, endColumn = Math.Max(column + 1, endColumn), severity = 8, source = "VBA compiler" } });
                         await Script("reveal", line, column);
+                        }
+                        finally { ReleaseUnadoptedModule(target); }
                     }
                     else SetResultStatus(UiText.Get("Compilation finished: no native diagnostics observed. Macros were not executed."));
                 }
@@ -175,11 +185,15 @@ namespace VBAi
                     int line = 1, column = 1, endLine = 1, endColumn = 1;
                     pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
                     var target = native.Sibling((string)pane.CodeModule.Parent.Name);
+                    try
+                    {
                     if (!target.IsComponent((object)pane.CodeModule.Parent)) throw new InvalidOperationException("The execution selection belongs to a different project.");
                     var doc = documents.Values.FirstOrDefault(item => item.Module is EditorVbeModule module && module.IsComponent(target.Component));
                     if (doc == null || doc != Current) doc = await OpenModule(target);
                     lastDebugDocument = doc.Id; lastExecutionLine = line; lastExecutionVersion = versions[doc.Id];
                     await ExecutionState(doc.Id, !doc.Dirty && !doc.Conflict ? line : 0);
+                    }
+                    finally { ReleaseUnadoptedModule(target); }
                 }
                 else
                 {

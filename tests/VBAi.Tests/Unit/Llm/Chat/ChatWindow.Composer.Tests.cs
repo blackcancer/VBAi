@@ -11,8 +11,64 @@ namespace VBAi.Tests.Unit
     /// <summary>Vérifie le contexte sélectionné et les jetons de référence du compositeur.</summary>
     public sealed partial class ChatWindowStateTests
     {
+        /// <summary>Completes a loading module's revision before insertion and keeps rejected selections out of the draft.</summary>
+        [STATestMethod]
+        public void AcceptReferencePinsAndDetachesModulesWithoutInsertingFailedReads()
+        {
+            foreach (bool pinned in new[] { false, true })
+                foreach (bool fail in new[] { false, true })
+                    using (var window = Surfaces())
+                    {
+                        var reference = new VbeChatReference { Project = "P", Module = "M", Sha256 = pinned ? "selected" : null };
+                        var index = Get<VbeChatReferences>(window, "referenceIndex");
+                        int reads = 0;
+                        index.Execute = request =>
+                        {
+                            if (request.Command != "read_module") return Response.Success(new object[0]);
+                            reads++; return fail ? Response.Failure("source unavailable") : Response.Success(new { Sha256 = "selected", Code = "original source" });
+                        };
+                        var prompt = Get<System.Windows.Controls.TextBox>(window, "prompt");
+                        prompt.Text = "#P"; prompt.CaretIndex = prompt.Text.Length;
+                        Set(window, "referenceStart", 0);
+                        Call(window, "SetSuggestionTargets", new object[] { new object[] { reference } });
+                        Get<ListBox>(window, "referenceList").SelectedIndex = 0;
+                        Call(window, "AcceptReference");
+                        var selected = Get<List<VbeChatReference>>(window, "selectedReferences");
+                        if (!pinned && fail)
+                        {
+                            Assert.AreEqual("#P", prompt.Text); Assert.AreEqual(0, selected.Count);
+                            StringAssert.Contains(Get<Label>(window, "status").Text, "source unavailable");
+                        }
+                        else
+                        {
+                            Assert.AreEqual("#P.M", prompt.Text); Assert.AreEqual(1, selected.Count);
+                            Assert.AreEqual("selected", selected[0].Sha256); Assert.AreNotSame(reference, selected[0]);
+                            reference.Module = "later module"; reference.Sha256 = "later revision";
+                            Assert.AreEqual("#P.M", selected[0].Token); Assert.AreEqual("selected", selected[0].Sha256);
+                        }
+                        Assert.AreEqual(pinned ? 0 : 1, reads);
+                    }
+        }
+
+        /// <summary>Send and queue capture do not share mutable reference objects with the composer.</summary>
+        [STATestMethod, DataRow("project"), DataRow("module"), DataRow("procedure")]
+        public void CapturedComposerReferencesStayDetachedFromSelectedItems(string kind)
+        {
+            using (var window = Surfaces())
+            {
+                var reference = new VbeChatReference { Project = "P", Module = kind == "project" ? null : "M", Name = kind == "procedure" ? "Calculate" : null, Kind = kind, Sha256 = "old" };
+                string token = reference.Token;
+                Get<List<VbeChatReference>>(window, "selectedReferences").Add(reference);
+                var captured = (VbeChatReference[])Call(window, "CurrentReferences", "Please inspect " + token);
+                Assert.AreEqual(1, captured.Length); Assert.AreNotSame(reference, captured[0]);
+                reference.Project = "Changed"; reference.Sha256 = "new";
+                Assert.AreEqual(token, captured[0].Token); Assert.AreEqual("old", captured[0].Sha256);
+                captured[0].Module = "Detached";
+                Assert.AreEqual(kind == "project" ? null : "M", reference.Module);
+            }
+        }
+
         /// <summary>Ne conserve que la référence sélectionnée la plus récente pour un jeton exact.</summary>
-        [TestMethod]
         [STATestMethod]
         public void CurrentReferencesKeepLatestExactTokenAndIgnoreEmbeddedMatches()
         {
@@ -30,7 +86,6 @@ namespace VBAi.Tests.Unit
         }
 
         /// <summary>Affiche les pièces jointes et la mémoire active sous forme de puces supprimables.</summary>
-        [TestMethod]
         [STATestMethod]
         public void ContextChipsRepresentMemoryAndDraftAttachmentsAndCanRemoveDraft()
         {
@@ -125,13 +180,13 @@ namespace VBAi.Tests.Unit
             using (var runtime = new RuntimeScope())
             using (var window = LoadedWindow(runtime.Session))
             {
-                var refs = Get<List<VbeChatReference>>(window, "selectedReferences"); var module = new VbeChatReference { Project = "P", Module = "M" }; refs.Add(module); refs.Add(new VbeChatReference { Project = "P", Module = "M" });
+                var refs = Get<List<VbeChatReference>>(window, "selectedReferences"); var module = PinnedModuleReference(window, "P", "M"); refs.Add(module); refs.Add(module.CaptureSnapshot());
                 foreach (var text in new[] { "#P.M", " #P.M!", "#P.M suffix", "prefix#P.M", "#P.Msuffix", "prefix#P.M #P.M", "missing" }) { var found = (VbeChatReference[])Call(window, "CurrentReferences", text); Assert.AreEqual(text == "missing" || text == "prefix#P.M" || text == "#P.Msuffix" ? 0 : 1, found.Length); }
                 Assert.AreEqual("unchanged", Call(window, "ResolveReferences", "unchanged")); StringAssert.Contains((string)Call(window, "ResolveReferences", "#P.M"), "<references-vbe>");
-                Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "ResolveReferences", new string('x', 48001) + " #P.M")); runtime.Module.DeleteLines(1, runtime.Module.CountOfLines); runtime.Module.InsertLines(1, new string('x', 48001)); Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "ResolveReferences", "#P.M"));
+                Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "ResolveReferences", new string('x', 48001) + " #P.M")); runtime.Module.DeleteLines(1, runtime.Module.CountOfLines); runtime.Module.InsertLines(1, new string('x', 48001)); refs.Clear(); refs.Add(PinnedModuleReference(window, "P", "M")); var oversized = Assert.ThrowsException<System.Reflection.TargetInvocationException>(() => Call(window, "ResolveReferences", "#P.M")); StringAssert.Contains(oversized.InnerException.Message, UiText.Get("The # context exceeds 48,000 characters."));
                 Get<TextBox>(window, "prompt").Text = "#P.M"; Set(window, "projectMemory", "note"); Get<System.Windows.Forms.CheckBox>(window, "attachMemory").Checked = true; Call(window, "RefreshContextChips"); var chips = Get<System.Windows.Forms.FlowLayoutPanel>(window, "contextChips"); Click(chips.Controls[0].Controls.Find("open", true).Single()); Assert.IsFalse(Get<System.Windows.Forms.CheckBox>(window, "attachMemory").Checked);
                 var row = chips.Controls.OfType<ChatContextChipView>().Single(); Click(row.Controls.Find("open", true).Single()); Click(row.Controls.Find("remove", true).Single()); Assert.AreEqual(0, refs.Count);
-                Call(window, "NavigateReference", new VbeChatReference { Project = "P" }); Assert.AreEqual("#P.", Get<TextBox>(window, "prompt").Text);
+                Call(window, "NavigateReference", new VbeChatReference { Project = "P" }); Assert.AreEqual("#P.M", Get<TextBox>(window, "prompt").Text);
                 Call(window, "NavigateReference", new VbeChatReference { Project = "P", Module = "missing" }); StringAssert.Contains(Get<System.Windows.Forms.Label>(window, "status").Text, "missing");
             }
         }

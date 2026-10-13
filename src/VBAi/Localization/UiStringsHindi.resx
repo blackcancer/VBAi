@@ -2871,4 +2871,25 @@ Git Credential Manager से साइन-इन करें; कमिट ल
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>यह मॉडल टूल कॉलिंग का समर्थन नहीं करता है।</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>प्रदाता ने {0} सेकंड के भीतर अपना उत्तर पूरा नहीं किया। कोई भी कार्रवाई अपने आप दोबारा नहीं की गई।</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>मॉडल की डिफ़ॉल्ट तर्क सेटिंग का उपयोग करें।</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>इस बातचीत के लिए तर्क प्रक्रिया बंद करें।</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>मॉडल का डिफ़ॉल्ट</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>तर्क प्रक्रिया बंद</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>यह मॉडल चुने गए तर्क विकल्प का समर्थन नहीं करता।</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>वर्तमान बातचीत में संलग्न करने के लिए फ़ाइल चुनें।</value>
+  </data>
 </root>

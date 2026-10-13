@@ -39,6 +39,26 @@ namespace VBAi.Tests.Unit
             Assert.IsTrue(OllamaOfficeStreamOracle.IsNumberedResponse("1) Chair\n2) Table\n3) Pencil\n"));
         }
 
+        [TestMethod]
+        public void SeparateRenderedListItemsProveStreamingOnlyAsAnOrderedSequence()
+        {
+            var first = "1. Object 1";
+            var second = "2. Object 2";
+            var third = "3. Object 3";
+            Assert.IsTrue(OllamaOfficeStreamOracle.HasNumberedResponse(new[]
+                { "No text response.", first, second + "\r\n", third, "4. Object 4" }));
+            Assert.IsTrue(OllamaOfficeStreamOracle.HasNumberedResponse(new[]
+                { "1. Chair\n2. Table\n3. Pencil\n" }));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(null));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(new[] { first }));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(new[] { first, second }));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(new[] { first, first, third }));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(new[] { second, first, third }));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(new[] { first, second, "3. Other 3" }));
+            Assert.IsFalse(OllamaOfficeStreamOracle.HasNumberedResponse(new[]
+                { OllamaOfficeChatScenario.StreamingRequest(), "qwen2.5:7b-instruct | Temperature 0" }));
+        }
+
         [STATestMethod]
         public void NativeTranscriptReadExcludesEditableHiddenAndClippedFields()
         {

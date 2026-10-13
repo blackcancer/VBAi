@@ -24,6 +24,8 @@ namespace VBAi.Tests.Unit
             private Exception operationFailure;
             private readonly HashSet<Task> operations = new HashSet<Task>();
             private bool disposed;
+            private bool retainScratchAfterDeadline;
+            internal int OperationDeadlineMilliseconds = 40000;
             internal Exception CapturedUiFailure => uiError;
             internal Fixture(bool bound = true)
             {
@@ -55,13 +57,36 @@ namespace VBAi.Tests.Unit
                 try
                 {
                     var clock = Stopwatch.StartNew();
+                    Exception deferredFailure = null;
+                    bool deadlineRecorded = false, uiFailureRecorded = false;
                     while ((task != null && !task.IsCompleted) || Get<bool>("running"))
                     {
                         Application.DoEvents(); Thread.Sleep(1);
-                        if (uiError != null) throw new InvalidOperationException("Disposable GitWindow UI failed", uiError);
-                        if (clock.ElapsedMilliseconds > 40000) throw new TimeoutException("Disposable GitWindow operation timed out");
+                        if (uiError != null && !uiFailureRecorded)
+                        {
+                            Exception observed = new InvalidOperationException("Disposable GitWindow UI failed", uiError);
+                            deferredFailure = deferredFailure == null ? observed : new AggregateException(deferredFailure, observed);
+                            uiFailureRecorded = true;
+                        }
+                        if (clock.ElapsedMilliseconds > OperationDeadlineMilliseconds && !deadlineRecorded)
+                        {
+                            deadlineRecorded = true; retainScratchAfterDeadline = true;
+                            var timeout = new TimeoutException("Disposable GitWindow operation timed out");
+                            Exception timeoutFailure = timeout;
+                            try { CaptureTimeout(clock.ElapsedMilliseconds); }
+                            catch (Exception capture) { timeoutFailure = new AggregateException("Git timeout and diagnostic capture failed.", timeout, capture); }
+                            deferredFailure = deferredFailure == null ? timeoutFailure : new AggregateException(deferredFailure, timeoutFailure);
+                            // Keep the same STA and modal timer alive until the admitted operation
+                            // settles. The expired deadline remains a failure; no work is replayed.
+                        }
                     }
-                    task?.GetAwaiter().GetResult(); Application.DoEvents();
+                    try { task?.GetAwaiter().GetResult(); }
+                    catch (Exception completion)
+                    {
+                        deferredFailure = deferredFailure == null ? completion : new AggregateException(deferredFailure, completion);
+                    }
+                    Application.DoEvents();
+                    if (deferredFailure != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(deferredFailure).Throw();
                 }
                 catch (Exception error) { operationFailure = error; throw; }
             }
@@ -72,6 +97,28 @@ namespace VBAi.Tests.Unit
             }
             internal void Action(string action, string name = null, string text = null, string choice = null, string path = null)
             { Pump((Task)Call("RunGitAction", action, name, text, choice, path)); }
+
+            /// <summary>Retains only fixture-owned UI/task lifecycle state when the original deadline expires; never retries work.</summary>
+            private void CaptureTimeout(long elapsedMilliseconds)
+            {
+                var request = Get<GitModalSession.Request>("modalRequest");
+                var state = new
+                {
+                    Format = "VBAi.GitWindowTestTimeout.1", Utc = DateTime.UtcNow.ToString("o"),
+                    ElapsedMilliseconds = elapsedMilliseconds, OwnerThreadId = Thread.CurrentThread.ManagedThreadId,
+                    SynchronizationContext = SynchronizationContext.Current?.GetType().FullName,
+                    WindowDisposed = Window.IsDisposed, WindowVisible = Window.Visible, Modal = Window.Modal,
+                    Running = Get<bool>("running"), CacheLeaseHeld = Get<FileStream>("cacheLock") != null,
+                    RequestPhase = request?.Phase, RequestErrorType = request?.Error?.GetType().FullName,
+                    AdmissionStatus = request?.Admission.Status.ToString(), CompletionStatus = request?.Completion.Status.ToString(),
+                    OperationStates = System.Linq.Enumerable.ToArray(System.Linq.Enumerable.Select(operations, task => task.Status.ToString())),
+                    NativeMutationReplayed = false, SourceOrCredentialsCaptured = false
+                };
+                string path = Path.Combine(Git.Root, "qualification-timeout.json");
+                using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read))
+                using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false)))
+                    writer.Write(new System.Web.Script.Serialization.JavaScriptSerializer().Serialize(state));
+            }
             internal void Compare() => Event("Compare_Click");
             internal void AssertLiveMatchesHead()
             {
@@ -101,7 +148,7 @@ namespace VBAi.Tests.Unit
                 cleanup(() => Application.ThreadException -= OnUiError);
                 cleanup(() => GitWindow.CacheDirectory = previousCache);
                 cleanup(() => SynchronizationContext.SetSynchronizationContext(previousContext));
-                if (terminal) cleanup(() => Git.Dispose());
+                if (terminal && !retainScratchAfterDeadline) cleanup(() => Git.Dispose());
                 if (failures.Count == 0) return;
                 // A using statement must not replace the original operation failure
                 // with a later disposal or locked-file error.

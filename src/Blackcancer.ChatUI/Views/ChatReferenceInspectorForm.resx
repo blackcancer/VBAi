@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="$this.Text" xml:space="preserve"><value>Captured reference</value></data>
+  <data name="copy.Text" xml:space="preserve"><value>Copy captured text</value></data>
+  <data name="navigate.Text" xml:space="preserve"><value>Navigate</value></data>
+  <data name="compare.Text" xml:space="preserve"><value>Compare capture</value></data>
+  <data name="close.Text" xml:space="preserve"><value>Close</value></data>
+  <data name="labelLabel.Text" xml:space="preserve"><value>Reference</value></data>
+  <data name="idLabel.Text" xml:space="preserve"><value>ID</value></data>
+  <data name="originLabel.Text" xml:space="preserve"><value>Origin</value></data>
+  <data name="metadataLabel.Text" xml:space="preserve"><value>Captured metadata</value></data>
+  <data name="contentLabel.Text" xml:space="preserve"><value>Exact captured text</value></data>
+  <data name="navigationNote.Text" xml:space="preserve"><value>Navigation: unavailable</value></data>
+  <data name="note.Text" xml:space="preserve"><value>Captured text only. This window does not reread or refresh the source.</value></data>
+  <data name="completeNote" xml:space="preserve"><value>Captured text only. This window does not reread or refresh the source.</value></data>
+  <data name="truncatedNote" xml:space="preserve"><value>The captured text is truncated. Copy preserves only this captured fragment.</value></data>
+  <data name="navigationUnavailable" xml:space="preserve"><value>Navigation: unavailable</value></data>
+  <data name="navigationAvailable" xml:space="preserve"><value>Navigation: available on request</value></data>
+  <data name="navigationStale" xml:space="preserve"><value>Navigation: stale reference</value></data>
+
+</root>

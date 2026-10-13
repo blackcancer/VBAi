@@ -287,36 +287,122 @@ namespace VBAi
             scopeSessions.Insert(0, fork); ActivateSession(fork, false); SaveCurrentSession();
         }
 
+        /// <summary>Opens the existing captured attachment in the shared modeless reader, without consulting the VBE.</summary>
+        /// <param name="attachment">Captured attachment from this transcript entry.</param>
+        private void ShowAttachmentPreview(ChatAttachment attachment)
+        {
+            Blackcancer.ChatUI.Views.ChatReferenceInspectorForm preview = null;
+            try { preview = CreateAttachmentPreview(attachment); preview.Show(this); }
+            catch (Exception error) { preview?.Dispose(); if (!IsDisposed) SetStatus(error.Message); }
+        }
+
+        /// <summary>Detaches attachment text and cached identities; live validation belongs exclusively to the Navigate action.</summary>
+        /// <param name="attachment">Recorded text, source identity and revision, never a request to reread the source.</param>
+        /// <returns>A shared reader whose callbacks remain bound to this captured conversation and host session.</returns>
+        internal Blackcancer.ChatUI.Views.ChatReferenceInspectorForm CreateAttachmentPreview(ChatAttachment attachment)
+        {
+            if (attachment == null) throw new ArgumentNullException(nameof(attachment));
+            var captured = attachment.CaptureSnapshot();
+            var capturedHost = scopeSession;
+            string capturedConversationId = currentSession?.Id, capturedConversationScope = currentSession?.Scope;
+            var selectedScope = scopePicker.SelectedItem as MacroScope;
+            string capturedScopeKey = selectedScope?.Key, capturedScopeProject = selectedScope?.Project;
+            bool canNavigate = capturedHost != null && tools != null && !string.IsNullOrEmpty(capturedConversationId)
+                && !string.IsNullOrEmpty(capturedScopeKey) && !string.IsNullOrEmpty(captured.Project)
+                && !string.IsNullOrEmpty(captured.Module) && !string.IsNullOrEmpty(captured.Sha256);
+            var metadata = new Dictionary<string, string>
+            {
+                { "Project", captured.Project ?? "" }, { "Module", captured.Module ?? "" },
+                { "Sha256", captured.Sha256 ?? "" }, { "EditorDocumentId", captured.EditorDocumentId ?? "" },
+                { "StartLine", captured.StartLine.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                { "ConversationId", capturedConversationId ?? "" }, { "Scope", capturedScopeKey ?? "" }
+            };
+            string id = captured.EditorDocumentId ?? (captured.Project ?? "") + "." + (captured.Module ?? "")
+                + ":" + captured.StartLine.ToString(System.Globalization.CultureInfo.InvariantCulture) + "@" + (captured.Sha256 ?? "");
+            var snapshot = new Blackcancer.ChatUI.Presentation.ChatReferenceSnapshot(id, captured.Label,
+                captured.Project ?? captured.Label, metadata, captured.Text, false,
+                canNavigate ? Blackcancer.ChatUI.Presentation.ChatReferenceNavigationState.Available
+                    : Blackcancer.ChatUI.Presentation.ChatReferenceNavigationState.Unavailable);
+            var preview = new Blackcancer.ChatUI.Views.ChatReferenceInspectorForm();
+            try
+            {
+                Action<Blackcancer.ChatUI.Presentation.ChatReferenceSnapshot> onNavigate = null;
+                if (canNavigate) onNavigate = async requested =>
+                {
+                    try
+                    {
+                        var currentScope = scopePicker.SelectedItem as MacroScope;
+                        if (IsDisposed || !ReferenceEquals(scopeSession, capturedHost)
+                            || !string.Equals(currentSession?.Id, capturedConversationId, StringComparison.Ordinal)
+                            || !string.Equals(currentSession?.Scope, capturedConversationScope, StringComparison.Ordinal)
+                            || !string.Equals(currentScope?.Key, capturedScopeKey, StringComparison.Ordinal)
+                            || !string.Equals(currentScope?.Project, capturedScopeProject, StringComparison.Ordinal))
+                        {
+                            preview.SetNavigationState(Blackcancer.ChatUI.Presentation.ChatReferenceNavigationState.Stale,
+                                UiText.Get("The VBA document has changed. Reopen the chat to choose the current document."));
+                            return;
+                        }
+                        EnsureCachedScope();
+                        tools.RequireProjectRead(captured.Project);
+                        await NavigateAttachmentAsync(captured);
+                    }
+                    catch (Exception error)
+                    {
+                        if (!preview.IsDisposed) preview.SetNavigationState(Blackcancer.ChatUI.Presentation.ChatReferenceNavigationState.Unavailable, error.Message);
+                        if (!IsDisposed) SetStatus(error.Message);
+                    }
+                };
+                preview.ShowSnapshot(snapshot,
+                    new Blackcancer.ChatUI.ChatServices { Translate = UiText.Get, CopyText = CopyText, GetWindowIcon = () => Icon },
+                    new Blackcancer.ChatUI.SharedChatStyle
+                    {
+                        Background = UiTheme.Background, Foreground = UiTheme.Foreground, CodeBackground = UiTheme.Surface,
+                        Border = UiTheme.Border, BodyFont = Font, RightToLeft = UiText.Culture.TextInfo.IsRightToLeft
+                    }, onNavigate, error => { if (!IsDisposed) SetStatus(error); }, UiText.Culture);
+                return preview;
+            }
+            catch { preview.Dispose(); throw; }
+        }
+
         /// <summary>Sélectionne le code source correspondant à une pièce jointe dans le VBE.</summary>
         /// <param name="attachment">Référence ou sélection à ouvrir dans le VBE.</param>
         private async void NavigateAttachment(ChatAttachment attachment)
+        { await NavigateAttachmentAsync(attachment); }
+
+        /// <summary>Runs attachment navigation and renderer awaits on their original VBE STA.</summary>
+        /// <param name="attachment">Captured source identity, revision and location to navigate.</param>
+        /// <returns>A task completed after navigation or its existing actionable error status.</returns>
+        internal Task NavigateAttachmentAsync(ChatAttachment attachment)
         {
-            try
+            return VbeUiTask.RunAsync(async () =>
             {
-                EnsureCurrentScope();
-                if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
+                try
                 {
-                    var editor = scopeSession?.ModernEditor?.Invoke(false);
-                    var document = (editor?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId)) ?? throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
-                    await editor.CaptureForTool();
-                    if (EditorDocument.Hash(document.Text) != attachment.Sha256)
-                        throw new InvalidOperationException(attachment.Label + UiText.Get(" is stale. Remove it and attach the current selection."));
-                    scopeSession.ModernEditor(true);
-                    await editor.OpenModule(document.Module);
-                    await editor.Script("reveal", Math.Max(1, attachment.StartLine), 1);
-                    return;
+                    EnsureCurrentScope();
+                    if (!string.IsNullOrEmpty(attachment.EditorDocumentId))
+                    {
+                        var editor = scopeSession?.ModernEditor?.Invoke(false);
+                        var document = (editor?.Documents.FirstOrDefault(d => d.Id == attachment.EditorDocumentId)) ?? throw new InvalidOperationException(UiText.Get("Select code in the VBE."));
+                        await editor.CaptureForTool();
+                        if (EditorDocument.Hash(document.Text) != attachment.Sha256)
+                            throw new InvalidOperationException(attachment.Label + UiText.Get(" is stale. Remove it and attach the current selection."));
+                        scopeSession.ModernEditor(true);
+                        await editor.OpenModule(document.Module);
+                        await editor.Script("reveal", Math.Max(1, attachment.StartLine), 1);
+                        return;
+                    }
+                    var result = ReadHost(scopeSession, new Request
+                    {
+                        Command = "select_code",
+                        Project = attachment.Project,
+                        Module = attachment.Module,
+                        StartLine = Math.Max(1, attachment.StartLine),
+                        ExpectedSha256 = attachment.Sha256
+                    });
+                    if (!result.Ok) SetStatus(result.Error);
                 }
-                var result = ReadHost(scopeSession, new Request
-                {
-                    Command = "select_code",
-                    Project = attachment.Project,
-                    Module = attachment.Module,
-                    StartLine = Math.Max(1, attachment.StartLine),
-                    ExpectedSha256 = attachment.Sha256
-                });
-                if (!result.Ok) SetStatus(result.Error);
-            }
-            catch (Exception ex) { SetStatus(ex.Message); }
+                catch (Exception ex) { SetStatus(ex.Message); }
+            });
         }
 
         /// <summary>Restaure un changement ou les changements du tour après vérification du périmètre.</summary>
@@ -325,16 +411,19 @@ namespace VBAi
         /// <param name="entireTurn">Indique si les changements du même tour doivent être restaurés ensemble.</param>
         private async void RollbackIntervention(CodeChange change, int? hunk, bool entireTurn)
         {
-            if (busy || tools == null) return;
-            try
+            await VbeUiTask.RunAsync(async () =>
             {
-                EnsureCurrentScope();
-                var targets = entireTurn && !string.IsNullOrEmpty(change.TurnId) ? codeChanges.Where(x => x.TurnId == change.TurnId).ToArray() : new[] { change };
-                var result = await tools.RestoreChangesAsync(targets, hunk);
-                AddTranscriptMessage(result.Ok ? UiText.Get("Code restored") : "Erreur", result.Ok ? UiText.Get("Undo complete. Other changes in the module were preserved.") : result.Error);
-                RefreshCodeChangeCards(); SaveCurrentSession();
-            }
-            catch (Exception ex) { SetStatus(ex.Message); }
+                if (busy || tools == null) return;
+                try
+                {
+                    EnsureCurrentScope();
+                    var targets = entireTurn && !string.IsNullOrEmpty(change.TurnId) ? codeChanges.Where(x => x.TurnId == change.TurnId).ToArray() : new[] { change };
+                    var result = await tools.RestoreChangesAsync(targets, hunk);
+                    AddTranscriptMessage(result.Ok ? UiText.Get("Code restored") : "Erreur", result.Ok ? UiText.Get("Undo complete. Other changes in the module were preserved.") : result.Error);
+                    RefreshCodeChangeCards(); SaveCurrentSession();
+                }
+                catch (Exception ex) { SetStatus(ex.Message); }
+            });
         }
     }
 }

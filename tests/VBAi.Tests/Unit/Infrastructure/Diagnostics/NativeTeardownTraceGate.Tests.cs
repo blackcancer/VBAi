@@ -11,6 +11,76 @@ namespace VBAi.Tests.Unit
     [TestClass, TestCategory("Unit")]
     public sealed class NativeTeardownTraceGateTests
     {
+        [DataTestMethod]
+        [DataRow("NativeVariantArraysRoundTripWithBoundsAndOneInvocation", true)]
+        [DataRow("NativeParamArrayCallsPreserveArityValuesAndSingleInvocation", true)]
+        [DataRow("ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving", true)]
+        [DataRow("SavedUnsignedWorkbookHasNoSignatureAndPreservesSource", true)]
+        [DataRow(null, false)]
+        [DataRow("", false)]
+        [DataRow("savedunsignedworkbookhasnosignatureandpreservessource", false)]
+        [DataRow("SavedUnsignedWorkbookHasNoSignatureAndPreservesSource ", false)]
+        [DataRow("NativeFirstSignaturePersistsThroughFreshOwnedProcessWithoutHelperSaving", false)]
+        [DataRow("VBAi.Tests.Integration.SavedUnsignedWorkbookHasNoSignatureAndPreservesSource", false)]
+        [DataRow("PersonalMacro", false)]
+        public void OnlyExactDeclaredCleanupScenariosAdmitAnOwnedIdentity(string scenario, bool expected)
+        {
+            using (var scope = new Scope())
+            {
+                scope.Identity.Scenario = scenario;
+                if (expected) NativeTeardownTraceGate.ValidateIdentity(scope.Identity);
+                else Assert.ThrowsException<ArgumentException>(() => NativeTeardownTraceGate.ValidateIdentity(scope.Identity));
+                Assert.IsFalse(File.Exists(Path.Combine(scope.Identity.Root, "teardown.pending.json")));
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving")]
+        [DataRow("SavedUnsignedWorkbookHasNoSignatureAndPreservesSource")]
+        public void PersistenceReadbacksAuthorizeOneCleanupWithoutAProcedureInvocation(string scenario)
+        {
+            using (var scope = new Scope())
+            {
+                scope.Identity.Scenario = scenario;
+                int emitted = 0;
+                foreach (string command in new[] { "save_host_document", "project_persistence_status", "read_module" })
+                    scope.Gate.Command(new { Command = command }, () =>
+                    {
+                        emitted++;
+                        return new Dictionary<string, object> { ["Ok"] = true };
+                    });
+                scope.Arm();
+                scope.Gate.BeforeCleanup();
+                var receipt = new JavaScriptSerializer().Deserialize<Dictionary<string, object>>(
+                    File.ReadAllText(Path.Combine(scope.Identity.Root, "teardown-cleanup-intent.json")));
+                Assert.AreEqual(3, emitted);
+                Assert.AreEqual(3, receipt["CommandEmissions"]);
+                Assert.AreEqual(0, receipt["InvocationRequests"]);
+                Assert.AreEqual(1, receipt["CleanupAttempts"]);
+                Assert.AreEqual(false, receipt["MutationReplayAllowed"]);
+                Assert.ThrowsException<InvalidOperationException>(() => scope.Gate.BeforeCleanup());
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("ProductSavePreservesModuleClassAndFormInFreshOwnedProcessWithoutHelperSaving")]
+        [DataRow("SavedUnsignedWorkbookHasNoSignatureAndPreservesSource")]
+        public void MissingPersistenceResponseCannotArmCleanupOrReplayTheOperation(string scenario)
+        {
+            using (var scope = new Scope())
+            {
+                scope.Identity.Scenario = scenario;
+                int emitted = 0;
+                scope.Gate.Command(new { Command = "save_host_document" }, () => { emitted++; return null; });
+                scope.Arm();
+                Assert.ThrowsException<InvalidOperationException>(() => scope.Gate.BeforeCleanup());
+                Assert.ThrowsException<InvalidOperationException>(() => scope.Gate.BeforeCleanup());
+                Assert.AreEqual(1, emitted);
+                Assert.IsFalse(File.Exists(Path.Combine(scope.Identity.Root, "teardown.pending.json")));
+                Assert.IsFalse(File.Exists(Path.Combine(scope.Identity.Root, "teardown-cleanup-intent.json")));
+            }
+        }
+
         private sealed class Scope : IDisposable
         {
             internal readonly NativeTeardownTraceGate.Identity Identity;

@@ -39,12 +39,12 @@ namespace VBAi.Tests.Unit
                 var model = new LlmModelOption("opaque-id", "Readable model");
                 picker.Items.Add(model); picker.SelectedItem = model;
                 Call(window, "RefreshModelSummary");
-                StringAssert.Contains(Get<ChatActionButton>(window, "modelSummary").Text, "Readable model");
+                StringAssert.Contains(Get<Blackcancer.ChatUI.Views.ChatActionButton>(window, "modelSummary").Text, "Readable model");
                 Call(window, "ModelSummary_Click", null, EventArgs.Empty);
-                Assert.IsTrue(Get<TableLayoutPanel>(window, "rootLayout").RowStyles[6].Height > 0);
+                Assert.IsTrue(Get<TableLayoutPanel>(window, "rootLayout").RowStyles[Get<TableLayoutPanel>(window, "rootLayout").GetRow(Get<TableLayoutPanel>(window, "providerLayout"))].Height > 0);
                 Assert.AreSame(model, picker.SelectedItem);
                 Call(window, "ModelSummary_Click", null, EventArgs.Empty);
-                Assert.AreEqual(0F, Get<TableLayoutPanel>(window, "rootLayout").RowStyles[6].Height);
+                Assert.AreEqual(0F, Get<TableLayoutPanel>(window, "rootLayout").RowStyles[Get<TableLayoutPanel>(window, "rootLayout").GetRow(Get<TableLayoutPanel>(window, "providerLayout"))].Height);
             }
         }
 

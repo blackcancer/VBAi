@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- SPDX-License-Identifier: MPL-2.0; ported native chat layout and localization resources. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="fileAttachmentDialog.Filter" xml:space="preserve">
+    <value>Tutti i file (*.*)|*.*</value>
+  </data>
+  <data name="fileAttachmentDialog.Title" xml:space="preserve">
+    <value>Allega file al prossimo messaggio</value>
+  </data>
+  <data name="modelSummary.AccessibleName" xml:space="preserve">
+    <value>Modello e sforzo di ragionamento</value>
+  </data>
+  <data name="modelSummary.Text" xml:space="preserve">
+    <value>Modello</value>
+  </data>
+  <data name="effortPicker.AccessibleName" xml:space="preserve">
+    <value>Sforzo di ragionamento</value>
+  </data>
+  <data name="configureMenuItem.Text" xml:space="preserve">
+    <value>Impostazioni…</value>
+  </data>
+  <data name="sessionTitle.Text" xml:space="preserve">
+    <value>Il tuo agente IA per application</value>
+  </data>
+  <data name="newChatButton.AccessibleName" xml:space="preserve">
+    <value>Nuova conversazione</value>
+  </data>
+  <data name="newChatButton.Text" xml:space="preserve">
+    <value>Nuova conversazione</value>
+  </data>
+  <data name="settingsButton.AccessibleName" xml:space="preserve">
+    <value>Opzioni della conversazione</value>
+  </data>
+  <data name="settingsButton.Text" xml:space="preserve">
+    <value>Opzioni</value>
+  </data>
+  <data name="scopePicker.AccessibleName" xml:space="preserve">
+    <value>Ambito della conversazione</value>
+  </data>
+  <data name="historyButton.Text" xml:space="preserve">
+    <value>Cronologia delle conversazioni</value>
+  </data>
+  <data name="projectPicker.AccessibleName" xml:space="preserve">
+    <value>Progetto</value>
+  </data>
+  <data name="createProjectButton.Text" xml:space="preserve">
+    <value>Crea progetto</value>
+  </data>
+  <data name="welcomeTitle.Text" xml:space="preserve">
+    <value>Cosa vorresti creare?</value>
+  </data>
+  <data name="welcomeBody.Text" xml:space="preserve">
+    <value>Parla del tuo modello, ispeziona il documento attivo o descrivi un’operazione.
+
+Scegli fornitore e modello nelle Impostazioni per iniziare.</value>
+  </data>
+  <data name="historyLabel.Text" xml:space="preserve">
+    <value>Conversazioni</value>
+  </data>
+  <data name="historyEmptyLabel.Text" xml:space="preserve">
+    <value>Nessuna conversazione in questo ambito.</value>
+  </data>
+  <data name="closeHistoryButton.Text" xml:space="preserve">
+    <value>Chiudi cronologia</value>
+  </data>
+  <data name="historySearchTextBox.AccessibleName" xml:space="preserve">
+    <value>Cerca conversazioni</value>
+  </data>
+  <data name="showArchivedCheckBox.AccessibleName" xml:space="preserve">
+    <value>Mostra archiviate</value>
+  </data>
+  <data name="showArchivedCheckBox.Text" xml:space="preserve">
+    <value>Mostra archiviate</value>
+  </data>
+  <data name="chatTitleEditor.AccessibleName" xml:space="preserve">
+    <value>Titolo della conversazione</value>
+  </data>
+  <data name="renameChatButton.AccessibleName" xml:space="preserve">
+    <value>Rinomina</value>
+  </data>
+  <data name="renameChatButton.Text" xml:space="preserve">
+    <value>Rinomina</value>
+  </data>
+  <data name="archiveChatButton.AccessibleName" xml:space="preserve">
+    <value>Archivia</value>
+  </data>
+  <data name="archiveChatButton.Text" xml:space="preserve">
+    <value>Archivia</value>
+  </data>
+  <data name="pinChatButton.AccessibleName" xml:space="preserve">
+    <value>Fissa</value>
+  </data>
+  <data name="pinChatButton.Text" xml:space="preserve">
+    <value>Fissa</value>
+  </data>
+  <data name="exportChatButton.AccessibleName" xml:space="preserve">
+    <value>Esporta</value>
+  </data>
+  <data name="exportChatButton.Text" xml:space="preserve">
+    <value>Esporta</value>
+  </data>
+  <data name="deleteChatButton.AccessibleName" xml:space="preserve">
+    <value>Elimina conversazione</value>
+  </data>
+  <data name="deleteChatButton.Text" xml:space="preserve">
+    <value>Elimina conversazione</value>
+  </data>
+  <data name="memoryToggleButton.AccessibleName" xml:space="preserve">
+    <value>Memoria del progetto</value>
+  </data>
+  <data name="memoryToggleButton.Text" xml:space="preserve">
+    <value>Memoria del progetto</value>
+  </data>
+  <data name="memoryPanel.AccessibleName" xml:space="preserve">
+    <value>Memoria del progetto</value>
+  </data>
+  <data name="attachMemoryCheckBox.AccessibleName" xml:space="preserve">
+    <value>Allega la memoria salvata al prossimo messaggio</value>
+  </data>
+  <data name="attachMemoryCheckBox.Text" xml:space="preserve">
+    <value>Allega la memoria salvata al prossimo messaggio</value>
+  </data>
+  <data name="saveMemoryButton.AccessibleName" xml:space="preserve">
+    <value>Salva memoria</value>
+  </data>
+  <data name="saveMemoryButton.Text" xml:space="preserve">
+    <value>Salva memoria</value>
+  </data>
+  <data name="memoryPanel.Text" xml:space="preserve">
+    <value>Memoria del progetto</value>
+  </data>
+  <data name="inputTextBox.AccessibleName" xml:space="preserve">
+    <value>Messaggio</value>
+  </data>
+  <data name="attachContextButton.AccessibleName" xml:space="preserve">
+    <value>Allega contesto CAD</value>
+  </data>
+  <data name="attachDocumentMenuItem.Text" xml:space="preserve">
+    <value>Documento attivo</value>
+  </data>
+  <data name="attachSelectionMenuItem.Text" xml:space="preserve">
+    <value>Funzione o schizzo selezionato</value>
+  </data>
+  <data name="attachFileButton.AccessibleName" xml:space="preserve">
+    <value>Allega file</value>
+  </data>
+  <data name="stopButton.Text" xml:space="preserve">
+    <value>Interrompi</value>
+  </data>
+  <data name="sendButton.Text" xml:space="preserve">
+    <value>Invia</value>
+  </data>
+  <data name="modePicker.AccessibleName" xml:space="preserve">
+    <value>Modalità della conversazione</value>
+  </data>
+  <data name="approvalPicker.AccessibleName" xml:space="preserve">
+    <value>Approvazione delle azioni CAD</value>
+  </data>
+  <data name="attachSelectionButton.AccessibleName" xml:space="preserve">
+    <value>Fai riferimento a una funzione application con #nome</value>
+  </data>
+  <data name="contextButton.AccessibleName" xml:space="preserve">
+    <value>Ispeziona il contesto del documento attivo</value>
+  </data>
+  <data name="contextButton.Text" xml:space="preserve">
+    <value>Contesto</value>
+  </data>
+  <data name="providerPicker.AccessibleName" xml:space="preserve">
+    <value>Fornitore</value>
+  </data>
+  <data name="modelPicker.AccessibleName" xml:space="preserve">
+    <value>Modello</value>
+  </data>
+  <data name="latestButton.Text" xml:space="preserve">
+    <value>Ultimo messaggio</value>
+  </data>
+  <data name="statusLabel.AccessibleName" xml:space="preserve">
+    <value>Stato</value>
+  </data>
+  <data name="statusLabel.Text" xml:space="preserve">
+    <value>Pronto</value>
+  </data>
+  <data name="contextLabel.AccessibleName" xml:space="preserve">
+    <value>Documento attivo</value>
+  </data>
+  <data name="contextLabel.Text" xml:space="preserve">
+    <value>Nessun documento attivo</value>
+  </data>
+  <data name="$this.AccessibleName" xml:space="preserve">
+    <value>Chat Chat</value>
+  </data>
+</root>

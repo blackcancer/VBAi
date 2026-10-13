@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace VBAi
 {
@@ -12,6 +13,16 @@ namespace VBAi
         /// <summary>Instance VBE dont les collections sont inspectées.</summary>
         private readonly dynamic vbe;
 
+        /// <summary>Balances only references acquired by a reader, never the borrowed editor.</summary>
+        internal Action<object> ReleaseAcquired = VbaTestComReferences.Release;
+
+        /// <summary>Identifies native one-based collections without creating a COM enumerator.</summary>
+        internal Func<object, bool> IndexedCollection = Marshal.IsComObject;
+
+        /// <summary>Creates one owner-thread acquisition scope for an inspection.</summary>
+        /// <returns>An independent scope whose acquisitions are released on the current owner thread.</returns>
+        private VbaTestComReferences ReferenceScope() => new VbaTestComReferences(ReleaseAcquired, IndexedCollection);
+
         /// <summary>Crée le lecteur pour l’instance VBE fournie.</summary>
         /// <param name="vbe">Instance VBE dont les collections seront lues.</param>
         public VbeEditorWindows(object vbe) { this.vbe = vbe; }
@@ -20,67 +31,79 @@ namespace VBAi
         /// <returns>Liste des fenêtres avec l’état de la fenêtre active et les erreurs de lecture.</returns>
         public object Windows()
         {
-            var windows = new List<object>();
-            int index = 0;
-            foreach (dynamic window in vbe.Windows)
-                windows.Add(WindowSnapshot(window, ++index));
-            object active = null;
-            try
+            using (var references = ReferenceScope())
             {
-                dynamic window = vbe.ActiveWindow;
-                if (window != null) active = WindowSnapshot(window, null);
+                var windows = new List<object>();
+                int index = 0;
+                foreach (dynamic window in references.Items((object)vbe.Windows))
+                    windows.Add(WindowSnapshot(window, ++index));
+                object active = null;
+                try
+                {
+                    dynamic window = references.Add((object)vbe.ActiveWindow);
+                    if (window != null) active = WindowSnapshot(window, null);
+                }
+                catch (Exception ex) { active = new { Error = ex.Message }; }
+                return new { Windows = windows, ActiveWindow = active };
             }
-            catch (Exception ex) { active = new { Error = ex.Message }; }
-            return new { Windows = windows, ActiveWindow = active };
         }
 
         /// <summary>Retourne les volets de code VBE et le volet actif sans en ouvrir de nouveau.</summary>
         /// <returns>Liste des volets de code et du volet actif avec leurs erreurs de lecture.</returns>
         public object CodePanes()
         {
-            var panes = new List<object>();
-            int index = 0;
-            foreach (dynamic pane in vbe.CodePanes)
-                panes.Add(PaneSnapshot(pane, ++index));
-            object active = null;
-            try
+            using (var references = ReferenceScope())
             {
-                dynamic pane = vbe.ActiveCodePane;
-                if (pane != null) active = PaneSnapshot(pane, null);
+                var panes = new List<object>();
+                int index = 0;
+                foreach (dynamic pane in references.Items((object)vbe.CodePanes))
+                    panes.Add(PaneSnapshot(pane, ++index));
+                object active = null;
+                try
+                {
+                    dynamic pane = references.Add((object)vbe.ActiveCodePane);
+                    if (pane != null) active = PaneSnapshot(pane, null);
+                }
+                catch (Exception ex) { active = new { Error = ex.Message }; }
+                return new { CodePanes = panes, ActiveCodePane = active };
             }
-            catch (Exception ex) { active = new { Error = ex.Message }; }
-            return new { CodePanes = panes, ActiveCodePane = active };
         }
 
         /// <summary>Lit les propriétés principales de l’instance et collecte les erreurs par propriété.</summary>
         /// <returns>Propriétés d’environnement accessibles et erreurs par propriété.</returns>
         public object Environment()
         {
-            var fields = new Dictionary<string, object>();
-            var errors = new Dictionary<string, string>();
-            Read(fields, errors, "Version", () => (string)vbe.Version);
-            Read(fields, errors, "ProjectCount", () => (int)vbe.VBProjects.Count);
-            Read(fields, errors, "WindowCount", () => (int)vbe.Windows.Count);
-            Read(fields, errors, "CodePaneCount", () => (int)vbe.CodePanes.Count);
-            Read(fields, errors, "AddInCount", () => (int)vbe.AddIns.Count);
-            Read(fields, errors, "ActiveProject", () => (string)vbe.ActiveVBProject.Name);
-            return new { Properties = fields, Errors = errors };
+            using (var references = ReferenceScope())
+            {
+                var fields = new Dictionary<string, object>();
+                var errors = new Dictionary<string, string>();
+                Read(fields, errors, "Version", () => (string)vbe.Version);
+                Read(fields, errors, "ProjectCount", () => (int)((dynamic)references.Add((object)vbe.VBProjects)).Count);
+                Read(fields, errors, "WindowCount", () => (int)((dynamic)references.Add((object)vbe.Windows)).Count);
+                Read(fields, errors, "CodePaneCount", () => (int)((dynamic)references.Add((object)vbe.CodePanes)).Count);
+                Read(fields, errors, "AddInCount", () => (int)((dynamic)references.Add((object)vbe.AddIns)).Count);
+                Read(fields, errors, "ActiveProject", () => (string)((dynamic)references.Add((object)vbe.ActiveVBProject)).Name);
+                return new { Properties = fields, Errors = errors };
+            }
         }
 
         /// <summary>Liste les add-ins enregistrés dans la collection VBE.AddIns.</summary>
         /// <returns>Add-ins VBE, nombre total et périmètre de la collection inspectée.</returns>
         public object AddIns()
         {
-            var addIns = new List<object>();
-            int index = 0;
-            foreach (dynamic addIn in vbe.AddIns)
-                addIns.Add(AddInSnapshot(addIn, ++index));
-            return new
+            using (var references = ReferenceScope())
             {
-                AddIns = addIns,
-                addIns.Count,
-                Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns."
-            };
+                var addIns = new List<object>();
+                int index = 0;
+                foreach (dynamic addIn in references.Items((object)vbe.AddIns))
+                    addIns.Add(AddInSnapshot(addIn, ++index));
+                return new
+                {
+                    AddIns = addIns,
+                    addIns.Count,
+                    Scope = "VBE.AddIns contains VBE-registered add-ins, not the host application's COMAddIns."
+                };
+            }
         }
 
         /// <summary>Active une fenêtre exacte déjà visible et rapporte le résultat de vérification.</summary>
@@ -242,31 +265,36 @@ namespace VBAi
         /// <param name="pane">Volet de code COM à inspecter.</param>
         /// <param name="index">Index de la fenêtre dans la collection, ou null pour la fenêtre active.</param>
         /// <returns>Dictionnaires des propriétés lues, de la sélection et des erreurs COM.</returns>
-        private static object PaneSnapshot(dynamic pane, int? index)
+        private object PaneSnapshot(dynamic pane, int? index)
         {
-            var fields = new Dictionary<string, object>();
-            var errors = new Dictionary<string, string>();
-            Read(fields, errors, "Module", () => (string)pane.CodeModule.Parent.Name);
-            Read(fields, errors, "Project", () => (string)pane.CodeModule.Parent.Collection.Parent.Name);
-            Read(fields, errors, "ProjectPath", () => (string)pane.CodeModule.Parent.Collection.Parent.FileName);
-            Read(fields, errors, "CodePaneView", () => (int)pane.CodePaneView);
-            Read(fields, errors, "TopLine", () => (int)pane.TopLine);
-            Read(fields, errors, "CountOfVisibleLines", () => (int)pane.CountOfVisibleLines);
-            Read(fields, errors, "WindowCaption", () => (string)pane.Window.Caption);
-            try
+            using (var references = ReferenceScope())
             {
-                int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
-                pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
-                fields["Selection"] = new
+                var fields = new Dictionary<string, object>();
+                var errors = new Dictionary<string, string>();
+                dynamic Component() => (dynamic)references.Add((object)((dynamic)references.Add((object)pane.CodeModule)).Parent);
+                dynamic Project() => (dynamic)references.Add((object)((dynamic)references.Add((object)Component().Collection)).Parent);
+                Read(fields, errors, "Module", () => (string)Component().Name);
+                Read(fields, errors, "Project", () => (string)Project().Name);
+                Read(fields, errors, "ProjectPath", () => (string)Project().FileName);
+                Read(fields, errors, "CodePaneView", () => (int)pane.CodePaneView);
+                Read(fields, errors, "TopLine", () => (int)pane.TopLine);
+                Read(fields, errors, "CountOfVisibleLines", () => (int)pane.CountOfVisibleLines);
+                Read(fields, errors, "WindowCaption", () => (string)((dynamic)references.Add((object)pane.Window)).Caption);
+                try
                 {
-                    StartLine = startLine,
-                    StartColumn = startColumn,
-                    EndLine = endLine,
-                    EndColumn = endColumn
-                };
+                    int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
+                    pane.GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
+                    fields["Selection"] = new
+                    {
+                        StartLine = startLine,
+                        StartColumn = startColumn,
+                        EndLine = endLine,
+                        EndColumn = endColumn
+                    };
+                }
+                catch (Exception ex) { errors["Selection"] = ex.Message; }
+                return new { Index = index, Properties = fields, Errors = errors };
             }
-            catch (Exception ex) { errors["Selection"] = ex.Message; }
-            return new { Index = index, Properties = fields, Errors = errors };
         }
 
         /// <param name="fields">Dictionnaire des valeurs lues avec succès.</param>

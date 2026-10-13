@@ -22,6 +22,8 @@ namespace VBAi.Tests.Infrastructure
             Host.ReadProcessName = () => "EXCEL";
             Host.ResolveApplication = (pid, read) => { Assert.AreEqual(System.Diagnostics.Process.GetCurrentProcess().Id, pid); return read(); };
             Host.ReadActiveApplication = name => { Assert.AreEqual("Excel.Application", name); return Application; };
+            // These managed getters return borrowed StdFont identities, not new COM getter acquisitions.
+            Host.ReleaseAcquired = value => { };
         }
         internal object Resolve() => Host.ResolveTarget(Project, Path);
         public void Dispose() { Owner.Dispose(); Marshal.FinalReleaseComObject(Project); Marshal.FinalReleaseComObject(OtherProject); }
@@ -31,8 +33,9 @@ namespace VBAi.Tests.Infrastructure
             public long Hwnd { get; set; }
             public List<WorkbookContract> Workbooks { get; } = new List<WorkbookContract>();
             public string Macro; public object[] Arguments; public int Invocations;
+            public bool ThrowOnRun;
             public object Run(string macro, object first = null, object second = null)
-            { Macro = macro; Arguments = new[] { first, second }; Invocations++; return "Native dispatch contract return"; }
+            { Macro = macro; Arguments = new[] { first, second }; Invocations++; if (ThrowOnRun) throw new InvalidOperationException("Native invocation outcome unavailable"); return "Native dispatch contract return"; }
         }
     }
 }

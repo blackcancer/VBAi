@@ -53,6 +53,13 @@ namespace VBAi.Tests.Unit
                 else if (phase == "preview") f.Operations.ImportPreview = _ => mutate();
                 else f.Operations.ImportOwnerPreflight = mutate;
                 var error = await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => f.Operations.ExecuteAsync("rollback", reviewed));
+                // Observe only after the existing operation has returned its refusal.
+                // Keep the original exact message, zero-import and recovery assertions below.
+                TestContext.WriteLine("Original refusal: " + error);
+                TestContext.WriteLine("Mutation callback count: " + boundaries);
+                var observed = f.Project.Capture();
+                TestContext.WriteLine("Files differing from frozen live capture: " + string.Join(",", observed.Changes(live)));
+                TestContext.WriteLine("Observed fake module: " + f.Host.VBComponents.Item("Module1").CodeModule.Text);
                 StringAssert.Contains(error.Message, UiText.Get("The Git/VBA state changed. Read git_status again before making changes."));
                 Assert.AreEqual(1, boundaries); Assert.AreEqual(0, f.Host.VBComponents.ImportAttempts);
                 Assert.IsTrue(f.Project.Capture().SameAs(live)); Assert.IsTrue(f.Repository.RecoveryPending);

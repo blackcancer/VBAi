@@ -9,7 +9,7 @@ namespace VBAi.Tests.Unit
     using System.Web.Script.Serialization;
     using VBAi;
 
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed class CodexToolQualificationTraceTests
     {

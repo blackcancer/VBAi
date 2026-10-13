@@ -8,39 +8,54 @@ namespace VBAi.Tests.Unit
 {
     public sealed partial class ChatGitModalDiagnosticTests
     {
+        /// <summary>Retains actual owner-context continuation phases for the isolated failed case.</summary>
+        public TestContext TestContext { get; set; }
+
         [STATestMethod, DataRow(false), DataRow(true)]
         public void OwnerDispatcherKeepsAsyncDiagnosticDisposalAndPostOnStaWithoutAmbientContext(bool fail)
         {
-            int thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
-            Action requireOwner = () =>
-            {
-                Assert.AreEqual(thread, System.Threading.Thread.CurrentThread.ManagedThreadId);
-                Assert.AreEqual(System.Threading.ApartmentState.STA, System.Threading.Thread.CurrentThread.GetApartmentState());
-            };
-            var o = new Observation(); var d = o.Begin(); var gate = new TaskCompletionSource<bool>();
-            var original = new InvalidOperationException("session failed"); int disposed = 0;
-            var previous = System.Threading.SynchronizationContext.Current; Task operation;
+            var continuationRows = new System.Collections.Concurrent.ConcurrentQueue<string>();
+            var continuationTrace = new VbeInspectionTrace(continuationRows.Enqueue);
+            var continuationScope = continuationTrace.Enter();
+            TestContext.WriteLine("Original ambient context: " + (System.Threading.SynchronizationContext.Current?.GetType().FullName ?? "null"));
             try
             {
-                System.Threading.SynchronizationContext.SetSynchronizationContext(null);
-                operation = VbeUiTask.Run(async () =>
+                int thread = System.Threading.Thread.CurrentThread.ManagedThreadId;
+                Action requireOwner = () =>
                 {
-                    try
+                    Assert.AreEqual(thread, System.Threading.Thread.CurrentThread.ManagedThreadId);
+                    Assert.AreEqual(System.Threading.ApartmentState.STA, System.Threading.Thread.CurrentThread.GetApartmentState());
+                };
+                var o = new Observation(); var d = o.Begin(); var gate = new TaskCompletionSource<bool>();
+                var original = new InvalidOperationException("session failed"); int disposed = 0;
+                var previous = System.Threading.SynchronizationContext.Current; Task operation;
+                try
+                {
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(null);
+                    operation = VbeUiTask.Run(async () =>
                     {
-                        await d.RunModalAsync(async () => { await gate.Task; requireOwner(); if (fail) throw original; },
-                            () => { requireOwner(); disposed++; });
-                    }
-                    catch (Exception error) { requireOwner(); Assert.AreSame(original, error); d.Fail(error); }
-                    finally { requireOwner(); d.SchedulePostHandler(callback => { requireOwner(); o.Post(callback); }); }
-                    return true;
-                });
-                Assert.IsNull(System.Threading.SynchronizationContext.Current);
+                        try
+                        {
+                            await d.RunModalAsync(async () => { await gate.Task; requireOwner(); if (fail) throw original; },
+                                () => { requireOwner(); disposed++; });
+                        }
+                        catch (Exception error) { requireOwner(); Assert.AreSame(original, error); d.Fail(error); }
+                        finally { requireOwner(); d.SchedulePostHandler(callback => { requireOwner(); o.Post(callback); }); }
+                        return true;
+                    });
+                    Assert.IsNull(System.Threading.SynchronizationContext.Current);
+                }
+                finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
+                Assert.AreEqual(0, disposed); Assert.IsFalse(operation.IsCompleted);
+                gate.SetResult(true); VBAi.Tests.Infrastructure.LlmBoundaryScope.Pump(operation);
+                Assert.AreEqual(1, disposed); Assert.AreEqual(fail ? 0 : 1, o.Posts);
+                if (!fail) { o.Callback(); Assert.IsTrue(d.Completed); }
             }
-            finally { System.Threading.SynchronizationContext.SetSynchronizationContext(previous); }
-            Assert.AreEqual(0, disposed); Assert.IsFalse(operation.IsCompleted);
-            gate.SetResult(true); VBAi.Tests.Infrastructure.LlmBoundaryScope.Pump(operation);
-            Assert.AreEqual(1, disposed); Assert.AreEqual(fail ? 0 : 1, o.Posts);
-            if (!fail) { o.Callback(); Assert.IsTrue(d.Completed); }
+            finally
+            {
+                continuationScope.Dispose();
+                TestContext.WriteLine("Original continuation phases:" + Environment.NewLine + string.Join(Environment.NewLine, continuationRows));
+            }
         }
 
         [DataTestMethod, DataRow(false), DataRow(true)]

@@ -11,7 +11,7 @@ using System.IO;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit"), DoNotParallelize]
+    [ToolBoundaryTestClass, TestCategory("Unit"), DoNotParallelize]
     public sealed class OwnerGitQualificationTests
     {
         [STATestMethod]

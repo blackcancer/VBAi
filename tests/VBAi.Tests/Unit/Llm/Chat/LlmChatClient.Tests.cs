@@ -11,12 +11,70 @@ using VBAi.Tests.Infrastructure;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class LlmChatClientCoverageTests
     {
         private const string Answer = "{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"answer\"}}]}";
         private static IList<object> History() { return new List<object> { new { role = "system", content = "Read before editing." }, new { role = "user", content = "request" } }; }
         private static object[] Tools() { return new object[] { new { type = "function", function = new { name = "read_module", description = "fixture", parameters = new { type = "object", properties = new { } } } } }; }
+
+        [DataTestMethod, DataRow(null, false), DataRow(null, true), DataRow("default", false), DataRow("default", true), DataRow("none", false), DataRow("none", true)]
+        public async Task OllamaReasoningSelectionIsFrozenAndSentOnlyWhenExplicit(string selected, bool streaming)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var provider = LlmBoundaryScope.Provider("Ollama");
+                var settings = new LlmSettings();
+                settings.SetReasoningEffort(provider, "model", "none");
+                var handler = new LlmHttpFixture();
+                handler.Replies.Enqueue(new LlmHttpFixture.Reply(streaming ? "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n" : Answer)
+                { MediaType = streaming ? "text/event-stream" : "application/json" });
+                using (var client = new LlmChatClient(provider, settings, "model", handler, new LlmModelCapabilities(reasoning: true), reasoningEffort: selected))
+                {
+                    settings.SetReasoningEffort(provider, "model", "injected-after-construction");
+                    if (streaming) client.TextDelta = _ => { };
+                    Assert.AreEqual("answer", (await client.CompleteAsync(History(), Tools()))["content"]);
+                }
+                var payload = LlmBoundaryScope.Object(new JavaScriptSerializer().DeserializeObject(handler.Bodies.Single()));
+                bool disabled = selected == null || selected == "none";
+                Assert.AreEqual(disabled, payload.ContainsKey("reasoning_effort"));
+                if (disabled) Assert.AreEqual("none", payload["reasoning_effort"]);
+                Assert.IsFalse(payload.ContainsKey("think"));
+                Assert.AreEqual("model", payload["model"]);
+            }
+        }
+
+        [TestMethod]
+        public void UnsupportedOllamaReasoningFailsBeforeCreatingTransportAndOtherProvidersIgnoreIt()
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                int constructed = 0;
+                LlmChatClient.HttpHandlerFactory = () => { constructed++; return new LlmHttpFixture(Answer); };
+                var provider = LlmBoundaryScope.Provider("Ollama");
+                foreach (var capabilities in new[] { LlmModelCapabilities.Unknown, new LlmModelCapabilities(reasoning: false), new LlmModelCapabilities(reasoning: true) })
+                    Assert.ThrowsException<InvalidOperationException>(() => new LlmChatClient(provider, new LlmSettings(), "model", null, capabilities, reasoningEffort: "high"));
+                Assert.ThrowsException<InvalidOperationException>(() => new LlmChatClient(provider, new LlmSettings(), "model", null, LlmModelCapabilities.Unknown, reasoningEffort: "none"));
+                Assert.AreEqual(0, constructed);
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("OpenAI API"), Settings(LlmBoundaryScope.Provider("OpenAI API")), "model", null, null, reasoningEffort: "unrelated")) { }
+                Assert.AreEqual(1, constructed);
+            }
+        }
+
+        [TestMethod]
+        public async Task OllamaCatalogueOffersReasoningControlsOnlyForExplicitThinkingModels()
+        {
+            var body = "{\"models\":[{\"name\":\"thinking\",\"capabilities\":[\"completion\",\"thinking\",\"tools\"]},{\"name\":\"plain\",\"capabilities\":[\"completion\"]},{\"name\":\"legacy\"}]}";
+            using (var scope = new LlmBoundaryScope())
+            {
+                var models = await LlmChatClient.ListModelsAsync(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), new LlmHttpFixture(body));
+                CollectionAssert.AreEqual(new[] { "default", "none" }, models[0].Efforts.Select(item => item.Id).ToArray());
+                Assert.AreEqual("default", models[0].DefaultEffort);
+                Assert.AreEqual((bool?)true, models[0].Capabilities.ToolCalling);
+                Assert.AreEqual(0, models[1].Efforts.Length); Assert.AreEqual((bool?)false, models[1].Capabilities.ToolCalling);
+                Assert.AreEqual(0, models[2].Efforts.Length); Assert.IsNull(models[2].Capabilities.ToolCalling);
+            }
+        }
         private static LlmSettings Settings(LlmProvider provider)
         {
             var settings = new LlmSettings(); settings.SetEndpoint(provider, provider.IsClaude ? "https://fixture.invalid/v1/messages" : "https://fixture.invalid/v1/chat/completions"); if (provider.RequiresKey) settings.SetKey(provider, "fixture-only-key"); return settings;
@@ -316,6 +374,218 @@ namespace VBAi.Tests.Unit
                 }
             }
         }
+
+        [DataTestMethod]
+        [DataRow(0L), DataRow(-1L), DataRow(2147483648L)]
+        public void InvalidRequestDeadlinesAreRejectedBeforeTransportConstruction(long milliseconds)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                int factories = 0;
+                LlmChatClient.HttpHandlerFactory = () => { factories++; return new LlmHttpFixture(Answer); };
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => new LlmChatClient(
+                    LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", null, null,
+                    TimeSpan.FromMilliseconds(milliseconds)));
+                Assert.AreEqual(0, factories);
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("Ollama"), DataRow("OpenAI API"), DataRow("Claude")]
+        public async Task HeaderDeadlineIsATimeoutAndDoesNotPoisonTheNextRequest(string name)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var provider = LlmBoundaryScope.Provider(name);
+                var handler = new DeadlineHeadersHandler(Answer);
+                using (var client = new LlmChatClient(provider, Settings(provider), "model", handler, null,
+                    TimeSpan.FromMilliseconds(150)))
+                {
+                    var error = await Assert.ThrowsExceptionAsync<TimeoutException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.IsInstanceOfType(error.InnerException, typeof(OperationCanceledException));
+                    StringAssert.Contains(error.Message, "No action was automatically retried.");
+                    Assert.AreEqual(1, handler.RequestCount);
+                    // The linked per-request deadline must never cancel the client lifetime.
+                    if (provider.IsClaude) handler.Answer = "{\"content\":[{\"type\":\"text\",\"text\":\"answer\"}],\"stop_reason\":\"end_turn\"}";
+                    Assert.AreEqual("answer", (await client.CompleteAsync(History(), Tools()))["content"]);
+                    Assert.AreEqual(2, handler.RequestCount);
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow("text/event-stream", "text", false)]
+        [DataRow("text/event-stream", "tool", true)]
+        [DataRow("application/json", "json", false)]
+        public async Task BodyDeadlineClosesTheStreamAndNeverCompletesPartialData(string mediaType, string prefix, bool disposedError)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var stream = new PendingHttpBody(prefix, disposedError);
+                var handler = new StreamBodyHandler(stream, HttpStatusCode.OK) { MediaType = mediaType };
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model",
+                    handler, null, TimeSpan.FromMilliseconds(150)))
+                {
+                    int text = 0, toolExecutions = 0;
+                    client.TextDelta = _ => text++;
+                    client.ToolHandler = (_, __) => { toolExecutions++; return Task.FromResult("unreachable"); };
+                    await Assert.ThrowsExceptionAsync<TimeoutException>(() => client.CompleteAsync(History(), Tools()));
+                    Assert.AreEqual(1, handler.RequestCount);
+                    Assert.IsTrue(stream.Disposed);
+                    Assert.AreEqual(prefix == "text" ? 1 : 0, text);
+                    Assert.AreEqual(0, toolExecutions);
+                    if (mediaType == "text/event-stream")
+                    {
+                        Assert.AreEqual("cancelled", client.LastStreamDiagnostics.Outcome);
+                        Assert.IsFalse(client.LastStreamDiagnostics.EndMarker);
+                    }
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false), DataRow(true)]
+        public async Task UserCancellationOfHeadersIsNotReportedAsADeadline(bool coincidingDeadline)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                LlmChatClient client = null;
+                var handler = new DeadlineHeadersHandler(Answer);
+                using (client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", handler,
+                    null, coincidingDeadline ? TimeSpan.FromMilliseconds(150) : TimeSpan.FromSeconds(120)))
+                {
+                    if (coincidingDeadline) handler.WhenCancelled = client.Dispose;
+                    var request = client.CompleteAsync(History(), Tools());
+                    await handler.Entered.Task;
+                    if (!coincidingDeadline) client.Dispose();
+                    Exception error = null;
+                    try { await request; } catch (Exception caught) { error = caught; }
+                    Assert.IsInstanceOfType(error, typeof(OperationCanceledException));
+                    Assert.IsFalse(error is TimeoutException);
+                    Assert.AreEqual(1, handler.RequestCount);
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false), DataRow(true)]
+        public async Task UserCancellationOfTheResponseBodyKeepsItsOriginalCancellation(bool disposedError)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var stream = new PendingHttpBody("text", disposedError);
+                var handler = new StreamBodyHandler(stream, HttpStatusCode.OK) { MediaType = "text/event-stream" };
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", handler))
+                {
+                    client.TextDelta = _ => { };
+                    var request = client.CompleteAsync(History(), Tools());
+                    await stream.Waiting.Task;
+                    client.Dispose();
+                    Exception error = null;
+                    try { await request; } catch (Exception caught) { error = caught; }
+                    Assert.IsNotNull(error);
+                    Assert.IsFalse(error is TimeoutException);
+                    Assert.IsTrue(stream.Disposed);
+                    Assert.AreEqual(1, handler.RequestCount);
+                }
+            }
+        }
+
+        [DataTestMethod]
+        [DataRow(false), DataRow(true)]
+        public async Task UnrelatedTransportCancellationAndProtocolErrorsAreNotReclassified(bool expired)
+        {
+            using (var scope = new LlmBoundaryScope())
+            {
+                var original = expired ? (Exception)new System.IO.InvalidDataException("fixture protocol failure") :
+                    new OperationCanceledException("fixture transport cancellation");
+                var handler = new DeadlineHeadersHandler(Answer) { Failure = original, WaitForDeadline = expired };
+                using (var client = new LlmChatClient(LlmBoundaryScope.Provider("Ollama"), new LlmSettings(), "model", handler,
+                    null, TimeSpan.FromMilliseconds(150)))
+                {
+                    Exception error = null;
+                    try { await client.CompleteAsync(History(), Tools()); } catch (Exception caught) { error = caught; }
+                    if (expired) Assert.AreSame(original, error);
+                    else Assert.IsInstanceOfType(error, typeof(OperationCanceledException));
+                    Assert.IsFalse(error is TimeoutException);
+                    Assert.AreEqual(1, handler.RequestCount);
+                }
+            }
+        }
+
+        private sealed class DeadlineHeadersHandler : HttpMessageHandler
+        {
+            internal string Answer;
+            internal int RequestCount;
+            internal Action WhenCancelled;
+            internal Exception Failure;
+            internal bool WaitForDeadline;
+            internal readonly TaskCompletionSource<bool> Entered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            internal DeadlineHeadersHandler(string answer) { Answer = answer; }
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken token)
+            {
+                RequestCount++;
+                Entered.TrySetResult(true);
+                if (RequestCount == 1)
+                {
+                    if (Failure != null && !WaitForDeadline) throw Failure;
+                    try { await Task.Delay(System.Threading.Timeout.Infinite, token).ConfigureAwait(false); }
+                    catch (OperationCanceledException)
+                    {
+                        WhenCancelled?.Invoke();
+                        if (Failure != null) throw Failure;
+                        throw;
+                    }
+                }
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Answer) };
+            }
+        }
+
+        private sealed class PendingHttpBody : System.IO.Stream
+        {
+            private readonly byte[] prefix;
+            private readonly bool disposedError;
+            private bool delivered;
+            private readonly TaskCompletionSource<int> pending = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+            internal readonly TaskCompletionSource<bool> Waiting = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            internal bool Disposed;
+            internal PendingHttpBody(string kind, bool disposedError)
+            {
+                this.disposedError = disposedError;
+                string content = kind == "text" ? "data: {\"choices\":[{\"delta\":{\"content\":\"partial\"}}]}\n\n" :
+                    kind == "tool" ? "data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"fixture\",\"type\":\"function\",\"function\":{\"name\":\"read_module\",\"arguments\":\"{\"}}]}}]}\n\n" :
+                    "{\"choices\":[";
+                prefix = System.Text.Encoding.UTF8.GetBytes(content);
+            }
+            public override bool CanRead => !Disposed;
+            public override bool CanSeek => false;
+            public override bool CanWrite => false;
+            public override long Length => throw new NotSupportedException();
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+            public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken token)
+            {
+                if (!delivered)
+                {
+                    delivered = true;
+                    Assert.IsTrue(count >= prefix.Length);
+                    Buffer.BlockCopy(prefix, 0, buffer, offset, prefix.Length);
+                    return Task.FromResult(prefix.Length);
+                }
+                Waiting.TrySetResult(true);
+                return pending.Task;
+            }
+            protected override void Dispose(bool disposing)
+            {
+                Disposed = true;
+                pending.TrySetException(disposedError ? (Exception)new ObjectDisposedException("fixture stream") : new System.IO.IOException("fixture connection closed"));
+                base.Dispose(disposing);
+            }
+            public override void Flush() => throw new NotSupportedException();
+            public override long Seek(long offset, System.IO.SeekOrigin origin) => throw new NotSupportedException();
+            public override void SetLength(long value) => throw new NotSupportedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
         [TestMethod]
         public async Task OversizedCompletionAndCatalogueBodiesStopBeforeTransportBuffering()
         {
@@ -363,12 +633,15 @@ namespace VBAi.Tests.Unit
             private readonly System.IO.Stream stream;
             private readonly HttpStatusCode status;
             internal Action BeforeResponse;
+            internal string MediaType = "application/json";
             internal int RequestCount;
             internal StreamBodyHandler(System.IO.Stream stream, HttpStatusCode status) { this.stream = stream; this.status = status; }
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
             {
                 RequestCount++; BeforeResponse?.Invoke();
-                return Task.FromResult(new HttpResponseMessage(status) { Content = new StreamContent(stream) });
+                var content = new StreamContent(stream);
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(MediaType);
+                return Task.FromResult(new HttpResponseMessage(status) { Content = content });
             }
         }
 
@@ -487,7 +760,7 @@ namespace VBAi.Tests.Unit
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class LlmChatClientCapabilityTests
     {
         private static readonly object[] ToolSchemas = { new { type = "function", function = new { name = "read_module", parameters = new { type = "object", properties = new { } } } } };

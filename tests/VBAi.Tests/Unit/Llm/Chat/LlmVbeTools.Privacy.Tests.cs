@@ -6,7 +6,7 @@ using System.Web.Script.Serialization;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed class LlmProjectPrivacyTests
     {
@@ -195,7 +195,7 @@ namespace VBAi.Tests.Unit
 }
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class ProjectPrivacyBoundaryTests
     {
         private readonly JavaScriptSerializer json = new JavaScriptSerializer();

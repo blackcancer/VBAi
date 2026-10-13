@@ -22,6 +22,21 @@ filter. Even local tests can create actual controls, WebView2 instances, synthet
 CLI processes and temporary Git repositories; use a suitable Windows desktop.
 An isolated build does not replace the registered add-in.
 
+`VBAi.Tests` uses [its runsettings file](VBAi.Tests/VBAi.Tests.runsettings) to run
+the Windows UI/COM bank in a dedicated x64 testhost process without a child
+AppDomain. This avoids requesting MSTest's child-domain unload for this native
+interop bank. Fixtures still disconnect owned providers, drain admitted work and
+observe their original threads and processes; the complete gate requires normal
+testhost exit and unchanged inputs. This configuration does not enable native-host
+opt-ins or skip tests. VSTest supports the setting through
+[`DisableAppDomain`](https://github.com/microsoft/vstest/blob/main/docs/configure.md).
+The project supplies it to `dotnet test` and Visual Studio. For a direct DLL run,
+pass `/Settings:<absolute-path-to-VBAi.Tests.runsettings>` explicitly. Test assets
+are resolved from the physical test assembly rather than the runner's directory.
+Ordinary test execution uses MTA. UI tests must select their dedicated STA or
+WinForms fixture attribute so a control-created synchronization context cannot
+leak onto the shared asynchronous-test thread.
+
 Packaged PowerShell controller tests run local scripts in child processes. A
 restricted default execution policy can reject them before their guard assertions
 run. Use an approved process-only policy for that test session when necessary;
@@ -103,6 +118,21 @@ VBA procedure-entry measurements, native-host qualification and synthetic UI.
 Native/provider opt-ins must be declared; do not enable every available flag.
 Skips and failed aggregates remain visible. No empty tests or metric-driven
 exclusions are accepted.
+
+When a gate includes test-process lifetime, retain the VSTest manager and host
+logs as well as the original runner's exit receipt. A successful runner exit and
+passing TRX do not prove normal test-host termination. A forced-cleanup warning,
+an unhandled host exception or an interrupted run leaves that lifecycle gate
+unqualified. Process absence proves cleanup, not the manner of exit.
+
+VSTest 18.7 reads `VSTEST_TESTHOST_SHUTDOWN_TIMEOUT` in its manager process; its
+default budget is 100 ms. For an explicitly declared shutdown investigation,
+set a bounded budget in the dedicated launcher before starting VSTest and retain
+that setting with the candidate plan. Do not change machine-wide settings or
+silently repeat a native mutation. See the
+[VSTest shutdown implementation](https://github.com/microsoft/vstest/blob/v18.7.0/src/Microsoft.TestPlatform.CrossPlatEngine/Client/ProxyOperationManager.cs#L298).
+Increasing the observation budget does not establish successful host shutdown;
+the recorded normal-exit evidence is still required.
 
 Reports, frozen plans, screenshots and binary manifests belong under `artifacts/`.
 Only reviewed synthetic evidence should be published. Record test counts once in

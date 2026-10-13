@@ -20,7 +20,11 @@ namespace VBAi.Tests.Unit
                     if (fault == "foreign child") surface.ProcessId = 999999;
                     if (fault == "reparented") { var enumerate = VbeDebugWindows.EnumChildWindows; VbeDebugWindows.EnumChildWindows = (h, c, p) => { bool result = enumerate(h, c, p); surface.Parent = IntPtr.Zero; return result; }; }
                     if (fault == "closed root") { var read = VbeDebugWindows.GetWindowThreadProcessId; int rootReads = 0; surface.ProcessId = 0; VbeDebugWindows.GetWindowThreadProcessId = (IntPtr h, out uint pid) => { uint result = read(h, out pid); if (h == root.Handle && ++rootReads > 1) pid = 0; return result; }; }
-                    if (fault == "empty toolbox") host.Invoke(h => System.Windows.Forms.Control.FromHandle(h).GetType().GetProperty("ControlBox").SetValue(System.Windows.Forms.Control.FromHandle(h), false));
+                    if (fault == "empty toolbox")
+                    {
+                        host.Invoke(h => System.Windows.Forms.Control.FromHandle(h).GetType().GetProperty("ControlBox").SetValue(System.Windows.Forms.Control.FromHandle(h), false));
+                        surface.Handle = host.Handle;
+                    }
                     if (fault == "detached parent") host.Root.Add(new AutomationNode { Kind = System.Windows.Automation.ControlType.TreeItem, Name = "detached" });
                     var probe = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe");
                     if (fault == "detached parent") probe.GetType().GetField("ReadParent", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).SetValue(probe, new Func<System.Windows.Automation.AutomationElement, System.Windows.Automation.AutomationElement>(e => null));
@@ -89,24 +93,22 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [Microsoft.VisualStudio.TestTools.UnitTesting.TestMethod]
-        public void NativeNavigationRejectsDuplicateOrOversizedUiaAndKeepsUnreadableNodeErrors()
+        [Microsoft.VisualStudio.TestTools.UnitTesting.DataTestMethod]
+        [DataRow("duplicate"), DataRow("oversized"), DataRow("pattern"), DataRow("name"), DataRow("toolbox name")]
+        public void NativeNavigationRejectsDuplicateOrOversizedUiaAndKeepsUnreadableNodeErrors(string fault)
         {
-            foreach (string fault in new[] { "duplicate", "oversized", "pattern", "name", "toolbox name" })
+            var provider = new AutomationNode { Kind = System.Windows.Automation.ControlType.Pane, Name = "root" };
+            var node = provider.Add(new AutomationNode { Kind = System.Windows.Automation.ControlType.TreeItem, Name = "node" }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
+            if (fault == "duplicate") { node.RuntimeIdentity = 500; provider.Add(new AutomationNode { Kind = node.Kind, Name = "duplicate", RuntimeIdentity = 500 }); }
+            if (fault == "oversized") for (int i = 0; i < 4096; i++) provider.Add(new AutomationNode { Kind = node.Kind, Name = "node" + i });
+            if (fault == "pattern") node.FailSelection = true;
+            if (fault.EndsWith("name", StringComparison.Ordinal)) node.FailName = true;
+            using (var host = new AutomationHost(provider)) using (var scene = new SystemScene())
             {
-                var provider = new AutomationNode { Kind = System.Windows.Automation.ControlType.Pane, Name = "root" };
-                var node = provider.Add(new AutomationNode { Kind = System.Windows.Automation.ControlType.TreeItem, Name = "node" }.With(System.Windows.Automation.SelectionItemPattern.Pattern));
-                if (fault == "duplicate") { node.RuntimeIdentity = 500; provider.Add(new AutomationNode { Kind = node.Kind, Name = "duplicate", RuntimeIdentity = 500 }); }
-                if (fault == "oversized") for (int i = 0; i < 4096; i++) provider.Add(new AutomationNode { Kind = node.Kind, Name = "node" + i });
-                if (fault == "pattern") node.FailSelection = true;
-                if (fault.EndsWith("name", StringComparison.Ordinal)) node.FailName = true;
-                using (var host = new AutomationHost(provider)) using (var scene = new SystemScene())
-                {
-                    var root = scene.Add("VBE", "wndclass_desked_gsk"); var surface = scene.Add("Toolbox", fault == "toolbox name" ? "VbaWindow" : "SysTreeView32", root); surface.Handle = host.Handle; scene.AccessibilityHResult = -1;
-                    var state = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe").Read(fault == "toolbox name" ? "toolbox" : "project");
-                    if (fault == "pattern") { Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(state.Available); Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(string.IsNullOrEmpty(state.Nodes[0].Error)); }
-                    else Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(state.Available, fault);
-                }
+                var root = scene.Add("VBE", "wndclass_desked_gsk"); var surface = scene.Add("Toolbox", fault == "toolbox name" ? "VbaWindow" : "SysTreeView32", root); surface.Handle = host.Handle; scene.AccessibilityHResult = -1;
+                var state = Native<VbeDebugWindows.INavigationSurfaceProbe>("NativeNavigationSurfaceProbe").Read(fault == "toolbox name" ? "toolbox" : "project");
+                if (fault == "pattern") { Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(state.Available); Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(string.IsNullOrEmpty(state.Nodes[0].Error)); }
+                else Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsFalse(state.Available, fault);
             }
         }
     }

@@ -15,11 +15,37 @@ using VBAi.Tests.Integration;
 namespace VBAi.Tests.Unit
 {
     /// <summary>Detached synthetic capture contracts only; none of these cases opens a socket or host.</summary>
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class OllamaSyntheticWireCaptureTests
     {
         private static readonly Uri Endpoint = new Uri("http://127.0.0.1:52541/v1/chat/completions");
         private static string Root => Path.Combine(Path.GetTempPath(), "VBAiSyntheticWire-" + Guid.NewGuid().ToString("N"));
+
+        [DataTestMethod]
+        [DataRow("cancellation-recovery"), DataRow("synthetic-tool-roundtrip"), DataRow("synthetic-host-context")]
+        public void DeclaredHeadlessScopesCaptureSyntheticEvidenceAndRestoreTheFactory(string fixture)
+        {
+            var sink = new Sink();
+            Func<HttpMessageHandler> original = () => new HttpClientHandler { AllowAutoRedirect = false };
+            Func<HttpMessageHandler> current = original;
+            var values = new Dictionary<string, string>
+            {
+                [OllamaSyntheticWireCapture.HeadlessFlag] = "1",
+                [OllamaSyntheticWireCapture.HeadlessResults] = Root,
+                [OllamaQualificationEndpoint.EnvironmentName] = Endpoint.AbsoluteUri
+            };
+            using (var scope = OllamaSyntheticWireCapture.FromEnvironment(false, fixture,
+                name => values.TryGetValue(name, out var value) ? value : null,
+                () => current, value => current = value, sink.Write))
+            {
+                Assert.IsTrue(scope.Enabled);
+                scope.RecordArguments("scope-contract", "{}", new Dictionary<string, object>());
+                var receipt = sink.Files.Single(pair => pair.Key.EndsWith(".json") && !pair.Key.EndsWith("-summary.json"));
+                StringAssert.Contains(Encoding.UTF8.GetString(receipt.Value), "\"Fixture\":\"" + fixture + "\"");
+                Assert.AreNotSame(original, current);
+            }
+            Assert.AreSame(original, current);
+        }
 
         [TestMethod]
         public void DisabledScopeDoesNotReadFactoryValidateConfigurationOrCreateEvidence()

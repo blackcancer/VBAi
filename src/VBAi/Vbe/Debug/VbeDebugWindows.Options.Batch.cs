@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -71,7 +71,7 @@ namespace VBAi
                     string category = change.Query;
                     if (!targets.Add(change.Pane + "\0" + (category ?? "") + "\0" + change.Property))
                         throw new ArgumentException("The batch contains a duplicate native option target.");
-                    var selected = RequireOptionChangeControl(controls, change.Property);
+                    var selected = RequireOptionChangeControl(controls, change, "planning", planned.Count + 1);
                     object value = ValidateEditableOption(change.Pane, selected, change.Value);
                     planned.Add(new PlannedOptionChange { Change = change, TabIndex = index, Type = selected.Type,
                         Before = selected.Value, WriteValue = value, Expected = OptionChangeExpected(selected.Type, value) });
@@ -79,7 +79,7 @@ namespace VBAi
                 foreach (var plan in planned)
                 {
                     SelectOptionChangeCategory(native, dialog, plan.TabIndex, plan.Change);
-                    var selected = RequireOptionChangeControl(native.Controls(dialog, plan.TabIndex), plan.Change.Property);
+                    var selected = RequireOptionChangeControl(native.Controls(dialog, plan.TabIndex), plan.Change, "staging", planned.IndexOf(plan) + 1);
                     if (selected.Type != plan.Type || !Equals(selected.Value, plan.Before) ||
                         !Equals(ValidateEditableOption(plan.Change.Pane, selected, plan.WriteValue), plan.WriteValue))
                         throw new InvalidOperationException("A planned native option changed before its staged write; Cancel will be requested.");
@@ -96,7 +96,7 @@ namespace VBAi
                     if (!string.IsNullOrEmpty(plan.Change.Query) && controls.Count(control => control.Type == "ControlType.List" &&
                         IsCodeColorList(control.Name) && Equals(control.Value, plan.Change.Query)) != 1)
                         throw new InvalidOperationException("The native Code Colors category changed during batch readback; Cancel will be requested.");
-                    var observed = RequireOptionChangeControl(controls, plan.Change.Property);
+                    var observed = RequireOptionChangeControl(controls, plan.Change, "verification", planned.IndexOf(plan) + 1);
                     if (observed.Type != plan.Type || !Equals(observed.Value, plan.Expected))
                         throw new InvalidOperationException("The complete native Options batch did not retain its requested values; Cancel will be requested.");
                 }
@@ -136,12 +136,19 @@ namespace VBAi
         }
 
         /// <summary>Requires one visible, enabled, supported and readable exact target.</summary>
-        private static OptionsControl RequireOptionChangeControl(IList<OptionsControl> controls, string property)
+        private static OptionsControl RequireOptionChangeControl(IList<OptionsControl> controls, VbeOptionChange change, string phase, int index)
         {
-            var matches = controls.Where(control => control.Visible && control.Enabled && control.Name == property &&
+            var matches = controls.Where(control => control.Visible && control.Enabled && control.Name == change.Property &&
                 new[] { "ControlType.CheckBox", "ControlType.RadioButton", "ControlType.Edit", "ControlType.ComboBox", "ControlType.List" }.Contains(control.Type)).ToArray();
             if (matches.Length != 1 || !string.IsNullOrEmpty(matches[0].Error))
-                throw new InvalidOperationException("The exact option is absent, ambiguous or unreadable.");
+            {
+                string candidates = string.Join("; ", controls.Where(control => control.Name == change.Property)
+                    .Select(control => "Type=" + control.Type + ",Visible=" + control.Visible +
+                        ",Enabled=" + control.Enabled + ",Error=" + (control.Error ?? "")));
+                throw new InvalidOperationException("The exact option is absent, ambiguous or unreadable. Phase='" + phase +
+                    "'; Index=" + index + "; Tab='" + change.Pane + "'; Property='" + change.Property +
+                    "'; Category='" + (change.Query ?? "") + "'; Candidates=[" + candidates + "].");
+            }
             return matches[0];
         }
 

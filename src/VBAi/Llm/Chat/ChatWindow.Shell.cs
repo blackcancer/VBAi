@@ -22,13 +22,11 @@ namespace VBAi
         {
             SetHistoryVisible(false);
             memoryPanel.Visible = false;
-            historyLayout.RowStyles[7].Height = 0;
-            contextPanel.Visible = false;
+            historyLayout.RowStyles[historyLayout.GetRow(memoryPanel)].Height = 0;
+            workspace.SetExtensionVisible(contextPanel, false);
             contextChips.Visible = false;
             activityBar.Visible = false;
             jumpToLatest.Visible = false;
-            transcriptPlaceholder.Visible = false;
-            promptPlaceholder.Visible = false;
             foreach (var mode in Enum.GetValues(typeof(ChatMode))) modePicker.Items.Add(mode);
             modePicker.FormattingEnabled = true;
             modePicker.Format += (sender, args) => { if (args.ListItem is ChatMode) args.Value = UiText.Get(args.ListItem.ToString() == "Discussion" ? "Chat" : args.ListItem.ToString()); };
@@ -85,7 +83,7 @@ namespace VBAi
             {
                 transcriptPanel.Visible = !visible;
                 historyPanel.Visible = visible;
-                history.Symbol = visible ? UiSymbol.Previous : UiSymbol.History;
+                history.Symbol = SharedGlyph(visible ? UiSymbol.Previous : UiSymbol.History);
                 history.Text = UiText.Get(visible ? "Back to conversation" : "☰ Chats");
                 history.AccessibleName = history.Text;
                 toolTips.SetToolTip(history, history.Text);
@@ -251,8 +249,11 @@ namespace VBAi
         private void MemoryToggle_Click(object sender, EventArgs e)
         {
             memoryPanel.Visible = !memoryPanel.Visible;
-            historyLayout.RowStyles[7].Height = memoryPanel.Visible ? 226 : 0;
-            historyLayout.MinimumSize = new System.Drawing.Size(0, memoryPanel.Visible ? 536 : 310);
+            var memoryRow = historyLayout.RowStyles[historyLayout.GetRow(memoryPanel)];
+            memoryRow.SizeType = memoryPanel.Visible ? System.Windows.Forms.SizeType.AutoSize : System.Windows.Forms.SizeType.Absolute;
+            if (!memoryPanel.Visible) memoryRow.Height = 0;
+            // The common Designer measures its own editor; old fixed form heights do not transfer.
+            historyLayout.MinimumSize = System.Drawing.Size.Empty;
         }
 
         /// <summary>Affiche ou masque l’aperçu du contexte et le recalcule à l’ouverture.</summary>
@@ -260,7 +261,7 @@ namespace VBAi
         /// <param name="e">Données de l’événement.</param>
         private void ContextToggle_Click(object sender, EventArgs e)
         {
-            contextPanel.Visible = !contextPanel.Visible;
+            workspace.SetExtensionVisible(contextPanel, !contextPanel.Visible);
             if (contextPanel.Visible) RefreshContextPreview();
         }
 

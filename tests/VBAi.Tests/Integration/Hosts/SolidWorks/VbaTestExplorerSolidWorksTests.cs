@@ -15,7 +15,7 @@ using System.Web.Script.Serialization;
 
 namespace VBAi.Tests.Integration
 {
-    /// <summary>Qualifies only an explicitly selected, preloaded SOLIDWORKS process and an already opened blank disposable SWP.</summary>
+    /// <summary>Qualifies an explicitly selected SOLIDWORKS process and an owned disposable SWP, blank or exactly prepared by this fixture.</summary>
     [TestClass, TestCategory("VbaTestSolidWorks"), DoNotParallelize]
     public sealed class VbaTestExplorerSolidWorksTests
     {
@@ -29,9 +29,24 @@ namespace VBAi.Tests.Integration
 
         [TestMethod, Timeout(240000)]
         public void PreloadedBlankMacroRunsVerifiedBatchSingleReportsAndExplorer()
+            => ExecuteSelectedMacro("VBAi_RUN_SOLIDWORKS_TEST_EXPLORER", FixtureStage.EditAndRestore);
+
+        /// <summary>Installs and warms exact fixture source before an explicit guarded save; the harness must seal bytes after normal host exit.</summary>
+        [TestMethod, Timeout(300000)]
+        public void PrepareSavedTestExplorerFixture()
+            => ExecuteSelectedMacro("VBAi_PREPARE_SOLIDWORKS_TEST_EXPLORER", FixtureStage.PrepareSaved);
+
+        /// <summary>Runs only the exact saved fixture without source edits, installation, removal or an implicit save.</summary>
+        [TestMethod, Timeout(240000)]
+        public void PreloadedSavedMacroRunsVerifiedReportsWithoutSourceMutation()
+            => ExecuteSelectedMacro("VBAi_RUN_SOLIDWORKS_SAVED_TEST_EXPLORER", FixtureStage.RunSaved);
+
+        private enum FixtureStage { EditAndRestore, PrepareSaved, RunSaved }
+
+        private static void ExecuteSelectedMacro(string optIn, FixtureStage stage)
         {
-            if (Environment.GetEnvironmentVariable("VBAi_RUN_SOLIDWORKS_TEST_EXPLORER") != "1")
-                Assert.Inconclusive("SOLIDWORKS Test Explorer qualification requires VBAi_RUN_SOLIDWORKS_TEST_EXPLORER=1.");
+            if (Environment.GetEnvironmentVariable(optIn) != "1")
+                Assert.Inconclusive("SOLIDWORKS Test Explorer qualification requires " + optIn + "=1.");
             string suppliedPid = Environment.GetEnvironmentVariable("VBAi_SOLIDWORKS_PID");
             string suppliedPath = Environment.GetEnvironmentVariable("VBAi_SOLIDWORKS_TEST_MACRO");
             if (string.IsNullOrWhiteSpace(suppliedPid) || string.IsNullOrWhiteSpace(suppliedPath))
@@ -53,11 +68,17 @@ namespace VBAi.Tests.Integration
                 _ = process.Handle; // Retain the exact selected process identity without activating COM.
                 var fixture = new Fixture(process, path, root);
                 Exception primary = null, cleanup = null;
-                try { fixture.Preflight(revision, sourceStatus); fixture.Run(); }
+                try
+                {
+                    fixture.Preflight(revision, sourceStatus, stage == FixtureStage.RunSaved);
+                    if (stage == FixtureStage.RunSaved) fixture.RunSaved();
+                    else if (stage == FixtureStage.PrepareSaved) fixture.PrepareSaved();
+                    else fixture.Run();
+                }
                 catch (Exception error) { primary = error; }
                 finally
                 {
-                    try { fixture.RestoreOwnedModules(); }
+                    try { if (stage != FixtureStage.PrepareSaved) fixture.RestoreOwnedModules(); }
                     catch (Exception error) { cleanup = error; }
                     try
                     {
@@ -65,6 +86,8 @@ namespace VBAi.Tests.Integration
                         {
                             PID = pid,
                             Macro = path,
+                            Stage = stage.ToString(),
+                            PreparedFixtureSaved = fixture.PreparedFixtureSaved,
                             PrimaryError = primary?.ToString(),
                             CleanupError = cleanup?.ToString(),
                             fixture.Unsettled,
@@ -93,6 +116,7 @@ namespace VBAi.Tests.Integration
             private string referencesVersion, diskHash;
             private bool baselineVerified;
             internal bool Unsettled { get; private set; }
+            internal bool PreparedFixtureSaved { get; private set; }
             internal Fixture(Process process, string path, string root) { this.process = process; this.path = path; this.root = root; }
             internal void Save(string name, object value) => File.WriteAllText(Path.Combine(root, name),
                 new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 }.Serialize(value), Utf8);
@@ -102,7 +126,7 @@ namespace VBAi.Tests.Integration
                 Assert.IsFalse(process.HasExited, "Selected SOLIDWORKS exited; no operation may be sent to a replacement PID.");
                 var request = new Dictionary<string, object> { ["Command"] = command, ["Project"] = path };
                 for (int index = 0; index < pairs.Length; index += 2) request[(string)pairs[index]] = pairs[index + 1];
-                bool mutation = new[] { "create_module", "replace_lines", "install_vba_test_support", "remove_component" }.Contains(command);
+                bool mutation = new[] { "create_module", "replace_lines", "install_vba_test_support", "remove_component", "save_host_document" }.Contains(command);
                 if (mutation || command == "run_vba_tests") Unsettled = true;
                 var response = VbeBridgeClient.Read("VBAi." + process.Id, request, 65000, connectionAttempts: 1);
                 Assert.IsNotNull(response, "Bridge connection unavailable; no request was resent.");
@@ -127,7 +151,7 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(true, response["Ok"], command + ": " + Convert.ToString(response["Error"]));
                 return ((object[])response["Data"]).Select(VbeBridgeClient.Object).ToArray();
             }
-            internal void Preflight(string revision, string sourceStatus)
+            internal void Preflight(string revision, string sourceStatus, bool prepared)
             {
                 var status = Data("status");
                 Assert.AreEqual(process.Id, Convert.ToInt32(status["HostProcessId"]));
@@ -162,10 +186,19 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(true, persistence["ProjectSaved"], "Save the blank disposable macro before qualification.");
                 baseline = ReadSources();
                 Assert.IsTrue(baseline.Length >= 1 && baseline.All(module => Convert.ToInt32(module["Type"]) == 1 || (Convert.ToInt32(module["Type"]) == 100 && Equals(module["Name"], "ThisLibrary"))), "Only blank standard modules and the empty native ThisLibrary component are accepted.");
-                foreach (var module in baseline)
+                foreach (var module in baseline.Where(item => !prepared || !IsFixtureModule((string)item["Name"])))
                     Assert.IsTrue(Regex.IsMatch((string)module["Code"], @"\A\s*(?:Option\s+Explicit\s*)?\z", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant),
                         "The selected macro must be blank: no procedures, comments or arbitrary existing code may be executed or edited.");
-                Assert.IsFalse(baseline.Any(module => (string)module["Name"] == ModuleName || (string)module["Name"] == VbaTestRuntimeSource.ModuleName));
+                if (prepared)
+                {
+                    Assert.AreEqual(Canonical(Source), Canonical((string)baseline.Single(module => Equals(module["Name"], ModuleName))["Code"]));
+                    var discovery = Data("discover_vba_tests");
+                    Catalogue(discovery);
+                    string support = (string)baseline.Single(module => Equals(module["Name"], VbaTestRuntimeSource.ModuleName))["Code"];
+                    Assert.AreEqual(Canonical(VbaTestRuntimeSource.Generate(Review(discovery))), Canonical(support));
+                    Assert.IsTrue(string.IsNullOrEmpty(discovery["ExecutionUnavailableReason"] as string));
+                }
+                else Assert.IsFalse(baseline.Any(module => IsFixtureModule((string)module["Name"])));
                 var references = Data("list_references");
                 referencesVersion = (string)references["Version"];
                 Save("baseline-sources.json", baseline); Save("baseline-references.json", references); Save("baseline-project.json", properties);
@@ -189,6 +222,28 @@ namespace VBAi.Tests.Integration
 
             internal void Run()
             {
+                InstallFixture();
+                var single = RunReady();
+                string version = (string)single["revision"];
+                var original = Data("read_module", "Module", ModuleName);
+                var tests = Catalogue(Data("discover_vba_tests"));
+                var passed = tests.Single(test => (string)test["Procedure"] == "ABooleanPass");
+                Replace(((string)original["Code"]).TrimEnd() + "\r\n' stale-source qualification\r\n");
+                var changed = Data("read_module", "Module", ModuleName);
+                var refusal = Response("run_vba_tests", "ExpectedProjectVersion", version, "ExpectedMode", 2, "Items", new[] { (string)passed["Id"] });
+                Save("stale-refusal.json", refusal);
+                Assert.AreEqual(false, refusal["Ok"]); StringAssert.Contains(Convert.ToString(refusal["Error"]), "ExpectedProjectVersion");
+                AssertSource(changed);
+                var historical = Data("vba_test_run_status", "Query", single["run"], "Action", "compact");
+                Save("stale-history.json", historical);
+                Assert.AreEqual(true, historical["Stale"]); Assert.AreEqual(false, historical["Pending"]);
+                Assert.AreEqual("Completed", historical["State"]);
+            }
+
+            private static bool IsFixtureModule(string name) => name == ModuleName || name == VbaTestRuntimeSource.ModuleName;
+
+            private void InstallFixture()
+            {
                 Data("create_module", "Module", ModuleName, "ExpectedMode", 2);
                 owned[ModuleName] = (string)Data("read_module", "Module", ModuleName)["Sha256"];
                 Replace(Source);
@@ -206,8 +261,13 @@ namespace VBAi.Tests.Integration
                 Assert.AreEqual(true, installed["Applied"]);
                 owned[VbaTestRuntimeSource.ModuleName] = (string)Data("read_module", "Module", VbaTestRuntimeSource.ModuleName)["Sha256"];
                 Assert.AreEqual(Canonical(support), Canonical((string)Data("read_module", "Module", VbaTestRuntimeSource.ModuleName)["Code"]));
+            }
+
+            private IDictionary<string, object> RunReady()
+            {
+                var original = Data("read_module", "Module", ModuleName);
                 var catalog = Data("discover_vba_tests");
-                tests = Catalogue(catalog);
+                var tests = Catalogue(catalog);
                 Save("discovery-ready.json", catalog);
                 Assert.IsTrue(string.IsNullOrEmpty(catalog["ExecutionUnavailableReason"] as string), Convert.ToString(catalog["ExecutionUnavailableReason"]));
                 string version = (string)catalog["ExpectedProjectVersion"];
@@ -228,16 +288,51 @@ namespace VBAi.Tests.Integration
                 WindowRect bounds; Assert.IsTrue(GetWindowRect(hwnd, out bounds));
                 Assert.IsTrue(bounds.Right > bounds.Left && bounds.Bottom > bounds.Top);
                 Save("explorer-window.json", new { Hwnd = hwnd.ToInt64(), PID = owner, bounds.Left, bounds.Top, bounds.Right, bounds.Bottom });
-                Replace(((string)original["Code"]).TrimEnd() + "\r\n' stale-source qualification\r\n");
-                var changed = Data("read_module", "Module", ModuleName);
-                var refusal = Response("run_vba_tests", "ExpectedProjectVersion", version, "ExpectedMode", 2, "Items", new[] { (string)passed["Id"] });
-                Save("stale-refusal.json", refusal);
-                Assert.AreEqual(false, refusal["Ok"]); StringAssert.Contains(Convert.ToString(refusal["Error"]), "ExpectedProjectVersion");
-                AssertSource(changed);
-                var historical = Data("vba_test_run_status", "Query", single["run"], "Action", "compact");
-                Save("stale-history.json", historical);
-                Assert.AreEqual(true, historical["Stale"]); Assert.AreEqual(false, historical["Pending"]);
-                Assert.AreEqual("Completed", historical["State"]);
+                return single;
+            }
+
+            internal void PrepareSaved()
+            {
+                InstallFixture();
+                RunReady(); // Compile and exercise the exact dispatcher before saving it.
+                var before = ReadSources();
+                string version = (string)Data("project_properties")["Version"];
+                var saved = Data("save_host_document", "ExpectedHostPath", path, "ExpectedProjectVersion", version);
+                Save("prepared-save.json", saved);
+                Assert.IsFalse(Unsettled, "The explicit fixture save was uncertain; do not invoke it again.");
+                var persistence = Data("project_persistence_status");
+                Assert.AreEqual(true, persistence["ProjectSaved"]);
+                Assert.AreEqual(referencesVersion, Data("list_references")["Version"]);
+                AssertSameSources(before, ReadSources());
+                PreparedFixtureSaved = true;
+                Save("prepared-fixture.json", new
+                {
+                    Macro = path, Sources = before, ReferencesVersion = referencesVersion,
+                    DiskSha256BeforeNormalExit = HashFile(path), ProjectSaved = true,
+                    RequiresNormalExitAndIndependentReopen = true, QualificationAccepted = false
+                });
+            }
+
+            internal void RunSaved()
+            {
+                RunReady();
+                AssertSameSources(baseline, ReadSources());
+                Assert.AreEqual(true, Data("project_persistence_status")["ProjectSaved"], "Execution dirtied the prepared project.");
+                Assert.AreEqual(diskHash, HashFile(path), "The saved fixture changed during execution.");
+                Save("saved-run.json", new { SourceMutation = false, ImplicitSave = false, SourcesVerified = true,
+                    RequiresOriginalNormalExitByteOracle = true, QualificationAccepted = false });
+            }
+
+            private static void AssertSameSources(IDictionary<string, object>[] expected, IDictionary<string, object>[] actual)
+            {
+                CollectionAssert.AreEquivalent(expected.Select(item => (string)item["Name"]).ToArray(), actual.Select(item => (string)item["Name"]).ToArray());
+                foreach (var module in expected)
+                {
+                    var observed = actual.Single(item => Equals(item["Name"], module["Name"]));
+                    Assert.AreEqual(module["Type"], observed["Type"]);
+                    Assert.AreEqual(module["Sha256"], observed["Sha256"]);
+                    Assert.AreEqual(module["Code"], observed["Code"]);
+                }
             }
             private void Replace(string source)
             {

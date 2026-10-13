@@ -43,6 +43,26 @@ namespace VBAi.Desktop.Helper
                comboDesktopMatches && listDesktopMatches &&
                (listClass == "ComboLBox" || listClass != null && listClass.Contains("LISTBOX"));
 
+        /// <summary>Distinguishes an owned popup still opening from any change in its native identity.</summary>
+        public enum NativeListReadiness { Rejected, Waiting, Ready }
+
+        /// <summary>Allows observation of hidden owned lists; only visible lists can supply a selectable item.</summary>
+        public static NativeListReadiness AssessNativeList(int comboPid, uint comboTid, int listPid, uint listTid,
+            int expectedPid, uint expectedTid, string listClass, bool listVisible,
+            bool comboDesktopMatches, bool listDesktopMatches)
+        {
+            if (!MatchesNativeList(comboPid, comboTid, listPid, listTid, expectedPid, expectedTid,
+                listClass, true, comboDesktopMatches, listDesktopMatches)) return NativeListReadiness.Rejected;
+            return listVisible ? NativeListReadiness.Ready : NativeListReadiness.Waiting;
+        }
+
+        /// <summary>A popup replacement cannot become an observation retry against another native control.</summary>
+        public static void RequireOriginalNativeList(IntPtr original, IntPtr observed)
+        {
+            if (original == IntPtr.Zero || observed != original)
+                throw new InvalidOperationException("Original native combo dropdown handle changed.");
+        }
+
         private static AutomationElement[] RawNodes(AutomationElement root)
         {
             var found = new List<AutomationElement>();
@@ -72,12 +92,15 @@ namespace VBAi.Desktop.Helper
                 string.IsNullOrEmpty(expectedDesktop) || desktopName == null || observation == null)
                 throw new InvalidOperationException("Exact native combo discovery requires an owned identity and desktop.");
             var clock = Stopwatch.StartNew(); object last = null;
+            IntPtr originalList = IntPtr.Zero;
             while (clock.Elapsed < TimeSpan.FromSeconds(3))
             {
                 var info = new ComboBoxInfo { Size = (uint)Marshal.SizeOf(typeof(ComboBoxInfo)) };
                 if (!GetComboBoxInfo(combo, ref info) || info.Combo != combo || info.List == IntPtr.Zero ||
                     !IsWindow(combo) || !IsWindow(info.List))
                     throw new InvalidOperationException("Native combo/list HWND relation unavailable after expansion.");
+                if (originalList == IntPtr.Zero) originalList = info.List;
+                RequireOriginalNativeList(originalList, info.List);
                 uint comboPid, listPid;
                 uint comboTid = GetWindowThreadProcessId(combo, out comboPid);
                 uint listTid = GetWindowThreadProcessId(info.List, out listPid);
@@ -86,8 +109,9 @@ namespace VBAi.Desktop.Helper
                 bool visible = IsWindowVisible(info.List);
                 bool comboDesktop = string.Equals(desktopName(comboTid), expectedDesktop, StringComparison.OrdinalIgnoreCase);
                 bool listDesktop = string.Equals(desktopName(listTid), expectedDesktop, StringComparison.OrdinalIgnoreCase);
-                if (!MatchesNativeList((int)comboPid, comboTid, (int)listPid, listTid,
-                    expectedPid, expectedTid, nativeClass, visible, comboDesktop, listDesktop))
+                var readiness = AssessNativeList((int)comboPid, comboTid, (int)listPid, listTid,
+                    expectedPid, expectedTid, nativeClass, visible, comboDesktop, listDesktop);
+                if (readiness == NativeListReadiness.Rejected)
                 {
                     observation(new
                     {
@@ -105,6 +129,13 @@ namespace VBAi.Desktop.Helper
                         ActionDelivered = false
                     });
                     throw new InvalidOperationException("Native combo/list owner, class or private desktop changed.");
+                }
+                if (readiness == NativeListReadiness.Waiting)
+                {
+                    last = new { ComboHandle = combo.ToInt64(), ListHandle = info.List.ToInt64(),
+                        ListClass = nativeClass, ListVisible = false, AwaitingOriginalPopup = true };
+                    Thread.Sleep(50); // Observe the original expansion; never expand or select again.
+                    continue;
                 }
                 var root = AutomationElement.FromHandle(info.List);
                 var nodes = RawNodes(root);

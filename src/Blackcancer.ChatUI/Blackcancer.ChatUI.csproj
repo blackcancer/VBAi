@@ -1,0 +1,59 @@
+<Project>
+  <!-- This source-vendored module has the same build contract in every host. -->
+  <PropertyGroup>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Blackcancer.ChatUI</RootNamespace>
+    <AssemblyName>Blackcancer.ChatUI</AssemblyName>
+    <Version>0.1.0</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <InformationalVersion>0.1.0</InformationalVersion>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <Company>Blackcancer</Company>
+    <Product>Blackcancer.ChatUI</Product>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <Platforms>AnyCPU;x64</Platforms>
+    <Deterministic>true</Deterministic>
+    <RegisterForComInterop>false</RegisterForComInterop>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Markdig" Version="0.37.0" />
+    <PackageReference Include="System.Resources.Extensions" Version="8.0.0" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="WindowsFormsIntegration" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Design" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Views\ChatWorkspaceView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatInputView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatTextView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatDisclosureView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatMarkdownView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatCodeBlockView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatTableView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatTableInspectorForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Views\ChatReadingOptionsForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Views\ChatReferenceInspectorForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Views\ChatReferenceComparisonForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Views\ChatReferencePickerForm.cs"><SubType>Form</SubType></Compile>
+    <Compile Update="Views\ChatPendingMessageListView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\ChatPendingMessageCardView.cs"><SubType>UserControl</SubType></Compile>
+    <Compile Update="Views\*.Designer.cs"><DependentUpon>$([System.String]::Copy('%(Filename)').Replace('.Designer','')).cs</DependentUpon></Compile>
+    <EmbeddedResource Update="Views\*.resx"><DependentUpon>$([System.String]::Copy('%(Filename)').Split('.')[0]).cs</DependentUpon></EmbeddedResource>
+  </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

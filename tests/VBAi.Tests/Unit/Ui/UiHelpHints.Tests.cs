@@ -14,6 +14,26 @@ namespace VBAi.Tests.Unit
     public sealed class UiHelpHintsTests
     {
         [STATestMethod]
+        [DataRow("projectPicker", "Select the project bound to this conversation and its VBE operations.")]
+        [DataRow("historySearchTextBox", "Filter this document's conversation history by text.")]
+        [DataRow("showArchivedCheckBox", "Include archived conversations so they can be reopened or restored.")]
+        [DataRow("memoryToggleButton", "Show the local notes associated with this document.")]
+        [DataRow("attachMemoryCheckBox", "Include these notes in the next message sent to the selected provider.")]
+        [DataRow("saveMemoryButton", "Save the edited notes locally for this document.")]
+        [DataRow("contextPreview", "Read the exact context prepared for the next message; refresh it after changing referenced code.")]
+        [DataRow("attachFileButton", "Choose a file to attach to the current conversation.")]
+        public void SharedWorkspaceControlsHaveUsageHintsWithoutCreatingGlobalNameAliases(string name, string key)
+        {
+            using (var workspace = new Blackcancer.ChatUI.Views.ChatWorkspaceView())
+            using (var unrelated = new Control { Name = name })
+            {
+                var control = Descendants(workspace).Single(value => value.Name == name);
+                Assert.AreEqual(UiText.Get(key), UiHelpHints.ForControl(control));
+                Assert.IsNull(UiHelpHints.ForControl(unrelated), "These rules describe a workspace control, not every control with that name.");
+            }
+        }
+
+        [STATestMethod]
         public void UnknownAndUnnamedControlsDoNotAcquireInventedHints()
         {
             using (var control = new Button())

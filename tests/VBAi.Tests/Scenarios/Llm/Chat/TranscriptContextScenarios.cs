@@ -10,7 +10,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class ChatWindowStateTests
     {
         /// <summary>Ajoute une entrée Markdown et vérifie l’affichage structuré du transcript et des pièces jointes.</summary>
-        [TestMethod]
         [STATestMethod]
         public void MarkdownTranscriptAndContextPreviewRetainStructuredEntries()
         {

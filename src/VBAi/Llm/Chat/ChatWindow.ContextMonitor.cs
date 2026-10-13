@@ -20,6 +20,9 @@ namespace VBAi
         /// <summary>Indique qu’un événement ou un sondage impose de rafraîchir le contexte affiché.</summary>
         private bool contextDirty;
 
+        /// <summary>Prevents COM message pumping from entering another context tick on the owning STA.</summary>
+        private bool contextMonitorReading;
+
         /// <summary>Abonnement aux événements d’ajout et retrait de références.</summary>
         private VbeReferenceEvents referenceEvents;
 
@@ -33,32 +36,63 @@ namespace VBAi
             projectEvents = new VbeCollectionEvents(() => contextDirty = true, false);
             componentEvents = new VbeCollectionEvents(() => contextDirty = true, true);
             referenceEvents = new VbeReferenceEvents(() => contextDirty = true);
-            contextMonitor = new VbeContextMonitor(request => ReadHost(session, request));
+            contextMonitor = new VbeContextMonitor(request => ReadMonitoredHost(session, request));
             contextMonitor.Changed += () => contextDirty = true;
             contextMonitorTimer = new Timer(components) { Interval = 1500 };
-            contextMonitorTimer.Tick += (sender, args) =>
-            {
-                if (busy || loadingSession || !Visible || IsDisposed) return;
-                try
-                {
-                    string project = (scopePicker.SelectedItem as MacroScope)?.Project;
-                    ObserveCollectionEvents(projectEvents, session.ProjectsEventSource);
-                    ObserveCollectionEvents(componentEvents, () => session.ComponentsEventSource(project));
-                    try { referenceEvents.Observe(session.ReferenceEventSource(project)); }
-                    catch (Exception error)
-                    {
-                        referenceEvents.Observe(null);
-                        LoadLog.Write("Reference events unavailable; polling continues: " + error.Message);
-                    }
-                    // A project-removed event must refresh the scope before polling
-                    // its old selector; otherwise that failed read starves refresh forever.
-                    RefreshDirtyContext(session);
-                    contextMonitor.Step((scopePicker.SelectedItem as MacroScope)?.Project);
-                    RefreshDirtyContext(session);
-                }
-                catch (Exception error) { LoadLog.Write("Context refresh deferred: " + error.Message); }
-            };
+            contextMonitorTimer.Tick += (sender, args) => PollContext(session);
             contextMonitorTimer.Start();
+        }
+
+        /// <summary>Whether passive context reads can run without interrupting a turn, scope change or disposal.</summary>
+        private bool ContextPollingAvailable => !VbeDebugInspection.IsActive && !busy && !loadingSession && !loadingScope &&
+            !runtimeDisposed && !IsDisposed && !Disposing && Visible;
+
+        /// <summary>Revalidates passive polling after a previous COM read pumped a busy, hidden or disposal transition.</summary>
+        private Response ReadMonitoredHost(VbeSession session, Request request) => ContextPollingAvailable
+            ? ReadHost(session, request) : Response.Failure("Context polling was deferred because the chat state changed.");
+
+        /// <summary>Runs one context tick; suspends its timer across COM calls and always releases its reentry guard.</summary>
+        /// <param name="session">Original session owned by this chat window.</param>
+        private void PollContext(VbeSession session)
+        {
+            if (contextMonitorReading || !ContextPollingAvailable) return;
+            contextMonitorReading = true;
+            contextMonitorTimer.Stop();
+            try
+            {
+                // Reconcile a removed project before acquiring any source tied
+                // to its old selector. A failed refresh leaves the event dirty.
+                RefreshDirtyContext(session);
+                if (!ContextPollingAvailable || contextDirty) return;
+                ObserveCollectionEvents(projectEvents, session.ProjectsEventSource);
+                if (!ContextPollingAvailable) return;
+                // Collection attachment itself can pump a project-change event.
+                RefreshDirtyContext(session);
+                if (!ContextPollingAvailable || contextDirty) return;
+                string project = (scopePicker.SelectedItem as MacroScope)?.Project;
+                ObserveCollectionEvents(componentEvents, () => session.ComponentsEventSource(project));
+                if (!ContextPollingAvailable) return;
+                try { referenceEvents.Observe(session.ReferenceEventSource(project)); }
+                catch (Exception error)
+                {
+                    if (!ContextPollingAvailable) return;
+                    referenceEvents.Observe(null);
+                    LoadLog.Write("Reference events unavailable; polling continues: " + error.Message);
+                }
+                if (!ContextPollingAvailable) return;
+                // A removed project must reconcile the scope before its old
+                // selector is polled. Events raised during reads stay dirty.
+                RefreshDirtyContext(session);
+                if (!ContextPollingAvailable) return;
+                contextMonitor.Step((scopePicker.SelectedItem as MacroScope)?.Project);
+                if (ContextPollingAvailable) RefreshDirtyContext(session);
+            }
+            catch (Exception error) { LoadLog.Write("Context refresh deferred: " + error.Message); }
+            finally
+            {
+                contextMonitorReading = false;
+                if (!runtimeDisposed && !IsDisposed && !Disposing) contextMonitorTimer.Start();
+            }
         }
 
         /// <summary>Actualise la collection COM observée et maintient le sondage si les événements natifs sont indisponibles.</summary>
@@ -93,7 +127,7 @@ namespace VBAi
         /// <returns><see langword="true"/> si la liste a pu être relue et actualisée.</returns>
         private bool RefreshAvailableScopes(VbeSession session)
         {
-            if (busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed) return false;
+            if (VbeDebugInspection.IsActive || busy || loadingSession || loadingScope || runtimeDisposed || IsDisposed) return false;
             Response response = ReadHost(session, new Request { Command = "list_projects" });
             if (!response.Ok) return false;
             if (!(json.DeserializeObject(json.Serialize(response.Data)) is object[] entries)) return false;

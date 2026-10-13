@@ -184,6 +184,9 @@ namespace VBAi
             /// <summary>Reads the existing PowerPoint window HWND for current-process ownership checks.</summary>
             internal Func<object, IntPtr> ReadPowerPointWindow = PowerPointWindow.Read;
 
+            /// <summary>Balances references acquired by ownership and catalogue reads, never borrowed caller objects.</summary>
+            internal Action<object> ReleaseAcquiredReference = VbaTestComReferences.Release;
+
             /// <summary>Classifies the current executable without attaching to or launching another host.</summary>
             /// <returns>Canonical host name for a recognized Office process, or null otherwise.</returns>
             private static string CurrentHostKind() => RecognizeOtherHost(Process.GetCurrentProcess().ProcessName);
@@ -200,10 +203,14 @@ namespace VBAi
             /// <returns>Application Office existante vérifiée comme appartenant au processus courant.</returns>
             public object Application()
             {
-                if (HostKind == null) throw new InvalidOperationException("Only the current Word, PowerPoint, Access or Publisher process is supported.");
+                // Executable classification and the current process ID cannot change
+                // during one lookup. Read them once, rather than once per HWND.
+                string hostKind = HostKind;
+                uint currentProcessId = (uint)CurrentProcessId;
+                if (hostKind == null) throw new InvalidOperationException("Only the current Word, PowerPoint, Access or Publisher process is supported.");
                 string rotObservation = "No verified ROT entry.";
-                var progIds = new List<string> { HostKind + ".Application" };
-                if (HostKind == "Access")
+                var progIds = new List<string> { hostKind + ".Application" };
+                if (hostKind == "Access")
                 {
                     int major = ReadHostMajorVersion();
                     if (major > 0 && major <= 100) progIds.Add("Access.Application." + major);
@@ -211,25 +218,28 @@ namespace VBAi
                 foreach (string progId in progIds)
                     try
                     {
-                        object registered = ReadActiveApplication(progId);
-                        uint owner = ApplicationProcessId(registered);
-                        if (owner == (uint)CurrentProcessId) return registered;
-                        rotObservation = "ROT entry " + progId + " has owner PID " + owner + "; expected " + CurrentProcessId + ".";
+                        using (var references = new VbaTestComReferences(ReleaseAcquiredReference))
+                        {
+                            object registered = references.Add(ReadActiveApplication(progId));
+                            uint owner = ApplicationProcessId(registered);
+                            if (owner == currentProcessId) { references.Transfer(registered); return registered; }
+                            rotObservation = "ROT entry " + progId + " has owner PID " + owner + "; expected " + currentProcessId + ".";
+                        }
                     }
                     catch (COMException error) { rotObservation = "ROT lookup " + progId + " failed with HRESULT 0x" + unchecked((uint)error.ErrorCode).ToString("X8") + "."; }
                     catch (RuntimeBinderException) { rotObservation = "ROT entry " + progId + " did not expose the required native owner window."; }
-                if (HostKind == "Access" || HostKind == "Publisher")
-                    throw new InvalidOperationException("No running " + HostKind + " application was verified as belonging to this VBE PID. " + rotObservation);
+                if (hostKind == "Access" || hostKind == "Publisher")
+                    throw new InvalidOperationException("No running " + hostKind + " application was verified as belonging to this VBE PID. " + rotObservation);
                 var windows = new List<IntPtr>();
                 VbeDebugWindows.EnumWindows((parent, parameter) =>
                 {
                     VbeDebugWindows.GetWindowThreadProcessId(parent, out uint owner);
-                    if (owner != (uint)CurrentProcessId) return true;
+                    if (owner != currentProcessId) return true;
                     VbeDebugWindows.EnumChildWindows(parent, (child, childParameter) =>
                     {
                         VbeDebugWindows.GetWindowThreadProcessId(child, out owner);
                         var name = new StringBuilder(256); VbeDebugWindows.GetClassName(child, name, name.Capacity);
-                        if (owner == (uint)CurrentProcessId && name.ToString() == (HostKind == "Word" ? "_WwG" : "paneClassDC")) windows.Add(child);
+                        if (owner == currentProcessId && name.ToString() == (hostKind == "Word" ? "_WwG" : "paneClassDC")) windows.Add(child);
                         return true;
                     }, IntPtr.Zero);
                     return true;
@@ -239,14 +249,42 @@ namespace VBAi
                     try
                     {
                         Guid dispatch = new Guid("00020400-0000-0000-C000-000000000046");
-                        if (VbeDebugWindows.AccessibleObjectFromWindow(window, 0xFFFFFFF0, ref dispatch, out object native) != 0 || native == null) continue;
-                        object application = ((dynamic)native).Application;
-                        if (ApplicationProcessId(application) == (uint)CurrentProcessId) return application;
+                        int hr = VbeDebugWindows.AccessibleObjectFromWindow(window, 0xFFFFFFF0, ref dispatch, out object native);
+                        object application = ReadNativeWindowApplication(hr, native);
+                        if (application != null) return application;
                     }
                     catch (COMException) { }
                     catch (RuntimeBinderException) { }
                 }
                 throw new InvalidOperationException("No running Office application was verified as belonging to this VBE PID.");
+            }
+
+            /// <summary>Reads only the live Word document path; source revision checks do not need save-state properties.</summary>
+            /// <param name="document">Matched document whose project and process are verified by the caller before and after this read.</param>
+            /// <returns>Current full document path, or an empty value when the document is unsaved.</returns>
+            internal string ReadWordDocumentPath(object document)
+            {
+                if (HostKind != "Word") throw new InvalidOperationException("Only a matched Word document supports this path read.");
+                if (document == null) throw new ArgumentNullException(nameof(document));
+                dynamic item = document;
+                return string.IsNullOrWhiteSpace((string)item.Path) ? "" : (string)item.FullName;
+            }
+
+            /// <summary>Consumes a NativeOM acquisition and transfers only a verified current-process application.</summary>
+            /// <param name="result">HRESULT from the PID-scoped native window lookup.</param>
+            /// <param name="native">Owned NativeOM getter acquisition, including a non-null object returned with a failed HRESULT.</param>
+            /// <returns>One application acquisition owned by the caller, or null after all refused acquisitions are released.</returns>
+            internal object ReadNativeWindowApplication(int result, object native)
+            {
+                using (var references = new VbaTestComReferences(ReleaseAcquiredReference))
+                {
+                    references.Add(native);
+                    if (result != 0 || native == null) return null;
+                    object application = references.Add((object)((dynamic)native).Application);
+                    if (ApplicationProcessId(application) != (uint)CurrentProcessId) return null;
+                    references.Transfer(application);
+                    return application;
+                }
             }
 
             /// <summary>Verifies the native application window owner without selecting a document.</summary>
@@ -256,15 +294,29 @@ namespace VBAi
             {
                 if (HostKind == "PowerPoint") return ReadOwner(ReadPowerPointWindow(application));
                 if (HostKind == "Access") return ReadOwner(new IntPtr(Convert.ToInt64(((dynamic)application).hWndAccessApp())));
-                if (HostKind == "Publisher") return ReadOwner(new IntPtr(Convert.ToInt64(((dynamic)application).ActiveWindow.hWnd)));
-                if (HostKind != "Word") return 0;
-                uint result = 0; int count = 0;
-                foreach (dynamic window in ((dynamic)application).Windows)
+                if (HostKind == "Publisher")
                 {
-                    if (++count > 1000) throw new InvalidOperationException("Unexpected Word window count.");
-                    uint observed = ReadOwner(new IntPtr(Convert.ToInt64(window.Hwnd)));
-                    if (observed == 0 || (result != 0 && result != observed)) return 0;
-                    result = observed;
+                    using (var references = new VbaTestComReferences(ReleaseAcquiredReference))
+                    {
+                        object window = references.Add((object)((dynamic)application).ActiveWindow);
+                        return ReadOwner(new IntPtr(Convert.ToInt64(((dynamic)window).hWnd)));
+                    }
+                }
+                if (HostKind != "Word") return 0;
+                uint result = 0;
+                using (var references = new VbaTestComReferences(ReleaseAcquiredReference))
+                {
+                    object windows = references.Add((object)((dynamic)application).Windows);
+                    int count = ReadBoundedOfficeCollectionCount(windows);
+                    for (int index = 1; index <= count; ++index)
+                    {
+                        dynamic window = references.Add((object)((dynamic)windows).Item(index));
+                        uint observed = ReadOwner(new IntPtr(Convert.ToInt64(window.Hwnd)));
+                        if (observed == 0 || (result != 0 && result != observed)) return 0;
+                        result = observed;
+                    }
+                    if (ReadBoundedOfficeCollectionCount(windows) != count)
+                        throw new InvalidOperationException("The Word window catalogue changed during its ownership read.");
                 }
                 return result;
             }
@@ -282,10 +334,32 @@ namespace VBAi
             {
                 var result = new List<object>();
                 if (HostKind == "Access") { result.Add((object)((dynamic)application).CurrentProject); return result; }
-                System.Collections.IEnumerable documents = HostKind == "PowerPoint" ? (System.Collections.IEnumerable)((dynamic)application).Presentations : (System.Collections.IEnumerable)((dynamic)application).Documents;
-                foreach (object document in documents)
-                { if (result.Count >= 1000) throw new InvalidOperationException("Unexpected Office document count."); result.Add(document); }
+                using (var references = new VbaTestComReferences(ReleaseAcquiredReference))
+                using (var returned = new VbaTestComReferences(ReleaseAcquiredReference))
+                {
+                    object documents = references.Add(HostKind == "PowerPoint" ? (object)((dynamic)application).Presentations : (object)((dynamic)application).Documents);
+                    int count = ReadBoundedOfficeCollectionCount(documents);
+                    for (int index = 1; index <= count; ++index)
+                    {
+                        object document = returned.Add((object)((dynamic)documents).Item(index));
+                        result.Add(document);
+                    }
+                    if (ReadBoundedOfficeCollectionCount(documents) != count)
+                        throw new InvalidOperationException("The Office document catalogue changed during its read.");
+                    // Release traversal objects before giving document acquisitions to the caller.
+                    references.Dispose();
+                    foreach (object document in result) returned.Transfer(document);
+                }
                 return result;
+            }
+
+            /// <summary>Bounds Office Count/Item traversal without acquiring an implicit COM enumerator.</summary>
+            /// <param name="collection">Collection already owned by the current read scope.</param>
+            private static int ReadBoundedOfficeCollectionCount(object collection)
+            {
+                int count = Convert.ToInt32(((dynamic)collection).Count);
+                if (count < 0 || count > 1000) throw new InvalidOperationException("Unexpected Office collection count.");
+                return count;
             }
 
             /// <summary>Lit l'objet projet attaché au document.</summary>

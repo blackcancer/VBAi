@@ -64,13 +64,17 @@ namespace VBAi
         /// <value>Description de l’option.</value>
         public string Description { get; private set; }
 
+        /// <summary>Optional localized presentation; the provider identifier remains unchanged.</summary>
+        private readonly string displayLabel;
+
         /// <summary>Crée un niveau avec son identifiant fournisseur et sa description.</summary>
         /// <param name="id">Identifiant utilisé par le fournisseur.</param>
         /// <param name="description">Explication affichée.</param>
-        public LlmEffortOption(string id, string description) { Id = id; Description = description; }
+        /// <param name="displayLabel">Optional localized label for controls without named effort levels.</param>
+        public LlmEffortOption(string id, string description, string displayLabel = null) { Id = id; Description = description; this.displayLabel = displayLabel; }
 
         /// <summary>Retourne l’identifiant pour l’affichage.</summary>
         /// <returns>Identifiant du niveau.</returns>
-        public override string ToString() { return Id; }
+        public override string ToString() { return displayLabel ?? Id; }
     }
 }

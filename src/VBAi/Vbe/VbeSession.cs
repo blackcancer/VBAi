@@ -29,11 +29,14 @@ namespace VBAi
         /// <returns>Adaptateur lié aux objets COM du projet et du composant trouvé.</returns>
         internal IEditorModule ResolveEditorModule(string projectName, string moduleName)
         {
-            dynamic project = GetProject(projectName);
             if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Module is required.");
-            foreach (dynamic component in project.VBComponents)
-                if (string.Equals((string)component.Name, moduleName, StringComparison.OrdinalIgnoreCase))
-                    return new EditorVbeModule((object)vbe, (object)project, (object)component);
+            using (var references = new VbaTestComReferences())
+            {
+                dynamic project = references.Add((object)GetProject(projectName));
+                foreach (object component in references.Items((object)project.VBComponents))
+                    if (string.Equals((string)((dynamic)component).Name, moduleName, StringComparison.OrdinalIgnoreCase))
+                        return EditorVbeModule.TransferBindings((object)vbe, (object)project, component, references);
+            }
             throw new InvalidOperationException("Module not found: " + moduleName);
         }
 
@@ -349,7 +352,7 @@ namespace VBAi
                 case "vba_test_coverage":
                 case "show_vba_test_explorer":
                     if (TestExplorer == null) return Response.Failure("The session test explorer is unavailable.");
-                    return Response.Success(TestExplorer.Command(request, TestExecutionGuard));
+                    return TestExplorer.CommandResponse(request, TestExecutionGuard);
                 case "status":
                     return Response.Success(new
                     {
@@ -836,9 +839,17 @@ namespace VBAi
         /// <summary>Énumère les projets VBE et leurs noms de fichier accessibles.</summary>
         /// <returns>Projets visibles avec nom, chemin accessible et mode.</returns>
         private object ListProjects()
+            => ReadProjectInventory((object)vbe);
+
+        /// <summary>Copies project metadata and releases every collection, enumerator and project acquisition.</summary>
+        /// <param name="editor">Borrowed editor whose projects are inspected on its owning thread.</param>
+        /// <param name="releaseAcquired">Optional acquisition-release boundary for ownership regressions.</param>
+        /// <returns>Detached metadata; no native project reference escapes the inventory.</returns>
+        internal static object ReadProjectInventory(object editor, Action<object> releaseAcquired = null)
         {
             var result = new List<object>();
-            foreach (dynamic project in vbe.VBProjects)
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            foreach (dynamic project in references.Items((object)((dynamic)editor).VBProjects))
             {
                 string fileName = null;
                 int? fileNameErrorHResult = null;
@@ -871,16 +882,32 @@ namespace VBAi
         /// <param name="projectName">Nom du projet VBE ciblé.</param>
         /// <returns>Composants du projet avec type et nombre de lignes.</returns>
         private object ListModules(string projectName)
+            => ReadComponentInventory(() => (object)GetProject(projectName));
+
+        /// <summary>Copies component metadata while balancing project, collection, enumerator, component and code-module acquisitions.</summary>
+        /// <param name="resolveProject">Acquires one project reference on the current VBE owner thread.</param>
+        /// <param name="releaseAcquired">Optional release boundary for ownership regressions.</param>
+        /// <returns>Detached component names, types and line counts.</returns>
+        internal static object ReadComponentInventory(Func<object> resolveProject, Action<object> releaseAcquired = null)
         {
-            dynamic project = GetProject(projectName);
+            if (resolveProject == null) throw new ArgumentNullException(nameof(resolveProject));
             var result = new List<object>();
-            foreach (dynamic component in project.VBComponents)
-                result.Add(new
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                dynamic project = references.Add(resolveProject());
+                foreach (dynamic component in references.Items((object)project.VBComponents))
                 {
-                    Name = (string)component.Name,
-                    Type = (int)component.Type,
-                    Lines = (int)component.CodeModule.CountOfLines
-                });
+                    string name = (string)component.Name;
+                    int type = (int)component.Type;
+                    dynamic module = references.Add((object)component.CodeModule);
+                    result.Add(new
+                    {
+                        Name = name,
+                        Type = type,
+                        Lines = (int)module.CountOfLines
+                    });
+                }
+            }
             return result;
         }
 
@@ -889,10 +916,31 @@ namespace VBAi
         /// <param name="moduleName">Nom du module VBA ciblé.</param>
         /// <returns>Code du module et empreinte SHA-256.</returns>
         private object ReadModule(string projectName, string moduleName)
+            => ReadModuleSnapshot(() => (object)GetProject(projectName), projectName, moduleName);
+
+        /// <summary>Reads native code and balances every acquired reference without transferring an RCW into the result.</summary>
+        /// <param name="resolveProject">Acquires one project reference on the current VBE owner thread.</param>
+        /// <param name="projectName">Exact caller selector retained in the detached result.</param>
+        /// <param name="moduleName">Component name matched case-insensitively, as in the native module resolver.</param>
+        /// <param name="releaseAcquired">Optional release boundary for ownership regressions.</param>
+        /// <returns>Detached project selector, module selector, native source and SHA-256 revision.</returns>
+        internal static object ReadModuleSnapshot(Func<object> resolveProject, string projectName, string moduleName,
+            Action<object> releaseAcquired = null)
         {
-            dynamic module = GetModule(projectName, moduleName);
-            string code = GetCode(module);
-            return new { Project = projectName, Module = moduleName, Code = code, Sha256 = Hash(code) };
+            if (string.IsNullOrWhiteSpace(moduleName)) throw new ArgumentException("Module is required.");
+            if (resolveProject == null) throw new ArgumentNullException(nameof(resolveProject));
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                dynamic project = references.Add(resolveProject());
+                foreach (dynamic component in references.Items((object)project.VBComponents))
+                {
+                    if (!string.Equals((string)component.Name, moduleName, StringComparison.OrdinalIgnoreCase)) continue;
+                    dynamic module = references.Add((object)component.CodeModule);
+                    string code = GetCode(module);
+                    return new { Project = projectName, Module = moduleName, Code = code, Sha256 = Hash(code) };
+                }
+            }
+            throw new InvalidOperationException("Module not found: " + moduleName);
         }
 
         /// <summary>Données sérialisables d’une référence de projet VBA.</summary>
@@ -932,19 +980,47 @@ namespace VBAi
         /// <param name="projectName">Nom du projet VBE ciblé.</param>
         /// <returns>Références du projet et empreinte de leur état.</returns>
         private object ListReferences(string projectName)
+            => ReadReferenceInventory(() => (object)GetProject(projectName), projectName);
+
+        /// <summary>Copies reference metadata while balancing the resolved project and every collection/item getter.</summary>
+        /// <param name="resolveProject">Resolves one acquired project on its owning thread.</param>
+        /// <param name="projectName">Original project selector retained in the detached response.</param>
+        /// <param name="releaseAcquired">Optional acquisition-release boundary for isolated ownership tests.</param>
+        /// <param name="indexedCollection">Optional classification boundary for one-based collection tests.</param>
+        /// <returns>Detached reference identities and their stable revision; no native object escapes.</returns>
+        internal static object ReadReferenceInventory(Func<object> resolveProject, string projectName,
+            Action<object> releaseAcquired = null, Func<object, bool> indexedCollection = null)
         {
-            dynamic project = GetProject(projectName);
-            var result = ReadReferences(project);
-            return new { Project = projectName, Version = ReferencesVersion(result), References = result };
+            if (resolveProject == null) throw new ArgumentNullException(nameof(resolveProject));
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                object project = references.Add(resolveProject());
+                var result = ReadReferenceItems(project, releaseAcquired, indexedCollection);
+                // Keep the private ReferenceInfo type out of the anonymous result's
+                // generic arguments so dynamic callers can read its public fields.
+                return new { Project = projectName, Version = ReferencesVersion(result), References = (object)result };
+            }
         }
 
         /// <summary>Lit les identités et états disponibles des références d’un projet.</summary>
         /// <param name="project">Projet VBE dont les références sont lues.</param>
         /// <returns>Références accessibles sous forme sérialisable.</returns>
         private static List<ReferenceInfo> ReadReferences(dynamic project)
+            => ReadReferenceItems((object)project);
+
+        /// <summary>Reads a borrowed project's reference collection without acquiring a hidden COM enumerator.</summary>
+        /// <param name="project">Borrowed project; this method does not release the caller's acquisition.</param>
+        /// <param name="releaseAcquired">Optional acquisition-release boundary.</param>
+        /// <param name="indexedCollection">Optional one-based collection classification boundary.</param>
+        /// <returns>Scalar reference metadata, with inaccessible optional fields left empty.</returns>
+        private static List<ReferenceInfo> ReadReferenceItems(object project,
+            Action<object> releaseAcquired = null, Func<object, bool> indexedCollection = null)
         {
             var result = new List<ReferenceInfo>();
-            foreach (dynamic reference in project.References)
+            using (var references = indexedCollection == null
+                ? new VbaTestComReferences(releaseAcquired)
+                : new VbaTestComReferences(releaseAcquired, indexedCollection))
+            foreach (dynamic reference in references.Items((object)((dynamic)project).References))
             {
                 bool broken = (bool)reference.IsBroken;
                 string name = null;

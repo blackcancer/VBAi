@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- SPDX-License-Identifier: MPL-2.0; ported native chat layout and localization resources. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="fileAttachmentDialog.Filter" xml:space="preserve">
+    <value>सभी फ़ाइलें (*.*)|*.*</value>
+  </data>
+  <data name="fileAttachmentDialog.Title" xml:space="preserve">
+    <value>अगले संदेश में फ़ाइलें संलग्न करें</value>
+  </data>
+  <data name="modelSummary.AccessibleName" xml:space="preserve">
+    <value>मॉडल और तर्क स्तर</value>
+  </data>
+  <data name="modelSummary.Text" xml:space="preserve">
+    <value>मॉडल</value>
+  </data>
+  <data name="effortPicker.AccessibleName" xml:space="preserve">
+    <value>तर्क स्तर</value>
+  </data>
+  <data name="configureMenuItem.Text" xml:space="preserve">
+    <value>सेटिंग…</value>
+  </data>
+  <data name="sessionTitle.Text" xml:space="preserve">
+    <value>application के लिए आपका AI एजेंट</value>
+  </data>
+  <data name="newChatButton.AccessibleName" xml:space="preserve">
+    <value>नई बातचीत</value>
+  </data>
+  <data name="newChatButton.Text" xml:space="preserve">
+    <value>नई बातचीत</value>
+  </data>
+  <data name="settingsButton.AccessibleName" xml:space="preserve">
+    <value>बातचीत के विकल्प</value>
+  </data>
+  <data name="settingsButton.Text" xml:space="preserve">
+    <value>विकल्प</value>
+  </data>
+  <data name="scopePicker.AccessibleName" xml:space="preserve">
+    <value>बातचीत का दायरा</value>
+  </data>
+  <data name="historyButton.Text" xml:space="preserve">
+    <value>बातचीत का इतिहास</value>
+  </data>
+  <data name="projectPicker.AccessibleName" xml:space="preserve">
+    <value>प्रोजेक्ट</value>
+  </data>
+  <data name="createProjectButton.Text" xml:space="preserve">
+    <value>प्रोजेक्ट बनाएँ</value>
+  </data>
+  <data name="welcomeTitle.Text" xml:space="preserve">
+    <value>आप क्या बनाना चाहेंगे?</value>
+  </data>
+  <data name="welcomeBody.Text" xml:space="preserve">
+    <value>अपने मॉडल पर चर्चा करें, सक्रिय दस्तावेज़ जाँचें या कोई कार्य बताएँ।
+
+शुरू करने के लिए सेटिंग में प्रदाता और मॉडल चुनें।</value>
+  </data>
+  <data name="historyLabel.Text" xml:space="preserve">
+    <value>बातचीत</value>
+  </data>
+  <data name="historyEmptyLabel.Text" xml:space="preserve">
+    <value>इस दायरे में कोई बातचीत नहीं है।</value>
+  </data>
+  <data name="closeHistoryButton.Text" xml:space="preserve">
+    <value>इतिहास बंद करें</value>
+  </data>
+  <data name="historySearchTextBox.AccessibleName" xml:space="preserve">
+    <value>बातचीत खोजें</value>
+  </data>
+  <data name="showArchivedCheckBox.AccessibleName" xml:space="preserve">
+    <value>संग्रहीत दिखाएँ</value>
+  </data>
+  <data name="showArchivedCheckBox.Text" xml:space="preserve">
+    <value>संग्रहीत दिखाएँ</value>
+  </data>
+  <data name="chatTitleEditor.AccessibleName" xml:space="preserve">
+    <value>बातचीत का शीर्षक</value>
+  </data>
+  <data name="renameChatButton.AccessibleName" xml:space="preserve">
+    <value>नाम बदलें</value>
+  </data>
+  <data name="renameChatButton.Text" xml:space="preserve">
+    <value>नाम बदलें</value>
+  </data>
+  <data name="archiveChatButton.AccessibleName" xml:space="preserve">
+    <value>संग्रहीत करें</value>
+  </data>
+  <data name="archiveChatButton.Text" xml:space="preserve">
+    <value>संग्रहीत करें</value>
+  </data>
+  <data name="pinChatButton.AccessibleName" xml:space="preserve">
+    <value>पिन करें</value>
+  </data>
+  <data name="pinChatButton.Text" xml:space="preserve">
+    <value>पिन करें</value>
+  </data>
+  <data name="exportChatButton.AccessibleName" xml:space="preserve">
+    <value>निर्यात करें</value>
+  </data>
+  <data name="exportChatButton.Text" xml:space="preserve">
+    <value>निर्यात करें</value>
+  </data>
+  <data name="deleteChatButton.AccessibleName" xml:space="preserve">
+    <value>बातचीत हटाएँ</value>
+  </data>
+  <data name="deleteChatButton.Text" xml:space="preserve">
+    <value>बातचीत हटाएँ</value>
+  </data>
+  <data name="memoryToggleButton.AccessibleName" xml:space="preserve">
+    <value>प्रोजेक्ट की स्मृति</value>
+  </data>
+  <data name="memoryToggleButton.Text" xml:space="preserve">
+    <value>प्रोजेक्ट की स्मृति</value>
+  </data>
+  <data name="memoryPanel.AccessibleName" xml:space="preserve">
+    <value>प्रोजेक्ट की स्मृति</value>
+  </data>
+  <data name="attachMemoryCheckBox.AccessibleName" xml:space="preserve">
+    <value>सहेजी गई स्मृति अगले संदेश में संलग्न करें</value>
+  </data>
+  <data name="attachMemoryCheckBox.Text" xml:space="preserve">
+    <value>सहेजी गई स्मृति अगले संदेश में संलग्न करें</value>
+  </data>
+  <data name="saveMemoryButton.AccessibleName" xml:space="preserve">
+    <value>स्मृति सहेजें</value>
+  </data>
+  <data name="saveMemoryButton.Text" xml:space="preserve">
+    <value>स्मृति सहेजें</value>
+  </data>
+  <data name="memoryPanel.Text" xml:space="preserve">
+    <value>प्रोजेक्ट की स्मृति</value>
+  </data>
+  <data name="inputTextBox.AccessibleName" xml:space="preserve">
+    <value>संदेश</value>
+  </data>
+  <data name="attachContextButton.AccessibleName" xml:space="preserve">
+    <value>CAD संदर्भ संलग्न करें</value>
+  </data>
+  <data name="attachDocumentMenuItem.Text" xml:space="preserve">
+    <value>सक्रिय दस्तावेज़</value>
+  </data>
+  <data name="attachSelectionMenuItem.Text" xml:space="preserve">
+    <value>चयनित फ़ीचर या स्केच</value>
+  </data>
+  <data name="attachFileButton.AccessibleName" xml:space="preserve">
+    <value>फ़ाइलें संलग्न करें</value>
+  </data>
+  <data name="stopButton.Text" xml:space="preserve">
+    <value>रोकें</value>
+  </data>
+  <data name="sendButton.Text" xml:space="preserve">
+    <value>भेजें</value>
+  </data>
+  <data name="modePicker.AccessibleName" xml:space="preserve">
+    <value>बातचीत का मोड</value>
+  </data>
+  <data name="approvalPicker.AccessibleName" xml:space="preserve">
+    <value>CAD कार्यों का अनुमोदन</value>
+  </data>
+  <data name="attachSelectionButton.AccessibleName" xml:space="preserve">
+    <value>#नाम से application फ़ीचर का संदर्भ दें</value>
+  </data>
+  <data name="contextButton.AccessibleName" xml:space="preserve">
+    <value>सक्रिय दस्तावेज़ का संदर्भ जाँचें</value>
+  </data>
+  <data name="contextButton.Text" xml:space="preserve">
+    <value>संदर्भ</value>
+  </data>
+  <data name="providerPicker.AccessibleName" xml:space="preserve">
+    <value>प्रदाता</value>
+  </data>
+  <data name="modelPicker.AccessibleName" xml:space="preserve">
+    <value>मॉडल</value>
+  </data>
+  <data name="latestButton.Text" xml:space="preserve">
+    <value>नवीनतम संदेश</value>
+  </data>
+  <data name="statusLabel.AccessibleName" xml:space="preserve">
+    <value>स्थिति</value>
+  </data>
+  <data name="statusLabel.Text" xml:space="preserve">
+    <value>तैयार</value>
+  </data>
+  <data name="contextLabel.AccessibleName" xml:space="preserve">
+    <value>सक्रिय दस्तावेज़</value>
+  </data>
+  <data name="contextLabel.Text" xml:space="preserve">
+    <value>कोई सक्रिय दस्तावेज़ नहीं</value>
+  </data>
+  <data name="$this.AccessibleName" xml:space="preserve">
+    <value>Chat बातचीत</value>
+  </data>
+</root>

@@ -13,7 +13,7 @@ namespace VBAi.Tests.Scenarios.Editor
         [TestMethod]
         public void LanguageAndEditingProvidersPassTheirCompleteScenarioMatrix()
         {
-            var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            var directory = new DirectoryInfo(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory);
             while (directory != null && !File.Exists(Path.Combine(directory.FullName, "assets", "editor", "src", "language.js"))) directory = directory.Parent;
             Assert.IsNotNull(directory, "Repository source assets are required for the JavaScript provider tests.");
             string root = directory.FullName;

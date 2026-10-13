@@ -2871,4 +2871,25 @@
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>Эта модель не поддерживает вызов инструментов.</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>Провайдер не завершил ответ за {0} секунд. Ни одно действие не было автоматически повторено.</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>Использовать режим рассуждения модели по умолчанию.</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>Отключить рассуждение для этого разговора.</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>По умолчанию для модели</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>Рассуждение отключено</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>Эта модель не поддерживает выбранный вариант рассуждения.</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>Выберите файл, который нужно прикрепить к текущему разговору.</value>
+  </data>
 </root>

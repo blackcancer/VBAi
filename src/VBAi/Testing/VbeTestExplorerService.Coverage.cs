@@ -128,6 +128,27 @@ namespace VBAi
         private async Task<VbaTestRun> ExecuteCoverageAsync(VbaTestCatalog original, IReadOnlyList<VbaTestDescriptor> selected,
             Action<VbaTestResult> progress, CancellationToken cancellation, Action executionGuard)
         {
+            // A queued run may have been disposed before entering this callback.
+            // Keep the owner-thread check here; the guarded core reports disposal
+            // as a blocked run and still settles the existing run receipt.
+            RequireContinuationOwner();
+            // Opening and compiling a disposable project pumps native messages. Keep
+            // passive Monaco navigation from acquiring its temporary modules until
+            // the complete operation (including close or retention) has settled.
+            using (new VbeDebugInspection())
+                return await AwaitOwner(ExecuteOwnedCoverageAsync(original, selected, progress, cancellation, executionGuard));
+        }
+
+        /// <summary>Executes and cleans up the copy while automatic editor navigation is suspended on its owning thread.</summary>
+        /// <param name="original">Revision-bound original project catalog.</param>
+        /// <param name="selected">Explicit tests to run only in the owned copy.</param>
+        /// <param name="progress">Optional translated-result callback.</param>
+        /// <param name="cancellation">Cancellation checked at each preparation and dispatch boundary.</param>
+        /// <param name="executionGuard">Live authorization and original-project revision guard.</param>
+        /// <returns>Measured results or the preserved refusal/uncertain outcome.</returns>
+        private async Task<VbaTestRun> ExecuteOwnedCoverageAsync(VbaTestCatalog original, IReadOnlyList<VbaTestDescriptor> selected,
+            Action<VbaTestResult> progress, CancellationToken cancellation, Action executionGuard)
+        {
             var plan = VbaCoverageInstrumentation.Create(original.Project);
             var run = new VbaTestRun { Project = original.Project.Name, Revision = original.Project.Revision };
             VbaTestCoverageClone clone = null;
@@ -304,21 +325,25 @@ namespace VBAi
         /// <param name="create">Whether a standard module may be added when the named module is absent.</param>
         private static void WriteCloneModule(dynamic project, string name, string source, bool create)
         {
-            dynamic component = null;
-            foreach (dynamic candidate in project.VBComponents)
-                if (string.Equals((string)candidate.Name, name, StringComparison.OrdinalIgnoreCase)) { component = candidate; break; }
-            if (create && component != null) throw new InvalidOperationException("The coverage runtime module name is occupied.");
-            if (component == null)
+            using (var references = new VbaTestComReferences())
             {
-                if (!create) throw new InvalidOperationException("A copied source module is missing: " + name);
-                component = project.VBComponents.Add(1); component.Name = name;
+                dynamic component = null;
+                foreach (dynamic candidate in references.Items((object)project.VBComponents))
+                    if (string.Equals((string)candidate.Name, name, StringComparison.OrdinalIgnoreCase)) { component = candidate; break; }
+                if (create && component != null) throw new InvalidOperationException("The coverage runtime module name is occupied.");
+                if (component == null)
+                {
+                    if (!create) throw new InvalidOperationException("A copied source module is missing: " + name);
+                    dynamic components = references.Add((object)project.VBComponents);
+                    component = references.Add((object)components.Add(1)); component.Name = name;
+                }
+                dynamic code = references.Add((object)component.CodeModule);
+                int count = (int)code.CountOfLines;
+                if (count > 0) code.DeleteLines(1, count);
+                code.AddFromString(source);
+                if (Canonical((string)code.Lines[1, (int)code.CountOfLines]) != Canonical(source))
+                    throw new InvalidOperationException("The instrumented copy source did not match its plan: " + name);
             }
-            dynamic code = component.CodeModule;
-            int count = (int)code.CountOfLines;
-            if (count > 0) code.DeleteLines(1, count);
-            code.AddFromString(source);
-            if (Canonical((string)code.Lines[1, (int)code.CountOfLines]) != Canonical(source))
-                throw new InvalidOperationException("The instrumented copy source did not match its plan: " + name);
         }
 
         /// <summary>Applies planned line insertions to the clone module after rechecking ownership and cancellation.</summary>
@@ -327,25 +352,28 @@ namespace VBAi
         /// <param name="guard">Rechecks owner, source revision, and copied catalog around native dispatch.</param>
         private static void InstrumentCloneModule(dynamic project, VbaCoverageModule module, Action guard)
         {
-            dynamic component = null;
-            foreach (dynamic candidate in project.VBComponents)
-                if (string.Equals((string)candidate.Name, module.Name, StringComparison.OrdinalIgnoreCase)) { component = candidate; break; }
-            if (component == null) throw new InvalidOperationException("An owned copied module is missing: " + module.Name);
-            dynamic code = component.CodeModule;
-            // Preserve member metadata by retaining every original declaration and only inserting probes.
-            foreach (var edit in module.Edits.OrderByDescending(item => item.OriginalLine).ThenByDescending(item => item.OriginalColumn))
+            using (var references = new VbaTestComReferences())
             {
-                guard();
-                if (edit.IsWholeLine) code.InsertLines(edit.OriginalLine, edit.Text.TrimEnd('\r', '\n'));
-                else
+                dynamic component = null;
+                foreach (dynamic candidate in references.Items((object)project.VBComponents))
+                    if (string.Equals((string)candidate.Name, module.Name, StringComparison.OrdinalIgnoreCase)) { component = candidate; break; }
+                if (component == null) throw new InvalidOperationException("An owned copied module is missing: " + module.Name);
+                dynamic code = references.Add((object)component.CodeModule);
+                // Preserve member metadata by retaining every original declaration and only inserting probes.
+                foreach (var edit in module.Edits.OrderByDescending(item => item.OriginalLine).ThenByDescending(item => item.OriginalColumn))
                 {
-                    string line = (string)code.Lines[edit.OriginalLine, 1];
-                    code.ReplaceLine(edit.OriginalLine, line.Insert(edit.OriginalColumn - 1, edit.Text));
+                    guard();
+                    if (edit.IsWholeLine) code.InsertLines(edit.OriginalLine, edit.Text.TrimEnd('\r', '\n'));
+                    else
+                    {
+                        string line = (string)code.Lines[edit.OriginalLine, 1];
+                        code.ReplaceLine(edit.OriginalLine, line.Insert(edit.OriginalColumn - 1, edit.Text));
+                    }
                 }
+                string observed = (int)code.CountOfLines == 0 ? "" : (string)code.Lines[1, (int)code.CountOfLines];
+                if (Canonical(observed) != Canonical(module.InstrumentedSource))
+                    throw new InvalidOperationException("The coverage probes do not match their reviewed original-source mapping: " + module.Name);
             }
-            string observed = (int)code.CountOfLines == 0 ? "" : (string)code.Lines[1, (int)code.CountOfLines];
-            if (Canonical(observed) != Canonical(module.InstrumentedSource))
-                throw new InvalidOperationException("The coverage probes do not match their reviewed original-source mapping: " + module.Name);
         }
     }
 }

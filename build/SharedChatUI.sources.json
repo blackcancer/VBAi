@@ -1,0 +1,336 @@
+{
+    "schemaVersion":  1,
+    "modulePath":  "src/Blackcancer.ChatUI",
+    "algorithm":  "SHA256",
+    "fingerprint":  "20f0e5bb14b57ba1dd22439bfc2afecfc4f78883a116e5094cef505eb3d9ad8b",
+    "files":  [
+                  {
+                      "path":  "src/Blackcancer.ChatUI/.gitattributes",
+                      "sha256":  "f4a56fad93969dab6fe065e2f2583e14a38e50b14b4f76928b835ca8b96f3d11"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Blackcancer.ChatUI.csproj",
+                      "sha256":  "20cfa04db67b3ed4af025e24330ce232020032a371b6654067f33a3060df1ade"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/ChatServices.cs",
+                      "sha256":  "ee0c43e3071c07a33dbee8e020d6e3261dc36d6f2b486b958b2378db8d2f54a1"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/CommonRuntime/ActivityRenderState.cs",
+                      "sha256":  "1fe9921ac6a3ea1a1737f8158ced4b3038948e90f6cd56809e96f4a08f7d4d8f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/LICENSE",
+                      "sha256":  "9221c2f936159b8446d329249fb4c0f25be510f447383a0f13336ac7985668a3"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatMarkdownDocument.cs",
+                      "sha256":  "c5010f6a8cf11732ec7ef41d379a78779540ac98ba4e7f99880ea73d83fdb167"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatMarkdownEngine.cs",
+                      "sha256":  "019ad36a76309861abccd48ee1f95eb593d281df57d30c4f358673ef29a8927c"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatPendingMessageEntry.cs",
+                      "sha256":  "ff08a5976407dd8119706a8e14c17c1e595a1c4f591697f46468a34f271931e0"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatReadingChoice.cs",
+                      "sha256":  "c23c5cf3e3fa9fc91c624f3caf2ebde2f12fb73875774a3b7f3412added8ed91"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatReferencePickerChoice.cs",
+                      "sha256":  "2a5fb07230454f5310f71b60dd7b6184543dda6338d26ca8713554f55d2875ab"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatReferenceSnapshot.cs",
+                      "sha256":  "5ebf4fb3570845b25f11ed60ca84c5f8a83ee543b308fe257789f4e55f79f304"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Presentation/ChatTableSnapshot.cs",
+                      "sha256":  "eacc680bbd9d645b20f00effc987ffca112496fac510adcb15674db57cd142fc"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/README.md",
+                      "sha256":  "6ecd6109e5843194ad994cf2e4195cb10f3f317d87279423167db3567202f61f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Runtime/TranscriptUpdateBatch.cs",
+                      "sha256":  "e0cd0450f22600fe5ca7df2b4ddd19e1e39621c35c6cc3fef07f2801e64d9049"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatActionButton.cs",
+                      "sha256":  "48721f190e4e234c56e2163fb3813deff6f1380c5db0b9225bd8ef95c79b58f7"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatCodeBlockView.Designer.cs",
+                      "sha256":  "66d069f7738e83f6aeb8b7f00d2b77845cd024728728da2de62acb0045438464"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatCodeBlockView.cs",
+                      "sha256":  "4f97940b5f912b3351f97cd7191498edfdeaeedf2033cdbf121ea37932f13750"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatCodeBlockView.resx",
+                      "sha256":  "80c60f1b45d86e8e31165d8031fbf5398cb2c86c62d9f27cd1a74cb1b79ae269"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatComposerTextBox.cs",
+                      "sha256":  "d58ff93ec3741d9c1cf70edbb63a03bb8799a612469f4d4bd5f3dd134c2be931"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatDisclosureDesigner.cs",
+                      "sha256":  "e0c49ea8554744d6a5e42585d78de5f2fad573c726511131511e11689a300baf"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatDisclosureView.Designer.cs",
+                      "sha256":  "16ba4b2acddf6ca96dfdc912c19838e1648989bb777a6eb6bca6aac03695030e"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatDisclosureView.cs",
+                      "sha256":  "4755c8e47046e21476e03d6a0307fe2dd18ac0fc258c4691cc216c442cff2da8"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatDisclosureView.resx",
+                      "sha256":  "80c60f1b45d86e8e31165d8031fbf5398cb2c86c62d9f27cd1a74cb1b79ae269"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatInputView.Designer.cs",
+                      "sha256":  "e26677298c95361df04558a76dcae721e8847c3dd924212978e099c4bce8655b"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatInputView.cs",
+                      "sha256":  "2d24e24e349b0ea6f0039d3daebf452981c49d9d4506b0f7c30a5ee8a9c1299b"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatInputView.resx",
+                      "sha256":  "b82fe13fbb64ad492f73367170bd79f9cb24408464c752feeb85b03136b4fb36"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatMarkdownView.Designer.cs",
+                      "sha256":  "37584f3e4d8c0c139bde018a7d0408e853670710620585b9a63cddc2156868f3"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatMarkdownView.cs",
+                      "sha256":  "890759fd6dae9779b07dc1c0fdea3f6c5da0e821b1ac9012a722074388f22227"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatMarkdownView.resx",
+                      "sha256":  "74693cfb42babd0b446169fb2f1ceb93da2fe05214d2508ea09a2ce2c55c5494"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageCardView.Designer.cs",
+                      "sha256":  "8320268de1fe8c9aa83049c6721e9627adc00052b30c816f41e8beb42d4ccd35"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageCardView.cs",
+                      "sha256":  "9955f050271b5c73ca09aaa2b9e38fd21460764051ea3916b8dcff1479fd9914"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageCardView.fr.resx",
+                      "sha256":  "3d1000f898e478471ffd9141283110430aa34b7e9174cbab2986e4ae6866ca14"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageCardView.resx",
+                      "sha256":  "e2e8757b323dfcc16631767a4903ea6f9dd1367c30c0270a20d7198bd0c7d787"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageListView.Designer.cs",
+                      "sha256":  "01342b69b0c27310bed6d32f33db1a979f5470802e000ef77be5ae2a0b00b510"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageListView.cs",
+                      "sha256":  "fb1ada2ef09cc055e3fbaac553cf4133bb7e2ed398703ae69ca3dd0c7f119cd3"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageListView.fr.resx",
+                      "sha256":  "2ba3cebe840d22754e5c779e30e66be327cce4098eb43d0e4d00120834a4dffa"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatPendingMessageListView.resx",
+                      "sha256":  "d8ad58c204f02b9e781c1940dfa8dc9184432088292d387514e82d5a7ae013c6"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReadingOptionsForm.Designer.cs",
+                      "sha256":  "94ff934798ad223e2c49fd46f4e8b4dfe31a2b3415aab6f075d18bc898d4532c"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReadingOptionsForm.cs",
+                      "sha256":  "fd6562ba20018a4e47be08b7f9974b0b35c59970f2091622466eb78f78b66210"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReadingOptionsForm.fr-FR.resx",
+                      "sha256":  "d6bcfa5e28ab8a10e569e7ec9768406ac6609d0a0e2308ef2e279b9b7425ee7f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReadingOptionsForm.resx",
+                      "sha256":  "987114ad6690d340415637dd4daf27170fb4734079ec5a6e49bc71a843670798"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceComparisonForm.Designer.cs",
+                      "sha256":  "a5d4794589e7fb6bd389bc9d3620e3b29c299b59a1e8b5dda5a376a3dd9c691f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceComparisonForm.cs",
+                      "sha256":  "9d16bc041cf93e0f1292564a237d92b29ec3a2c430efa7b1f9ad2980967e103a"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceComparisonForm.fr.resx",
+                      "sha256":  "52e2b181118bd21bfa032e02ecf769dd44e6abe0e30622ca104b6e5d55227406"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceComparisonForm.resx",
+                      "sha256":  "53639f7470767fe868cf50fccee2c3aba7db0b4d0b484a31151a300e7b3c74b9"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceInspectorForm.Designer.cs",
+                      "sha256":  "e8980217a2b8ea90ef027b9108ee1745d55db18f50a38c87219d04a4bda0c306"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceInspectorForm.cs",
+                      "sha256":  "2cb3c5e27ca1331c240c0dcb37f1f8c9f1d7e8bc955c0c26837df0e8921d7d6a"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceInspectorForm.fr-FR.resx",
+                      "sha256":  "cfdca5de9d1a24a6806073fda5b85128fa30a03eb3c0a74c29e4676b042ecb84"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferenceInspectorForm.resx",
+                      "sha256":  "116b5d456d8f19bfebb0485c914a4d5e812b1276a777f286043dfdf0de1524f5"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferencePickerForm.Designer.cs",
+                      "sha256":  "1d718b47ebc01fdb87beee12530e601247f8177e7d515a91e129f5cb3ce58006"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferencePickerForm.cs",
+                      "sha256":  "b150ea7d4734c0b1189a82819afd31491c83dbe4d17e69032cb307241af3b66b"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferencePickerForm.fr.resx",
+                      "sha256":  "ccddece66362a034085e4428107e2ed626fdda5e932c93dd267ab039a07305b1"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatReferencePickerForm.resx",
+                      "sha256":  "88585345585ae7d33d8511515db19fe881023a2cd7192fedf043280e19d42a9f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableGridBinding.cs",
+                      "sha256":  "08d8af0ba0b86409bc28b23af8f45a8793dcc98770b1b35be4986dff8420b872"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableInspectorForm.Designer.cs",
+                      "sha256":  "9ef0dde7f5f66f8e82eb4be6c2e4169fb8071669baa3992a92ebdf83117bc116"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableInspectorForm.cs",
+                      "sha256":  "0ce0cddf62174b0cbff7547c5bc5c05334d1e2586d10d54ee8f6fa4bf58109f0"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableInspectorForm.fr-FR.resx",
+                      "sha256":  "bf635b5e189852f2248dadf065ffd10668c7165edffe9121f7c19d7d4e8938f0"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableInspectorForm.resx",
+                      "sha256":  "15c68c892d0b39f115e817da419b5010b02a4d4a766ce8b264fbac47704cf6ce"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableView.Designer.cs",
+                      "sha256":  "fc6d2631dbd01e58031f811f80e243343f7287a423a8ab7ebf7b5ad0aad078fd"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableView.cs",
+                      "sha256":  "52be16951440a2f95a0186f8118055baf76f8e2a4e9366e86fcc094dabc634dd"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableView.fr-FR.resx",
+                      "sha256":  "fd4861be9f66cf00563b48a0923e168803308c3bf5e132655eeb968bcb6b97b0"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTableView.resx",
+                      "sha256":  "5f1419fc56e7946b6208a96a7ce9eaa265aeaf169bb206cdc8a417726367d1c4"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTextView.Designer.cs",
+                      "sha256":  "5842c26f87e31a2bb64c9704f5e03a85990d41987e1b30490e59f23a5b31b174"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTextView.cs",
+                      "sha256":  "eee9771a5b32bcfaa0f61aab8ceffe5434a5c16ce1b21c0df46fbd6bc65168cb"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTextView.resx",
+                      "sha256":  "80c60f1b45d86e8e31165d8031fbf5398cb2c86c62d9f27cd1a74cb1b79ae269"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatTranscriptView.cs",
+                      "sha256":  "2fcdb4bf913d6122635744e95d6d4b522d662164c2310d4e1d3c7a998e4e709a"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatView.cs",
+                      "sha256":  "3139697572707b0db31dfee519d149ecdc307ac18a188b9676bd38378682df4f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.Designer.cs",
+                      "sha256":  "3caa45a5f5560f29dce505d32a848b04fc97fac00fdb748699d651eb7abd4254"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.ar-SA.resx",
+                      "sha256":  "a7b6cf57d79e8ddb882fc1148b915eb33a8c9e8e0c62d7dd70f5a4201612e76e"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.cs",
+                      "sha256":  "7f3c98946c5e153c3d9f55bee9f748dfc6febf081d53baca0dcbdd6b8d7be0bd"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.de-DE.resx",
+                      "sha256":  "78471e291a954bd86ffdd7543e2d9bbce3fae95c9a4bdcdb993e84e1737ba4e6"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.es-ES.resx",
+                      "sha256":  "cda709c4b52a46738b2db4ddc72b53a0fc9b0801a3796958d3486a51b5eeee5a"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.fr-FR.resx",
+                      "sha256":  "ae59ba9953d7d514f072d26dbe92b84f0e168a9c9a9196efd4ee0d39245b023f"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.hi-IN.resx",
+                      "sha256":  "edafb76e4b7f642ecece0fb9131f8086cf6694cf865dc44977969a8d8bceb5c3"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.it-IT.resx",
+                      "sha256":  "029861e9a50310538783dd4f23e8b383ee40b8eb78cfafa158e25c87d4894d94"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.ja-JP.resx",
+                      "sha256":  "b38d4d092e4888efae4f9f844627cc0c9203fb4694288e50037bd462be98b087"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.ko-KR.resx",
+                      "sha256":  "3cdb27679ca66dadedd7ce748b1271ab6a8098d6f398cb444f3864a4187c93b6"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.pt-BR.resx",
+                      "sha256":  "308ffe5255231d34dd30371e52949800e9b3ace564ecd6e74b710d9a47cc9529"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.resx",
+                      "sha256":  "5572ba97c211055ed9e025a228fbe582ac579bffe4dc7334da204b1819c8060d"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.ru-RU.resx",
+                      "sha256":  "6d2f613a9fa00565cfc7bd18d2ac3c47146b13ddcae524c23fd12c60e41362c4"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.zh-CN.resx",
+                      "sha256":  "4de5a64552ee8a7096d8e5885b44b4c474279e252c0053b4493da081cb7338a8"
+                  },
+                  {
+                      "path":  "src/Blackcancer.ChatUI/Views/ChatWorkspaceView.zh-TW.resx",
+                      "sha256":  "97ca3f240fcb3520839c2e38e6a795af292156e9a61de22fc888d6e1983c7818"
+                  }
+              ]
+}

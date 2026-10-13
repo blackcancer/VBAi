@@ -128,7 +128,7 @@ namespace VBAi.Tests.Integration
                     Assert.AreEqual(VbaTestOutcome.Inconclusive, Result(run, "Placeholder").Outcome);
                     StringAssert.Contains(VbaTestReports.Human(run), "AssertionFail");
                     StringAssert.Contains(VbaTestReports.Compact(run), "\"available\":false");
-                    string reports = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "test-explorer-native");
+                    string reports = Path.Combine(VBAi.Tests.Infrastructure.TestAssemblyPaths.OutputDirectory, "test-explorer-native");
                     Directory.CreateDirectory(reports);
                     File.WriteAllText(Path.Combine(reports, "results-human.txt"), VbaTestReports.Human(run), new System.Text.UTF8Encoding(false));
                     File.WriteAllText(Path.Combine(reports, "results-llm.json"), VbaTestReports.Compact(run), new System.Text.UTF8Encoding(false));

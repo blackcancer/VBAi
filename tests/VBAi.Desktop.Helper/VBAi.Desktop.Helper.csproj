@@ -6,6 +6,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\VBAi\VBAi.csproj" />
     <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.cs" Link="IsolatedTestDesktop.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.Main.cs" Link="IsolatedTestDesktop.Main.cs" />
+    <Compile Include="..\VBAi.Tests\Infrastructure\Diagnostics\IsolatedTestDesktop.Main.WindowLifetime.cs" Link="IsolatedTestDesktop.Main.WindowLifetime.cs" />
     <Reference Include="Accessibility" />
     <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />

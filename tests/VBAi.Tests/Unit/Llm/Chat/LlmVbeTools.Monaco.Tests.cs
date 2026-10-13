@@ -6,7 +6,7 @@ using System.Web.Script.Serialization;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class LlmMonacoValidationTests
     {
         [STATestMethod]
@@ -120,7 +120,8 @@ namespace VBAi.Tests.Unit
         }
 
         private static LlmVbeTools Tools(string policy = "Automatic") => new LlmVbeTools(null, null, new LlmSettings { VbeEditApproval = policy })
-        { MonacoModule = (p, m) => throw new InvalidOperationException("HOST WAS ACCESSED") };
+        // Both native factories are guarded: resolving the editor is itself host access.
+        { MonacoWindow = create => throw new InvalidOperationException("HOST WAS ACCESSED"), MonacoModule = (p, m) => throw new InvalidOperationException("HOST WAS ACCESSED") };
 
         [TestMethod]
         public async Task EveryMonacoContractValidatesRequiredTypesWhitespaceAndDispatchesAsynchronously()
@@ -294,6 +295,57 @@ namespace VBAi.Tests.Unit
                     if (operation == "monaco_navigate") Assert.AreEqual(1, fixture.Base.Scripts.FindAll(call => call.Item1 == "selectRange").Count);
                     else { Assert.AreEqual(draft, fixture.Module.Code); Assert.AreEqual(1, fixture.Module.Writes); Assert.IsFalse(fixture.Document.Dirty); }
                 }
+        }
+    }
+}
+
+
+namespace VBAi.Tests.Unit
+{
+    /// <summary>Checks that temporary Monaco-tool adapters have an owning-STA cleanup boundary.</summary>
+    [VBAi.Tests.Unit.ToolBoundaryTestClass,
+     Microsoft.VisualStudio.TestTools.UnitTesting.TestCategory("Unit"),
+     Microsoft.VisualStudio.TestTools.UnitTesting.DoNotParallelize]
+    public sealed class LlmMonacoOwnershipTests
+    {
+        [Microsoft.VisualStudio.TestTools.UnitTesting.STATestMethod]
+        public void ReadingAnAlreadyOpenDocumentReleasesItsTransientResolverAdapter()
+        {
+            using (var fixture = new VBAi.Tests.Infrastructure.ModernEditorDebugFixture())
+            {
+                fixture.Ready(true);
+                var released = new System.Collections.Generic.List<object>();
+                EditorVbeModule transient = null;
+                fixture.Rendering = (method, values) => method == "read"
+                    ? "{\"text\":\"Option Explicit\",\"version\":1,\"selection\":{\"startLineNumber\":1,\"startColumn\":1,\"endLineNumber\":1,\"endColumn\":1}}" : "null";
+                var tools = new LlmVbeTools(null, null, new LlmSettings())
+                {
+                    MonacoWindow = create => fixture.Window,
+                    MonacoModule = (project, module) => transient = EditorVbeModule.AcquireActive(fixture.Native.Vbe, false, released.Add)
+                };
+                var response = new System.Web.Script.Serialization.JavaScriptSerializer().Deserialize<Response>(
+                    VBAi.Tests.Infrastructure.ModernEditorDebugFixture.Wait(tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}")));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(response.Ok, response.Error);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsNotNull(transient);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(5, released.Count);
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.IsTrue(fixture.Window.OwnsModule(fixture.Native.Adapter));
+                Microsoft.VisualStudio.TestTools.UnitTesting.Assert.ThrowsException<System.ObjectDisposedException>(() => transient.Read());
+            }
+        }
+
+        [Microsoft.VisualStudio.TestTools.UnitTesting.STATestMethod]
+        public void MissingEditorRefusesBeforeCreatingAnyNativeResolverAdapter()
+        {
+            int resolves = 0;
+            var tools = new LlmVbeTools(null, null, new LlmSettings())
+            {
+                MonacoWindow = create => null,
+                MonacoModule = (project, module) => { resolves++; throw new System.InvalidOperationException("Native resolver must not run"); }
+            };
+            string response = VBAi.Tests.Infrastructure.ModernEditorDebugFixture.Wait(
+                tools.InvokeAsync("monaco_read", "{\"Project\":\"P\",\"Module\":\"M\"}"));
+            Microsoft.VisualStudio.TestTools.UnitTesting.StringAssert.Contains(response, "monaco_open first");
+            Microsoft.VisualStudio.TestTools.UnitTesting.Assert.AreEqual(0, resolves);
         }
     }
 }

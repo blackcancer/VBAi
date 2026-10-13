@@ -1,0 +1,204 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- SPDX-License-Identifier: MPL-2.0; ported native chat layout and localization resources. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="fileAttachmentDialog.Filter" xml:space="preserve">
+    <value>すべてのファイル (*.*)|*.*</value>
+  </data>
+  <data name="fileAttachmentDialog.Title" xml:space="preserve">
+    <value>次のメッセージにファイルを添付</value>
+  </data>
+  <data name="modelSummary.AccessibleName" xml:space="preserve">
+    <value>モデルと推論の強度</value>
+  </data>
+  <data name="modelSummary.Text" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="effortPicker.AccessibleName" xml:space="preserve">
+    <value>推論の強度</value>
+  </data>
+  <data name="configureMenuItem.Text" xml:space="preserve">
+    <value>設定…</value>
+  </data>
+  <data name="sessionTitle.Text" xml:space="preserve">
+    <value>application 用 AI エージェント</value>
+  </data>
+  <data name="newChatButton.AccessibleName" xml:space="preserve">
+    <value>新しいチャット</value>
+  </data>
+  <data name="newChatButton.Text" xml:space="preserve">
+    <value>新しいチャット</value>
+  </data>
+  <data name="settingsButton.AccessibleName" xml:space="preserve">
+    <value>会話オプション</value>
+  </data>
+  <data name="settingsButton.Text" xml:space="preserve">
+    <value>オプション</value>
+  </data>
+  <data name="scopePicker.AccessibleName" xml:space="preserve">
+    <value>会話の範囲</value>
+  </data>
+  <data name="historyButton.Text" xml:space="preserve">
+    <value>会話履歴</value>
+  </data>
+  <data name="projectPicker.AccessibleName" xml:space="preserve">
+    <value>プロジェクト</value>
+  </data>
+  <data name="createProjectButton.Text" xml:space="preserve">
+    <value>プロジェクトを作成</value>
+  </data>
+  <data name="welcomeTitle.Text" xml:space="preserve">
+    <value>何を作成しますか？</value>
+  </data>
+  <data name="welcomeBody.Text" xml:space="preserve">
+    <value>モデルについて相談したり、アクティブなドキュメントを確認したり、操作を説明したりできます。
+
+設定でプロバイダーとモデルを選択して開始してください。</value>
+  </data>
+  <data name="historyLabel.Text" xml:space="preserve">
+    <value>会話</value>
+  </data>
+  <data name="historyEmptyLabel.Text" xml:space="preserve">
+    <value>この範囲に会話はありません。</value>
+  </data>
+  <data name="closeHistoryButton.Text" xml:space="preserve">
+    <value>履歴を閉じる</value>
+  </data>
+  <data name="historySearchTextBox.AccessibleName" xml:space="preserve">
+    <value>会話を検索</value>
+  </data>
+  <data name="showArchivedCheckBox.AccessibleName" xml:space="preserve">
+    <value>アーカイブを表示</value>
+  </data>
+  <data name="showArchivedCheckBox.Text" xml:space="preserve">
+    <value>アーカイブを表示</value>
+  </data>
+  <data name="chatTitleEditor.AccessibleName" xml:space="preserve">
+    <value>会話のタイトル</value>
+  </data>
+  <data name="renameChatButton.AccessibleName" xml:space="preserve">
+    <value>名前を変更</value>
+  </data>
+  <data name="renameChatButton.Text" xml:space="preserve">
+    <value>名前を変更</value>
+  </data>
+  <data name="archiveChatButton.AccessibleName" xml:space="preserve">
+    <value>アーカイブ</value>
+  </data>
+  <data name="archiveChatButton.Text" xml:space="preserve">
+    <value>アーカイブ</value>
+  </data>
+  <data name="pinChatButton.AccessibleName" xml:space="preserve">
+    <value>固定</value>
+  </data>
+  <data name="pinChatButton.Text" xml:space="preserve">
+    <value>固定</value>
+  </data>
+  <data name="exportChatButton.AccessibleName" xml:space="preserve">
+    <value>エクスポート</value>
+  </data>
+  <data name="exportChatButton.Text" xml:space="preserve">
+    <value>エクスポート</value>
+  </data>
+  <data name="deleteChatButton.AccessibleName" xml:space="preserve">
+    <value>会話を削除</value>
+  </data>
+  <data name="deleteChatButton.Text" xml:space="preserve">
+    <value>会話を削除</value>
+  </data>
+  <data name="memoryToggleButton.AccessibleName" xml:space="preserve">
+    <value>プロジェクトメモリ</value>
+  </data>
+  <data name="memoryToggleButton.Text" xml:space="preserve">
+    <value>プロジェクトメモリ</value>
+  </data>
+  <data name="memoryPanel.AccessibleName" xml:space="preserve">
+    <value>プロジェクトメモリ</value>
+  </data>
+  <data name="attachMemoryCheckBox.AccessibleName" xml:space="preserve">
+    <value>保存済みメモリを次のメッセージに添付</value>
+  </data>
+  <data name="attachMemoryCheckBox.Text" xml:space="preserve">
+    <value>保存済みメモリを次のメッセージに添付</value>
+  </data>
+  <data name="saveMemoryButton.AccessibleName" xml:space="preserve">
+    <value>メモリを保存</value>
+  </data>
+  <data name="saveMemoryButton.Text" xml:space="preserve">
+    <value>メモリを保存</value>
+  </data>
+  <data name="memoryPanel.Text" xml:space="preserve">
+    <value>プロジェクトメモリ</value>
+  </data>
+  <data name="inputTextBox.AccessibleName" xml:space="preserve">
+    <value>メッセージ</value>
+  </data>
+  <data name="attachContextButton.AccessibleName" xml:space="preserve">
+    <value>CAD コンテキストを添付</value>
+  </data>
+  <data name="attachDocumentMenuItem.Text" xml:space="preserve">
+    <value>アクティブなドキュメント</value>
+  </data>
+  <data name="attachSelectionMenuItem.Text" xml:space="preserve">
+    <value>選択したフィーチャーまたはスケッチ</value>
+  </data>
+  <data name="attachFileButton.AccessibleName" xml:space="preserve">
+    <value>ファイルを添付</value>
+  </data>
+  <data name="stopButton.Text" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="sendButton.Text" xml:space="preserve">
+    <value>送信</value>
+  </data>
+  <data name="modePicker.AccessibleName" xml:space="preserve">
+    <value>会話モード</value>
+  </data>
+  <data name="approvalPicker.AccessibleName" xml:space="preserve">
+    <value>CAD 操作の承認</value>
+  </data>
+  <data name="attachSelectionButton.AccessibleName" xml:space="preserve">
+    <value>#名前 で application フィーチャーを参照</value>
+  </data>
+  <data name="contextButton.AccessibleName" xml:space="preserve">
+    <value>アクティブなドキュメントのコンテキストを確認</value>
+  </data>
+  <data name="contextButton.Text" xml:space="preserve">
+    <value>コンテキスト</value>
+  </data>
+  <data name="providerPicker.AccessibleName" xml:space="preserve">
+    <value>プロバイダー</value>
+  </data>
+  <data name="modelPicker.AccessibleName" xml:space="preserve">
+    <value>モデル</value>
+  </data>
+  <data name="latestButton.Text" xml:space="preserve">
+    <value>最新のメッセージ</value>
+  </data>
+  <data name="statusLabel.AccessibleName" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="statusLabel.Text" xml:space="preserve">
+    <value>準備完了</value>
+  </data>
+  <data name="contextLabel.AccessibleName" xml:space="preserve">
+    <value>アクティブなドキュメント</value>
+  </data>
+  <data name="contextLabel.Text" xml:space="preserve">
+    <value>アクティブなドキュメントなし</value>
+  </data>
+  <data name="$this.AccessibleName" xml:space="preserve">
+    <value>Chat チャット</value>
+  </data>
+</root>

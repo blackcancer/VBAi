@@ -2871,4 +2871,25 @@ Anmeldung über Git Credential Manager; die Commit-Identität wird in Git festge
   <data name="This model does not support tool calling." xml:space="preserve">
     <value>Dieses Modell unterstützt keine Werkzeugaufrufe.</value>
   </data>
+  <data name="The provider did not complete its response within {0} seconds. No action was automatically retried." xml:space="preserve">
+    <value>Der Anbieter hat seine Antwort nicht innerhalb von {0} Sekunden abgeschlossen. Keine Aktion wurde automatisch erneut ausgeführt.</value>
+  </data>
+  <data name="Use the model's default reasoning." xml:space="preserve">
+    <value>Die standardmäßige Denkfunktion des Modells verwenden.</value>
+  </data>
+  <data name="Disable reasoning for this conversation." xml:space="preserve">
+    <value>Die Denkfunktion für diese Unterhaltung deaktivieren.</value>
+  </data>
+  <data name="Model default" xml:space="preserve">
+    <value>Modellstandard</value>
+  </data>
+  <data name="Reasoning off" xml:space="preserve">
+    <value>Denkfunktion aus</value>
+  </data>
+  <data name="The selected reasoning option is not supported by this model." xml:space="preserve">
+    <value>Die ausgewählte Denkoption wird von diesem Modell nicht unterstützt.</value>
+  </data>
+  <data name="Choose a file to attach to the current conversation." xml:space="preserve">
+    <value>Wählen Sie eine Datei aus, die Sie der aktuellen Unterhaltung hinzufügen möchten.</value>
+  </data>
 </root>

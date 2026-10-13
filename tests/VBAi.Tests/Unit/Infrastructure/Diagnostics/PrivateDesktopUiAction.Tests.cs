@@ -8,6 +8,43 @@ namespace VBAi.Tests.Unit
     public sealed class PrivateDesktopUiActionTests
     {
         [TestMethod]
+        public void OwnerRefusalAfterPreflightPreventsButtonDelivery()
+        {
+            int sends = 0;
+            var refusal = new System.InvalidOperationException("Parent ended");
+            var error = Assert.ThrowsException<System.InvalidOperationException>(() => PrivateDesktopUiAction.DeliverButtonOnce(
+                () => { throw refusal; }, () => { sends++; return true; }));
+            Assert.AreSame(refusal, error); Assert.AreEqual(0, sends);
+        }
+
+        [TestMethod]
+        public void UncertainButtonDeliveryIsEmittedOnceWithoutRetry()
+        {
+            int owners = 0, sends = 0;
+            Assert.ThrowsException<System.InvalidOperationException>(() => PrivateDesktopUiAction.DeliverButtonOnce(
+                () => owners++, () => { sends++; return false; }));
+            Assert.AreEqual(1, owners); Assert.AreEqual(1, sends);
+        }
+
+        [TestMethod]
+        public void NativeDeliveryExceptionIsPreservedWithoutRetry()
+        {
+            int sends = 0;
+            var native = new System.Exception("Native delivery failure");
+            var error = Assert.ThrowsException<System.Exception>(() => PrivateDesktopUiAction.DeliverButtonOnce(null,
+                () => { sends++; throw native; }));
+            Assert.AreSame(native, error); Assert.AreEqual(1, sends);
+        }
+
+        [TestMethod]
+        public void OwnerIsRecheckedImmediatelyBeforeOneSuccessfulEmission()
+        {
+            var order = new System.Collections.Generic.List<string>();
+            PrivateDesktopUiAction.DeliverButtonOnce(() => order.Add("owner"), () => { order.Add("delivery"); return true; });
+            CollectionAssert.AreEqual(new[] { "owner", "delivery" }, order);
+        }
+
+        [TestMethod]
         public void NativeButtonRequiresExactLeafIdentityAndOwnerRelationship()
         {
             const int pid = 422;

@@ -10,6 +10,26 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed partial class HistoryAndCodeTests
     {
+        /// <summary>Retains every attachment field when the original draft changes after capture.</summary>
+        [TestMethod]
+        public void AttachmentSnapshotRetainsSourceAndTextIndependently()
+        {
+            var original = new ChatAttachment
+            {
+                Label = "Selected code", Text = "Dim value As Long", Project = "P", Module = "M",
+                Sha256 = "revision", EditorDocumentId = "document", StartLine = 7
+            };
+            var snapshot = original.CaptureSnapshot();
+            foreach (var property in typeof(ChatAttachment).GetProperties())
+                Assert.AreEqual(property.GetValue(original), property.GetValue(snapshot), property.Name);
+            original.Label = "changed"; original.Text = "changed"; original.Project = "other";
+            original.Module = "other"; original.Sha256 = "other"; original.EditorDocumentId = "other"; original.StartLine = 9;
+            Assert.AreEqual("Selected code", snapshot.Label); Assert.AreEqual("Dim value As Long", snapshot.Text);
+            Assert.AreEqual("P", snapshot.Project); Assert.AreEqual("M", snapshot.Module);
+            Assert.AreEqual("revision", snapshot.Sha256); Assert.AreEqual("document", snapshot.EditorDocumentId);
+            Assert.AreEqual(7, snapshot.StartLine); Assert.AreNotSame(original, snapshot);
+        }
+
         /// <summary>Développe uniquement les jetons de commande complets et refuse les commandes inconnues.</summary>
         [TestMethod]
         public void CommandsExpandOnlyCompleteTokensAndRejectUnknownCommands()

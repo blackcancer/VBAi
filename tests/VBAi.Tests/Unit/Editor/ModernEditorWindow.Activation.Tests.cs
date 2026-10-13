@@ -59,6 +59,32 @@ namespace VBAi.Tests.Unit
             }
         }
 
+        /// <summary>Explicit native selection must not open temporary runtime modules or acquire their sources in Monaco.</summary>
+        [STATestMethod]
+        public void NestedNativeSelectionScopesPreventAutomaticAcquisitionAndResumeAfterTheirFinalExit()
+        {
+            using (var f = new ActivationScope())
+            {
+                f.Follow(); var original = f.Editor.Current;
+                var temporary = f.Another(); int reads = 0;
+                temporary.CodeModule.BeforeRead = () => reads++;
+                f.Activate(temporary);
+                using (new VbeDebugInspection())
+                {
+                    using (new VbeDebugInspection()) f.Follow();
+                    f.Follow();
+                    Assert.AreSame(original, f.Editor.Current);
+                    Assert.AreEqual(1, f.Editor.Documents.Count());
+                    Assert.AreEqual(0, reads, "Neither nested observation may acquire the temporary module's source.");
+                }
+                Assert.IsFalse(VbeDebugInspection.IsActive);
+                f.Follow();
+                Assert.AreEqual(2, f.Editor.Documents.Count());
+                Assert.AreNotSame(original, f.Editor.Current);
+                Assert.IsTrue(reads > 0, "Following a real native activation must resume after the owning scope ends.");
+            }
+        }
+
         [STATestMethod]
         public void UnchangedNativePaneDoesNotOverrideAnExplicitMonacoTabAndDesignerReturnDoesFollow()
         {

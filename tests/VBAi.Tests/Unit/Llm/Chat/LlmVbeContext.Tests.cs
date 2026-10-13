@@ -8,6 +8,35 @@ namespace VBAi.Tests.Unit
     [TestCategory("Unit")]
     public sealed class LlmVbeContextTests
     {
+        /// <summary>Preserves the selected host-document or unsaved-project selector without changing the user's request.</summary>
+        [DataTestMethod]
+        [DataRow("Macro document", @"C:\VBAiSynthetic\Disposable.docm")]
+        [DataRow("Macro publication", @"C:\VBAiSynthetic\Disposable.pub")]
+        [DataRow("Classeur français", @"E:\Développement\Essai.xlsm")]
+        [DataRow("Unsaved", "VBAProject")]
+        [DataRow(null, @"C:\VBAiSynthetic\Disposable.accdb")]
+        [DataRow("Ignored when unbound", null)]
+        public void ProjectContextPreservesExactSelectorAndUserRequest(string label, string project)
+        {
+            const string request = "Read ObservedMarker from Q028Marker.\nDo not edit or execute code.";
+            string actual = LlmVbeContext.WithProjectScope(request, label, project);
+            if (project == null)
+                Assert.AreEqual(request, actual, "An unbound request must not inherit a stale project label.");
+            else
+            {
+                StringAssert.StartsWith(actual, UiText.Get("VBA project for this conversation: ") + label);
+                StringAssert.Contains(actual, UiText.Get("\nProject identifier to use in tools: ") + project + "\n\n");
+                StringAssert.EndsWith(actual, request);
+            }
+        }
+
+        /// <summary>Refuses a missing request rather than manufacturing a context-only conversation turn.</summary>
+        [TestMethod]
+        public void ProjectContextRejectsMissingRequest()
+        {
+            Assert.ThrowsException<ArgumentNullException>(() => LlmVbeContext.WithProjectScope(null, "Project", "VBAProject"));
+        }
+
         [TestMethod]
         public void LiveEnvironmentSnapshotDistinguishesAccessibleProjectsAndDiscoveryFailure()
         {

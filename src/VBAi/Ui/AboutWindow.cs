@@ -43,9 +43,7 @@ namespace VBAi
         /// <param name="sender">AppDomain raising the assembly resolution event.</param>
         /// <param name="request">Requested assembly identity.</param>
         /// <returns>The already-loaded reader assembly for the exact known identity, or <see langword="null"/> to leave other resolution to the runtime.</returns>
-        internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) =>
-            request.Name == "System.Resources.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51"
-                ? typeof(System.Resources.Extensions.DeserializingResourceReader).Assembly : null;
+        internal static Assembly ResolveImageReader(object sender, ResolveEventArgs request) => UiResourceReader.Resolve(sender, request);
 
         /// <summary>Current host process name used in metadata and host description.</summary>
         private string hostProcess;
@@ -59,10 +57,7 @@ namespace VBAi
             // SDK-generated image resources name the legacy reader assembly. COM hosts
             // and the Designer do not use this library's binding-redirect configuration.
             // Resolve only that reader while loading this window's resources.
-            ResolveEventHandler imageReader = ResolveImageReader;
-            AppDomain.CurrentDomain.AssemblyResolve += imageReader;
-            try { InitializeComponent(); }
-            finally { AppDomain.CurrentDomain.AssemblyResolve -= imageReader; }
+            UiResourceReader.Apply(InitializeComponent);
             if (LicenseManager.UsageMode == LicenseUsageMode.Designtime) return;
             Icon = VbeWindowIcons.Icon("assistant");
             UiText.Apply(this, components);

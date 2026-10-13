@@ -9,7 +9,6 @@ namespace VBAi.Tests.Unit
     public sealed partial class GitWindowStateTests
     {
         /// <summary>Numérote les lignes à partir de un et marque uniquement les côtés modifiés.</summary>
-        [TestMethod]
         [STATestMethod]
         public void SwitchingDiffModePreservesDesignerColumnsAndLineNumberWidth()
         {
@@ -34,7 +33,6 @@ namespace VBAi.Tests.Unit
             }
         }
 
-        [TestMethod]
         [STATestMethod]
         public void DiffRowsUseOneBasedLineNumbersAndMarkOnlyChangedSides()
         {

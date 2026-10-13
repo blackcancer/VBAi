@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -16,6 +17,9 @@ namespace VBAi
 
         /// <summary>Client HTTP utilisé pour appeler le fournisseur courant.</summary>
         private readonly HttpClient http;
+
+        /// <summary>Whole-response deadline; the transport itself has no competing cancellation timer.</summary>
+        private readonly TimeSpan requestTimeout;
 
         /// <summary>Sérialiseur JSON des requêtes et réponses fournisseur.</summary>
         private readonly JavaScriptSerializer json = new JavaScriptSerializer { MaxJsonLength = 10 * 1024 * 1024 };
@@ -40,6 +44,9 @@ namespace VBAi
 
         /// <summary>Validated Ollama-only sampling snapshot for this client's lifetime.</summary>
         private readonly double? ollamaTemperature, ollamaTopP;
+
+        /// <summary>Explicit model-supported Ollama reasoning selection; null preserves server behavior.</summary>
+        private readonly string ollamaReasoningEffort;
 
         /// <summary>Source d’annulation liée à la durée de vie du client.</summary>
         private readonly CancellationTokenSource lifetime = new CancellationTokenSource();
@@ -84,9 +91,19 @@ namespace VBAi
             : this(provider, settings, selectedModel, handler, null) { }
 
         /// <summary>Creates one immutable transport/model capability snapshot.</summary>
+        /// <param name="provider">Selected HTTP or Copilot provider.</param>
+        /// <param name="settings">Connection settings captured for this client.</param>
+        /// <param name="selectedModel">Exact model identifier.</param>
+        /// <param name="handler">Optional transport supplied by the caller.</param>
+        /// <param name="capabilities">Declared capabilities for the selected model.</param>
+        /// <param name="requestTimeout">Optional internal deadline; production uses 120 seconds for the complete response.</param>
+        /// <param name="reasoningEffort">Current conversation selection, or null to use the saved model preference.</param>
         internal LlmChatClient(LlmProvider provider, LlmSettings settings, string selectedModel, HttpMessageHandler handler,
-            LlmModelCapabilities capabilities)
+            LlmModelCapabilities capabilities, TimeSpan? requestTimeout = null, string reasoningEffort = null)
         {
+            this.requestTimeout = requestTimeout ?? TimeSpan.FromSeconds(120);
+            if (this.requestTimeout <= TimeSpan.Zero || this.requestTimeout.TotalMilliseconds > Int32.MaxValue)
+                throw new ArgumentOutOfRangeException(nameof(requestTimeout));
             if (provider == null || !provider.Available || provider.IsCodex || settings == null)
                 throw new InvalidOperationException(UiText.Get("This provider is not implemented yet."));
             this.provider = provider;
@@ -99,12 +116,14 @@ namespace VBAi
                 ollamaTopP = settings.OllamaTopP;
                 RequireOllamaSampling(ollamaTemperature, 0, 2, false, nameof(LlmSettings.OllamaTemperature));
                 RequireOllamaSampling(ollamaTopP, 0, 1, true, nameof(LlmSettings.OllamaTopP));
+                ollamaReasoningEffort = OllamaReasoning.Validate(reasoningEffort ?? settings.GetReasoningEffort(provider, model), modelCapabilities);
             }
             if (provider.IsCopilot) { copilot = new CopilotClient(); return; }
             connection = LlmConnectionProfile.ForModel(provider, settings, model, modelCapabilities);
             endpoint = connection.Endpoint;
             http = handler == null ? new HttpClient(HttpHandlerFactory()) : new HttpClient(handler);
-            http.Timeout = TimeSpan.FromSeconds(120);
+            // One linked deadline owns both headers and body, so an expiry cannot masquerade as user Stop.
+            http.Timeout = Timeout.InfiniteTimeSpan;
         }
 
         /// <summary>Refuses nonfinite or out-of-range optional sampling before constructing an HTTP transport.</summary>
@@ -174,7 +193,13 @@ namespace VBAi
                                 if (!(entry is IDictionary<string, object> item)) continue;
                                 string field = provider.IsOllama ? "name" : "id";
                                 string id = item.ContainsKey(field) ? Convert.ToString(item[field]) : null;
-                                if (!string.IsNullOrWhiteSpace(id)) models.Add(new LlmModelOption(id, ClaudeProtocol.Text(item, "display_name") ?? ClaudeProtocol.Text(item, "name") ?? id, capabilities: LlmModelCapabilities.FromCatalogue(provider, item)));
+                                if (!string.IsNullOrWhiteSpace(id))
+                                {
+                                    var capabilities = LlmModelCapabilities.FromCatalogue(provider, item);
+                                    models.Add(new LlmModelOption(id, ClaudeProtocol.Text(item, "display_name") ?? ClaudeProtocol.Text(item, "name") ?? id,
+                                        defaultEffort: provider.IsOllama && capabilities.Reasoning == true ? OllamaReasoning.Default : null,
+                                        efforts: provider.IsOllama ? OllamaReasoning.Options(capabilities) : null, capabilities: capabilities));
+                                }
                             }
                             if (!provider.IsClaude || !root.ContainsKey("has_more") || !Equals(root["has_more"], true)) return models.ToArray();
                             string cursor = ClaudeProtocol.Text(root, "last_id");
@@ -213,6 +238,7 @@ namespace VBAi
                 {
                     if (ollamaTemperature.HasValue) data["temperature"] = ollamaTemperature.Value;
                     if (ollamaTopP.HasValue) data["top_p"] = ollamaTopP.Value;
+                    if (ollamaReasoningEffort != null) data["reasoning_effort"] = ollamaReasoningEffort;
                 }
                 payload = data;
             }
@@ -227,49 +253,60 @@ namespace VBAi
             using (var request = new HttpRequestMessage(HttpMethod.Post, endpoint))
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token))
             {
-                timeout.CancelAfter(TimeSpan.FromSeconds(120));
+                timeout.CancelAfter(requestTimeout);
                 request.Content = new StringContent(json.Serialize(payload), Encoding.UTF8, "application/json");
                 connection.Authenticate(request);
-                using (var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(true))
+                try
                 {
-                    if (!response.IsSuccessStatusCode)
-                        throw new InvalidOperationException(provider.Name + " HTTP " + (int)response.StatusCode + UiText.Get(": check the key, model, URL and provider limits."));
-                    if (streaming && response.Content.Headers.ContentType?.MediaType == "text/event-stream")
+                    using (var response = await http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token).ConfigureAwait(true))
                     {
-                        LastStreamDiagnostics = new StreamDiagnostics();
-                        return RequireModelTools(await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token, LastStreamDiagnostics, ActivityUpdate, activityPrefix));
-                    }
-                    string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync(), timeout.Token);
+                        if (!response.IsSuccessStatusCode)
+                            throw new InvalidOperationException(provider.Name + " HTTP " + (int)response.StatusCode + UiText.Get(": check the key, model, URL and provider limits."));
+                        if (streaming && response.Content.Headers.ContentType?.MediaType == "text/event-stream")
+                        {
+                            LastStreamDiagnostics = new StreamDiagnostics();
+                            return RequireModelTools(await ChatStreamReader.ReadAsync(await response.Content.ReadAsStreamAsync(), provider.IsClaude, TextDelta, timeout.Token, LastStreamDiagnostics, ActivityUpdate, activityPrefix));
+                        }
+                        string body = await ChatStreamReader.ReadBodyAsync(await response.Content.ReadAsStreamAsync(), timeout.Token);
 
-                    var root = json.DeserializeObject(body) as IDictionary<string, object>;
-                    if (provider.IsBedrock) return RequireModelTools(BedrockProtocol.Response(root, ActivityUpdate, activityPrefix));
-                    if (provider.IsClaude) return RequireModelTools(ClaudeProtocol.Response(root, ActivityUpdate, activityPrefix));
-                    // JavaScriptSerializer uses object[] for JSON arrays.
-                    var array = root != null && root.ContainsKey("choices") ? root["choices"] as object[] : null;
-                    if (array == null || array.Length == 0)
-                        throw new InvalidOperationException("The LLM returned no choice.");
-                    var choice = array[0] as IDictionary<string, object>;
-                    var reasoning = new ProviderReasoning(ActivityUpdate, activityPrefix);
-                    reasoning.OpenAi(choice != null && choice.TryGetValue("message", out var rawReasoningMessage) ? rawReasoningMessage as IDictionary<string, object> : null, true);
-                    try
-                    {
-                        string finish = ClaudeProtocol.Text(choice, "finish_reason");
-                        if (finish == "length" || finish == "content_filter") throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
-                        if (choice == null || !choice.ContainsKey("message"))
-                            throw new InvalidOperationException("The LLM response has no message.");
-                        if (!(choice["message"] is IDictionary<string, object> message)) throw new InvalidOperationException("Invalid LLM message.");
-                        if (message.TryGetValue("tool_calls", out var proposedCalls) && proposedCalls is object[] calls && calls.Length > 0 &&
-                            finish != "tool_calls" && finish != "stop")
-                            throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
-                        RequireModelTools(message);
-                        reasoning.Finish("completed");
-                        return message;
+                        var root = json.DeserializeObject(body) as IDictionary<string, object>;
+                        if (provider.IsBedrock) return RequireModelTools(BedrockProtocol.Response(root, ActivityUpdate, activityPrefix));
+                        if (provider.IsClaude) return RequireModelTools(ClaudeProtocol.Response(root, ActivityUpdate, activityPrefix));
+                        // JavaScriptSerializer uses object[] for JSON arrays.
+                        var array = root != null && root.ContainsKey("choices") ? root["choices"] as object[] : null;
+                        if (array == null || array.Length == 0)
+                            throw new InvalidOperationException("The LLM returned no choice.");
+                        var choice = array[0] as IDictionary<string, object>;
+                        var reasoning = new ProviderReasoning(ActivityUpdate, activityPrefix);
+                        reasoning.OpenAi(choice != null && choice.TryGetValue("message", out var rawReasoningMessage) ? rawReasoningMessage as IDictionary<string, object> : null, true);
+                        try
+                        {
+                            string finish = ClaudeProtocol.Text(choice, "finish_reason");
+                            if (finish == "length" || finish == "content_filter") throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
+                            if (choice == null || !choice.ContainsKey("message"))
+                                throw new InvalidOperationException("The LLM response has no message.");
+                            if (!(choice["message"] is IDictionary<string, object> message)) throw new InvalidOperationException("Invalid LLM message.");
+                            if (message.TryGetValue("tool_calls", out var proposedCalls) && proposedCalls is object[] calls && calls.Length > 0 &&
+                                finish != "tool_calls" && finish != "stop")
+                                throw new InvalidOperationException(UiText.Get("Response truncated or filtered; tool calls were not executed."));
+                            RequireModelTools(message);
+                            reasoning.Finish("completed");
+                            return message;
+                        }
+                        catch
+                        {
+                            reasoning.Finish(timeout.IsCancellationRequested ? "interrupted" : "failed");
+                            throw;
+                        }
                     }
-                    catch
-                    {
-                        reasoning.Finish(timeout.IsCancellationRequested ? "interrupted" : "failed");
-                        throw;
-                    }
+                }
+                catch (Exception error) when (timeout.IsCancellationRequested && !lifetime.IsCancellationRequested &&
+                    (error is OperationCanceledException || error is ObjectDisposedException ||
+                     (error is IOException && !(error is InvalidDataException))))
+                {
+                    throw new TimeoutException(string.Format(UiText.Get(
+                        "The provider did not complete its response within {0} seconds. No action was automatically retried."),
+                        requestTimeout.TotalSeconds), error);
                 }
             }
         }

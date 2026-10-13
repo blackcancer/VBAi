@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="$this.Text" xml:space="preserve"><value>Comparer les références capturées</value></data>
+  <data name="copyOld.Text" xml:space="preserve"><value>Copier la capture précédente</value></data>
+  <data name="copyNew.Text" xml:space="preserve"><value>Copier la capture proposée</value></data>
+  <data name="accept.Text" xml:space="preserve"><value>Appliquer au brouillon</value></data>
+  <data name="cancel.Text" xml:space="preserve"><value>Annuler</value></data>
+  <data name="oldTitle.Text" xml:space="preserve"><value>Capture précédente</value></data>
+  <data name="newTitle.Text" xml:space="preserve"><value>Capture proposée</value></data>
+  <data name="oldMetadataLabel.Text" xml:space="preserve"><value>Métadonnées capturées</value></data>
+  <data name="newMetadataLabel.Text" xml:space="preserve"><value>Métadonnées capturées</value></data>
+  <data name="oldContentLabel.Text" xml:space="preserve"><value>Texte exact capturé</value></data>
+  <data name="newContentLabel.Text" xml:space="preserve"><value>Texte exact capturé</value></data>
+  <data name="oldCaptureNote.Text" xml:space="preserve"><value>Texte capturé ; aucune relecture automatique.</value></data>
+  <data name="newCaptureNote.Text" xml:space="preserve"><value>Texte capturé ; aucune relecture automatique.</value></data>
+  <data name="note.Text" xml:space="preserve"><value>Examinez les deux captures. Appliquer la capture proposée demande une action explicite à l’hôte ; les messages envoyés conservent leur capture d’origine.</value></data>
+  <data name="statusNote.Text" xml:space="preserve"><value>L’application de cette capture au brouillon est indisponible.</value></data>
+  <data name="identityId" xml:space="preserve"><value>ID</value></data>
+  <data name="identityOrigin" xml:space="preserve"><value>Origine</value></data>
+  <data name="truncatedCapture" xml:space="preserve"><value>Capture tronquée : seul le fragment capturé est disponible.</value></data>
+  <data name="completeCapture" xml:space="preserve"><value>Texte capturé ; aucune relecture automatique.</value></data>
+  <data name="acceptanceAvailable" xml:space="preserve"><value>Appliquez au brouillon après examen des deux captures.</value></data>
+  <data name="acceptanceUnavailable" xml:space="preserve"><value>L’application de cette capture au brouillon est indisponible.</value></data>
+  <data name="acceptanceRequested" xml:space="preserve"><value>Application demandée. En attente de validation du brouillon par l’hôte.</value></data>
+  <data name="CapturePending" xml:space="preserve"><value>Capture d’une version proposée pour comparaison…</value></data>
+  <data name="ValidationPending" xml:space="preserve"><value>Validation de la capture proposée et du brouillon actuel…</value></data>
+  <data name="ComparisonUnavailable" xml:space="preserve"><value>La comparaison est indisponible pour cette référence.</value></data>
+  <data name="SourceChanged" xml:space="preserve"><value>La source ou le brouillon a changé. Demandez une nouvelle comparaison.</value></data>
+  <data name="CandidateStale" xml:space="preserve"><value>La capture proposée est périmée. Demandez une nouvelle comparaison.</value></data>
+  <data name="Accepted" xml:space="preserve"><value>La capture proposée a été appliquée au brouillon.</value></data>
+  <data name="SavingPending" xml:space="preserve"><value>Enregistrement du brouillon. Vous pourrez fermer la fenêtre après cet enregistrement.</value></data>
+  <data name="SavingFailed" xml:space="preserve"><value>La capture proposée n’a pas pu être enregistrée dans le brouillon.</value></data>
+</root>

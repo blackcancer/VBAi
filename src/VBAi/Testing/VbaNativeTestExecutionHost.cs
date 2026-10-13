@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -46,6 +46,13 @@ namespace VBAi
             int ReadMode(object project);
         }
 
+        /// <summary>Owns interfaces acquired for one native attempt until its verified completion.</summary>
+        internal interface IPreparedResources : IDisposable
+        {
+            /// <summary>Roots acquired references when dispatched native completion is uncertain.</summary>
+            void Retain();
+        }
+
         /// <summary>VBE automation object used only from the captured owning thread.</summary>
         private readonly object vbe;
 
@@ -88,6 +95,9 @@ namespace VBAi
         /// <summary>Maximum time allowed to obtain positive native completion evidence.</summary>
         internal TimeSpan VerificationTimeout = TimeSpan.FromSeconds(30);
 
+        /// <summary>Optional stage observer; its failures cannot replace an execution verdict.</summary>
+        internal NativeExecutionTimings Timings = NativeExecutionTimings.Disabled;
+
         /// <summary>Captures all identities and resources for one one-shot native invocation attempt.</summary>
         private sealed class Call
         {
@@ -103,6 +113,12 @@ namespace VBAi
 
             /// <summary>Live project object resolved for this attempt.</summary>
             internal object Project;
+
+            /// <summary>Owner of native preparation acquisitions; never the borrowed project or editor.</summary>
+            internal object Prepared;
+
+            /// <summary>Positive callback and design-mode evidence permitting acquisition release.</summary>
+            internal bool NativeCompleted;
 
             /// <summary>Tracks whether result correlation was armed and the irreversible native call was dispatched.</summary>
             internal bool Armed, Invoked;
@@ -182,32 +198,35 @@ namespace VBAi
                 // Native selection can pump editor callbacks; reserve it through dispatch and immediate observation.
                 using (new VbeDebugInspection())
                 {
-                    Validate(call.Catalog);
+                    Timings.Measure(NativeTestTimingStage.ValidateBeforePreparation, () => Validate(call.Catalog));
                     call.Project = resolveProject(call.Catalog);
                     var support = call.Catalog.Project.Modules.Single(module => string.Equals(module.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase));
-                    object prepared = Probe.Prepare(vbe, call.Project, support.Source);
+                    object prepared = call.Prepared = Timings.Measure(NativeTestTimingStage.PrepareNativeDispatch,
+                        () => Probe.Prepare(vbe, call.Project, support.Source));
                     // Showing a pane can pump messages. Revalidate all authority after selection.
-                    Validate(call.Catalog);
+                    Timings.Measure(NativeTestTimingStage.ValidateAfterPreparation, () => Validate(call.Catalog));
                     if (Probe is NativeProbe nativeProbe)
                     {
                         if (!nativeProbe.SameIdentity(call.Project, resolveProject(call.Catalog)))
                             throw new InvalidOperationException("The selected project identity changed during native preparation.");
-                        nativeProbe.RevalidateBeforeArming(vbe, call.Project, prepared);
+                        Timings.Measure(NativeTestTimingStage.RevalidateNativeDispatch,
+                            () => nativeProbe.RevalidateBeforeArming(vbe, call.Project, prepared));
                         // Focus activation can pump callbacks: verify all authority again before arming.
-                        Validate(call.Catalog);
+                        Timings.Measure(NativeTestTimingStage.ValidateBeforeArming, () => Validate(call.Catalog));
                     }
-                    Probe.Revalidate(vbe, call.Project, prepared);
-                    sink.Arm(call.Project, string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
-                        VbaTestRuntimeSource.Version, call.Catalog.Project.Revision, runId(), call.Test, call.Phase, signature(call.Catalog));
+                    Timings.Measure(NativeTestTimingStage.RevalidateNativeDispatch, () => Probe.Revalidate(vbe, call.Project, prepared));
+                    Timings.Measure(NativeTestTimingStage.ArmCallback, () => sink.Arm(call.Project,
+                        string.IsNullOrEmpty(call.Catalog.Project.HostPath) ? call.Catalog.Project.Id : call.Catalog.Project.HostPath,
+                        VbaTestRuntimeSource.Version, call.Catalog.Project.Revision, runId(), call.Test, call.Phase, signature(call.Catalog)));
                     call.Armed = true;
-                    Probe.Revalidate(vbe, call.Project, prepared);
+                    Timings.Measure(NativeTestTimingStage.RevalidateNativeDispatch, () => Probe.Revalidate(vbe, call.Project, prepared));
                     executionGuard();
                     sink.BeginNative();
                     call.Invoked = true;
                     call.Clock.Restart();
-                    call.Exposure = VbaTestRuntime.Expose(sink);
+                    call.Exposure = Timings.Measure(NativeTestTimingStage.ExposeCallback, () => VbaTestRuntime.Expose(sink));
                     // Never infer macro success from Execute returning: callback and Design mode are required.
-                    Probe.Execute(prepared);
+                    Timings.Measure(NativeTestTimingStage.ExecuteNativeDispatch, () => Probe.Execute(prepared));
                     Observe(call);
                     if (!call.Completion.Task.IsCompleted) call.Polling = StartPolling(() => Observe(call));
                 }
@@ -225,22 +244,25 @@ namespace VBAi
                 RequireOwner();
                 if (sink.HasFault) throw new InvalidOperationException("The runtime callback rejected this attempt.");
                 Probe.RequireOwner(vbe);
-                int mode = Probe.ReadMode(call.Project);
+                int mode = Timings.Measure(NativeTestTimingStage.ReadNativeMode, () => Probe.ReadMode(call.Project));
                 if (mode == 1) throw new InvalidOperationException("The test entered break mode; its completion is uncertain.");
                 if (mode != 0 && mode != 2) throw new InvalidOperationException("The test project mode is unavailable.");
                 if (mode == 2 && sink.HasVerdict)
                 {
-                    object verdict = sink.CompleteNative(true);
+                    object verdict = Timings.Measure(NativeTestTimingStage.CompleteCallback, () => sink.CompleteNative(true));
                     call.Armed = false;
                     var result = VbaTestRuntimeSource.Decode(call.Test, verdict);
                     result.Phase = call.Phase;
                     result.Duration = call.Clock.Elapsed;
-                    Revoke(call);
+                    call.NativeCompleted = true;
+                    Timings.Measure(NativeTestTimingStage.RevokeCallback, () => Revoke(call));
                     active = null;
                     call.Completion.TrySetResult(result);
                 }
                 else if (call.Clock.Elapsed >= VerificationTimeout)
-                    throw new InvalidOperationException("Native completion and callback verdict were not both verified before the observation deadline.");
+                    throw new InvalidOperationException("Native completion and callback verdict were not both verified before the observation deadline. "
+                        + "Observed project mode=" + mode + "; correlated verdict=" + sink.HasVerdict
+                        + "; callback fault=" + sink.HasFault + "; native dispatch entered=" + call.Invoked + ". No action was replayed.");
             }
             catch (Exception error) { Finish(call, error); }
         }
@@ -258,7 +280,11 @@ namespace VBAi
                 call.Armed = false;
             }
             if (call.Invoked) uncertain = true;
-            Revoke(call);
+            try { Revoke(call); }
+            catch (Exception cleanupError)
+            {
+                error = new AggregateException(error.Message + Environment.NewLine + cleanupError.Message, error, cleanupError);
+            }
             if (ReferenceEquals(active, call)) active = null;
             call.Completion.TrySetException(new VbaTestInvocationException(error.Message, call.Invoked, error));
         }
@@ -266,7 +292,21 @@ namespace VBAi
         /// <summary>Stops polling and removes the temporary result exposure associated with an attempt.</summary>
         /// <param name="call">Attempt whose temporary resources are released.</param>
         private static void Revoke(Call call)
-        { call.Polling?.Dispose(); call.Polling = null; call.Exposure?.Dispose(); call.Exposure = null; }
+        {
+            var polling = call.Polling; call.Polling = null;
+            var exposure = call.Exposure; call.Exposure = null;
+            var prepared = call.Prepared as IPreparedResources; call.Prepared = null;
+            try { polling?.Dispose(); }
+            finally
+            {
+                try { exposure?.Dispose(); }
+                finally
+                {
+                    if (call.Invoked && !call.NativeCompleted) prepared?.Retain();
+                    else prepared?.Dispose();
+                }
+            }
+        }
 
         /// <summary>Throws unless the caller is on the thread that captured this VBE automation object.</summary>
         private void RequireOwner()
@@ -300,29 +340,35 @@ namespace VBAi
         /// <param name="observeAfterShow">Optional callback to verify the editor after showing its pane.</param>
         /// <param name="identity">COM identity comparer; defaults to the shared VBE identity check.</param>
         /// <returns>Opaque pane preparation record used to detect a changed selection before dispatch.</returns>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         internal static object PrepareNativePane(object editorObject, object moduleObject, int line, Action<object> observeAfterShow = null,
-            Func<object, object, bool> identity = null)
+            Func<object, object, bool> identity = null, Action<object> releaseAcquired = null)
         {
-            if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
-            dynamic editor = editorObject;
-            // Show() selects a pane within its window; it does not make the VBE's
-            // parent window visible. Materialize that parent before acquiring a pane.
-            editor.MainWindow.Visible = true;
-            if (!(bool)editor.MainWindow.Visible)
-                throw new InvalidOperationException("The native VBE main window could not be made visible before pane selection.");
-            editor.MainWindow.SetFocus();
-            dynamic pane = ((dynamic)moduleObject).CodePane;
-            pane.Show();
-            observeAfterShow?.Invoke((object)pane);
-            editor.ActiveCodePane = pane;
-            pane.SetSelection(line, 1, line, 1);
-            dynamic window = pane.Window;
-            // VBIDE can report HWnd=0 for a live code window. Its COM identity,
-            // module, type and visibility determine whether it is eligible for focus.
-            if (!identity(moduleObject, (object)pane.CodeModule) || (int)window.Type != 0 || !(bool)window.Visible)
-                throw new InvalidOperationException("The exact support code window is not visible before native focus.");
-            window.SetFocus();
-            return (object)pane;
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+                dynamic editor = editorObject;
+                // Show() selects a pane within its window; it does not make the VBE's
+                // parent window visible. Materialize that parent before acquiring a pane.
+                dynamic mainWindow = references.Add((object)editor.MainWindow);
+                mainWindow.Visible = true;
+                if (!(bool)mainWindow.Visible)
+                    throw new InvalidOperationException("The native VBE main window could not be made visible before pane selection.");
+                mainWindow.SetFocus();
+                dynamic pane = references.Add((object)((dynamic)moduleObject).CodePane);
+                pane.Show();
+                observeAfterShow?.Invoke((object)pane);
+                editor.ActiveCodePane = pane;
+                pane.SetSelection(line, 1, line, 1);
+                dynamic window = references.Add((object)pane.Window);
+                // VBIDE can report HWnd=0 for a live code window. Its COM identity,
+                // module, type and visibility determine whether it is eligible for focus.
+                if (!identity(moduleObject, references.Add((object)pane.CodeModule)) || (int)window.Type != 0 || !(bool)window.Visible)
+                    throw new InvalidOperationException("The exact support code window is not visible before native focus.");
+                window.SetFocus();
+                references.Transfer((object)pane);
+                return (object)pane;
+            }
         }
 
         /// <summary>Validates the active project, code window, and pending-wrapper selection before native dispatch.</summary>
@@ -332,23 +378,27 @@ namespace VBAi
         /// <param name="expectedPane">Pane captured during preparation.</param>
         /// <param name="expectedLine">One-based pending-wrapper body line that must remain selected.</param>
         /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         internal static void ValidateNativePaneContext(object editorObject, object projectObject, object moduleObject,
-            object expectedPane, int expectedLine, Func<object, object, bool> identity = null)
+            object expectedPane, int expectedLine, Func<object, object, bool> identity = null, Action<object> releaseAcquired = null)
         {
-            if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
-            dynamic editor = editorObject;
-            object activeProject = (object)editor.ActiveVBProject;
-            if (activeProject == null || !identity(projectObject, activeProject))
-                throw new InvalidOperationException("The exact selected project is not active before native dispatch.");
-            dynamic window = ((dynamic)expectedPane).Window;
-            object activeWindow = (object)editor.ActiveWindow;
-            bool available = activeWindow != null, matches = available && identity((object)window, activeWindow);
-            int type = (int)window.Type;
-            bool visible = (bool)window.Visible;
-            if (!available || !matches || type != 0 || !visible)
-                throw new InvalidOperationException("The exact support code window does not own native focus before dispatch. Observed focus: activeWindowAvailable="
-                    + available + "; activeWindowMatches=" + matches + "; supportWindowType=" + type + "; supportWindowVisible=" + visible + ".");
-            ValidateNativePaneSelection(editorObject, moduleObject, expectedPane, expectedLine, identity);
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+                dynamic editor = editorObject;
+                object activeProject = references.Add((object)editor.ActiveVBProject);
+                if (activeProject == null || !identity(projectObject, activeProject))
+                    throw new InvalidOperationException("The exact selected project is not active before native dispatch.");
+                dynamic window = references.Add((object)((dynamic)expectedPane).Window);
+                object activeWindow = references.Add((object)editor.ActiveWindow);
+                bool available = activeWindow != null, matches = available && identity((object)window, activeWindow);
+                int type = (int)window.Type;
+                bool visible = (bool)window.Visible;
+                if (!available || !matches || type != 0 || !visible)
+                    throw new InvalidOperationException("The exact support code window does not own native focus before dispatch. Observed focus: activeWindowAvailable="
+                        + available + "; activeWindowMatches=" + matches + "; supportWindowType=" + type + "; supportWindowVisible=" + visible + ".");
+                ValidateNativePaneSelection(editorObject, moduleObject, expectedPane, expectedLine, identity, releaseAcquired);
+            }
         }
 
         /// <summary>Validates native pane selection for vba native test execution host.</summary>
@@ -357,18 +407,22 @@ namespace VBAi
         /// <param name="expectedPane">Pane captured during preparation.</param>
         /// <param name="expectedLine">One-based pending-wrapper body line that must remain selected.</param>
         /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         private static void ValidateNativePaneSelection(object editorObject, object moduleObject,
-            object expectedPane, int expectedLine, Func<object, object, bool> identity)
+            object expectedPane, int expectedLine, Func<object, object, bool> identity, Action<object> releaseAcquired = null)
         {
-            dynamic editor = editorObject;
-            dynamic pane = editor.ActiveCodePane;
-            if (pane == null || !identity(expectedPane, (object)pane) || !identity(moduleObject, (object)pane.CodeModule))
-                throw new InvalidOperationException("The support code pane no longer owns the native run selection.");
-            int line = 0, column = 0, endLine = 0, endColumn = 0;
-            pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
-            if (line != expectedLine || endLine != expectedLine || column != 1 || endColumn != 1
-                || (int)((dynamic)moduleObject).ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0] != expectedLine)
-                throw new InvalidOperationException("The exact pending wrapper body no longer owns the native selection.");
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                dynamic editor = editorObject;
+                dynamic pane = references.Add((object)editor.ActiveCodePane);
+                if (pane == null || !identity(expectedPane, (object)pane) || !identity(moduleObject, references.Add((object)pane.CodeModule)))
+                    throw new InvalidOperationException("The support code pane no longer owns the native run selection.");
+                int line = 0, column = 0, endLine = 0, endColumn = 0;
+                pane.GetSelection(ref line, ref column, ref endLine, ref endColumn);
+                if (line != expectedLine || endLine != expectedLine || column != 1 || endColumn != 1
+                    || (int)((dynamic)moduleObject).ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0] != expectedLine)
+                    throw new InvalidOperationException("The exact pending wrapper body no longer owns the native selection.");
+            }
         }
 
         /// <summary>Ensures native pane focus for vba native test execution host.</summary>
@@ -380,28 +434,32 @@ namespace VBAi
         /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
         /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         /// <returns>target produced by the operation for ensure native pane focus on vba native test execution host.</returns>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         internal static VbaNativeTestWindowFocus.Target EnsureNativePaneFocus(object editorObject, object projectObject,
             object moduleObject, object paneObject, int line, VbaNativeTestWindowFocus.IWindows windows,
-            Func<object, object, bool> identity = null)
+            Func<object, object, bool> identity = null, Action<object> releaseAcquired = null)
         {
-            if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
-            dynamic editor = editorObject, window = ((dynamic)paneObject).Window;
-            ValidateNativeFocusTarget(editorObject, projectObject, moduleObject, paneObject, line, identity);
-            try
+            using (var references = new VbaTestComReferences(releaseAcquired))
             {
-                ValidateNativePaneContext(editorObject, projectObject, moduleObject, paneObject, line, identity);
-                return null;
-            }
-            catch (InvalidOperationException)
-            {
-                ValidateNativeFocusTarget(editorObject, projectObject, moduleObject, paneObject, line, identity);
-                // No native command was dispatched. The verified native child is
-                // activated once, then COM must independently confirm the mapping.
-                var target = VbaNativeTestWindowFocus.Focus(windows,
-                    new IntPtr(Convert.ToInt64(editor.MainWindow.HWnd)), (string)window.Caption);
-                ValidateNativePaneContext(editorObject, projectObject, moduleObject, paneObject, line, identity);
-                ValidateRecoveredNativeFocus(editorObject, paneObject, windows, target);
-                return target;
+                if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+                dynamic editor = editorObject, window = references.Add((object)((dynamic)paneObject).Window);
+                ValidateNativeFocusTarget(editorObject, projectObject, moduleObject, paneObject, line, identity, releaseAcquired);
+                try
+                {
+                    ValidateNativePaneContext(editorObject, projectObject, moduleObject, paneObject, line, identity, releaseAcquired);
+                    return null;
+                }
+                catch (InvalidOperationException)
+                {
+                    ValidateNativeFocusTarget(editorObject, projectObject, moduleObject, paneObject, line, identity, releaseAcquired);
+                    // No native command was dispatched. The verified native child is
+                    // activated once, then COM must independently confirm the mapping.
+                    var target = VbaNativeTestWindowFocus.Focus(windows,
+                        new IntPtr(Convert.ToInt64(((dynamic)references.Add((object)editor.MainWindow)).HWnd)), (string)window.Caption);
+                    ValidateNativePaneContext(editorObject, projectObject, moduleObject, paneObject, line, identity, releaseAcquired);
+                    ValidateRecoveredNativeFocus(editorObject, paneObject, windows, target, releaseAcquired);
+                    return target;
+                }
             }
         }
 
@@ -412,20 +470,24 @@ namespace VBAi
         /// <param name="paneObject">Prepared code pane whose window is the required target.</param>
         /// <param name="line">Expected pending-wrapper body line.</param>
         /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         private static void ValidateNativeFocusTarget(object editorObject, object projectObject, object moduleObject,
-            object paneObject, int line, Func<object, object, bool> identity)
+            object paneObject, int line, Func<object, object, bool> identity, Action<object> releaseAcquired = null)
         {
-            dynamic editor = editorObject, pane = paneObject, window = pane.Window;
-            // This fallback follows the completed COM focus attempt. It must not
-            // repair a changed project, module, code window or wrapper selection.
-            if (!identity(projectObject, (object)editor.ActiveVBProject) || !identity(moduleObject, (object)pane.CodeModule)
-                || (int)window.Type != 0 || !(bool)window.Visible)
-                throw new InvalidOperationException("The exact support context changed before native focus recovery.");
-            int start = 0, column = 0, end = 0, endColumn = 0;
-            pane.GetSelection(ref start, ref column, ref end, ref endColumn);
-            if (start != line || end != line || column != 1 || endColumn != 1
-                || (int)((dynamic)moduleObject).ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0] != line)
-                throw new InvalidOperationException("The pending wrapper selection changed before native focus recovery.");
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
+                    dynamic editor = editorObject, pane = paneObject, window = references.Add((object)pane.Window);
+                    // This fallback follows the completed COM focus attempt. It must not
+                    // repair a changed project, module, code window or wrapper selection.
+                    if (!identity(projectObject, references.Add((object)editor.ActiveVBProject)) || !identity(moduleObject, references.Add((object)pane.CodeModule))
+                        || (int)window.Type != 0 || !(bool)window.Visible)
+                        throw new InvalidOperationException("The exact support context changed before native focus recovery.");
+                    int start = 0, column = 0, end = 0, endColumn = 0;
+                    pane.GetSelection(ref start, ref column, ref end, ref endColumn);
+                    if (start != line || end != line || column != 1 || endColumn != 1
+                        || (int)((dynamic)moduleObject).ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0] != line)
+                        throw new InvalidOperationException("The pending wrapper selection changed before native focus recovery.");
+            }
         }
 
         /// <summary>Validates recovered native focus for vba native test execution host.</summary>
@@ -433,14 +495,18 @@ namespace VBAi
         /// <param name="paneObject">Prepared code pane whose window is the required target.</param>
         /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
         /// <param name="target">Previously verified native VBE main, MDI, and code-window handle chain.</param>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         internal static void ValidateRecoveredNativeFocus(object editorObject, object paneObject,
-            VbaNativeTestWindowFocus.IWindows windows, VbaNativeTestWindowFocus.Target target)
+            VbaNativeTestWindowFocus.IWindows windows, VbaNativeTestWindowFocus.Target target, Action<object> releaseAcquired = null)
         {
+            using (var references = new VbaTestComReferences(releaseAcquired))
+            {
             if (target == null) return;
-            if (new IntPtr(Convert.ToInt64(((dynamic)editorObject).MainWindow.HWnd)) != target.Main.Handle
-                || !string.Equals((string)((dynamic)paneObject).Window.Caption, target.Caption, StringComparison.Ordinal))
+            if (new IntPtr(Convert.ToInt64(((dynamic)references.Add((object)((dynamic)editorObject).MainWindow)).HWnd)) != target.Main.Handle
+                || !string.Equals((string)((dynamic)references.Add((object)((dynamic)paneObject).Window)).Caption, target.Caption, StringComparison.Ordinal))
                 throw new InvalidOperationException("The COM-to-native code-window mapping changed after focus recovery.");
             VbaNativeTestWindowFocus.VerifyFocus(windows, target);
+            }
         }
 
         /// <summary>Captures bounded COM and native-window diagnostics without focusing or dispatching a command.</summary>
@@ -450,47 +516,51 @@ namespace VBAi
         /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         /// <param name="nativeWindows">Optional native-window formatter; defaults to a bounded owner-thread scan.</param>
         /// <returns>One bounded diagnostic string; individual failed COM reads are represented as unavailable.</returns>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         internal static string DescribeNativeWindows(object editorObject, object expectedPane, object expectedModule,
-            Func<object, object, bool> identity = null, Func<IntPtr, string> nativeWindows = null)
+            Func<object, object, bool> identity = null, Func<IntPtr, string> nativeWindows = null, Action<object> releaseAcquired = null)
         {
-            if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
-            object main = null, expectedWindow = null, activeWindow = null, activePane = null, activeModule = null;
-            DiagnosticRead(() => { main = (object)((dynamic)editorObject).MainWindow; return "available"; });
-            DiagnosticRead(() => { expectedWindow = (object)((dynamic)expectedPane).Window; return "available"; });
-            DiagnosticRead(() => { activeWindow = (object)((dynamic)editorObject).ActiveWindow; return "available"; });
-            DiagnosticRead(() => { activePane = (object)((dynamic)editorObject).ActiveCodePane; return "available"; });
-            DiagnosticRead(() => { activeModule = (object)((dynamic)activePane).CodeModule; return "available"; });
-            var details = new StringBuilder("main={" + DiagnosticWindow(main) + "}; paneWindow={" + DiagnosticWindow(expectedWindow)
-                + "}; activeWindow={" + DiagnosticWindow(activeWindow) + "}; activeWindowMatches=" + DiagnosticMatches(identity, expectedWindow, activeWindow)
-                + "; activePaneAvailable=" + (activePane != null) + "; activePaneMatches=" + DiagnosticMatches(identity, expectedPane, activePane)
-                + "; activeModuleMatches=" + DiagnosticMatches(identity, expectedModule, activeModule) + "; selection=");
-            details.Append(DiagnosticRead(() =>
+            using (var references = new VbaTestComReferences(releaseAcquired))
             {
-                int start = 0, column = 0, end = 0, endColumn = 0;
-                ((dynamic)activePane).GetSelection(ref start, ref column, ref end, ref endColumn);
-                return start + ":" + column + "-" + end + ":" + endColumn;
-            }));
-            details.Append("; COMWindows=[");
-            try
-            {
-                int count = 0;
-                foreach (object window in ((dynamic)editorObject).Windows)
+                if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+                object main = null, expectedWindow = null, activeWindow = null, activePane = null, activeModule = null;
+                DiagnosticRead(() => { main = references.Add((object)((dynamic)editorObject).MainWindow); return "available"; });
+                DiagnosticRead(() => { expectedWindow = references.Add((object)((dynamic)expectedPane).Window); return "available"; });
+                DiagnosticRead(() => { activeWindow = references.Add((object)((dynamic)editorObject).ActiveWindow); return "available"; });
+                DiagnosticRead(() => { activePane = references.Add((object)((dynamic)editorObject).ActiveCodePane); return "available"; });
+                DiagnosticRead(() => { activeModule = references.Add((object)((dynamic)activePane).CodeModule); return "available"; });
+                var details = new StringBuilder("main={" + DiagnosticWindow(main) + "}; paneWindow={" + DiagnosticWindow(expectedWindow)
+                    + "}; activeWindow={" + DiagnosticWindow(activeWindow) + "}; activeWindowMatches=" + DiagnosticMatches(identity, expectedWindow, activeWindow)
+                    + "; activePaneAvailable=" + (activePane != null) + "; activePaneMatches=" + DiagnosticMatches(identity, expectedPane, activePane)
+                    + "; activeModuleMatches=" + DiagnosticMatches(identity, expectedModule, activeModule) + "; selection=");
+                details.Append(DiagnosticRead(() =>
                 {
-                    if (count++ >= 12) { details.Append("bounded"); break; }
-                    details.Append("{" + DiagnosticWindow(window) + "}");
+                    int start = 0, column = 0, end = 0, endColumn = 0;
+                    ((dynamic)activePane).GetSelection(ref start, ref column, ref end, ref endColumn);
+                    return start + ":" + column + "-" + end + ":" + endColumn;
+                }));
+                details.Append("; COMWindows=[");
+                try
+                {
+                    int count = 0;
+                    foreach (object window in references.Items((object)((dynamic)editorObject).Windows))
+                    {
+                        if (count++ >= 12) { details.Append("bounded"); break; }
+                        details.Append("{" + DiagnosticWindow(window) + "}");
+                    }
                 }
+                catch (Exception error) { details.Append("unavailable(" + error.GetType().Name + ")"); }
+                details.Append("]; ownedNative=[");
+                try
+                {
+                    var handle = new IntPtr(Convert.ToInt64(((dynamic)main).HWnd));
+                    if (nativeWindows == null) nativeWindows = NativeWindowObservation.Read;
+                    string native = nativeWindows(handle);
+                    details.Append(native == null ? "null" : native.Substring(0, Math.Min(native.Length, 4000)));
+                }
+                catch (Exception error) { details.Append("unavailable(" + error.GetType().Name + ")"); }
+                return details.Append("]").ToString();
             }
-            catch (Exception error) { details.Append("unavailable(" + error.GetType().Name + ")"); }
-            details.Append("]; ownedNative=[");
-            try
-            {
-                var handle = new IntPtr(Convert.ToInt64(((dynamic)main).HWnd));
-                if (nativeWindows == null) nativeWindows = NativeWindowObservation.Read;
-                string native = nativeWindows(handle);
-                details.Append(native == null ? "null" : native.Substring(0, Math.Min(native.Length, 4000)));
-            }
-            catch (Exception error) { details.Append("unavailable(" + error.GetType().Name + ")"); }
-            return details.Append("]").ToString();
         }
 
         /// <summary>Reads bounded scalar properties from one observed VBIDE window.</summary>
@@ -580,45 +650,49 @@ namespace VBAi
         /// <param name="expectedLine">One-based pending-wrapper body line that must remain selected.</param>
         /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
         /// <returns>Scalar expected/observed selection evidence; reads outside the selected project are redacted.</returns>
+        /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
         internal static string DescribeNativeSelection(object editorObject, object expectedProject, object expectedModule,
-            object expectedPane, int expectedLine, Func<object, object, bool> identity = null)
+            object expectedPane, int expectedLine, Func<object, object, bool> identity = null, Action<object> releaseAcquired = null)
         {
-            if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
-            object activeProject = null, pane = null, module = null, paneProject = null;
-            string activeProjectRead = DiagnosticRead(() => { activeProject = (object)((dynamic)editorObject).ActiveVBProject; return activeProject == null ? "null" : "available"; });
-            string paneRead = DiagnosticRead(() => { pane = (object)((dynamic)editorObject).ActiveCodePane; return pane == null ? "null" : "available"; });
-            string moduleRead = DiagnosticRead(() => { module = (object)((dynamic)pane).CodeModule; return module == null ? "null" : "available"; });
-            string projectRead = DiagnosticRead(() => { paneProject = (object)((dynamic)module).Parent.Collection.Parent; return paneProject == null ? "null" : "available"; });
-            bool activeProjectMatches = DiagnosticMatches(identity, expectedProject, activeProject);
-            bool moduleMatches = DiagnosticMatches(identity, expectedModule, module);
-            bool paneProjectMatches = DiagnosticMatches(identity, expectedProject, paneProject);
-            bool inspectedModuleIsAuthorized = moduleMatches || paneProjectMatches;
-            const string redacted = "redacted(outside selected project)";
-            int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
-            string selection = DiagnosticRead(() =>
+            using (var references = new VbaTestComReferences(releaseAcquired))
             {
-                ((dynamic)pane).GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
-                return startLine + ":" + startColumn + "-" + endLine + ":" + endColumn;
-            });
-            return " Expected: project=" + DiagnosticRead(() => ((dynamic)expectedProject).Name)
-                + "; module=" + DiagnosticRead(() => ((dynamic)expectedModule).Parent.Name)
-                + "; procedure=" + VbaTestRuntimeSource.PendingProcedure + "; runtimeVersion=" + VbaTestRuntimeSource.Version
-                + "; mainWindowVisible=" + DiagnosticRead(() => ((dynamic)editorObject).MainWindow.Visible)
-                + "; selection=" + expectedLine + ":1-" + expectedLine + ":1"
-                + "; currentBodyLine=" + DiagnosticRead(() => ((dynamic)expectedModule).ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0])
-                + "; paneWindow=" + DiagnosticRead(() => ((dynamic)expectedPane).Window.HWnd)
-                + ". Actual: activeProject=" + (activeProjectMatches ? DiagnosticRead(() => ((dynamic)activeProject).Name) : redacted)
-                + "; activeProjectMatches=" + activeProjectMatches
-                + "; paneMatches=" + DiagnosticRead(() => identity(expectedPane, pane))
-                + "; paneWindow=" + DiagnosticRead(() => ((dynamic)pane).Window.HWnd)
-                + "; module=" + (inspectedModuleIsAuthorized ? DiagnosticRead(() => ((dynamic)module).Parent.Name) : redacted)
-                + "; moduleMatches=" + moduleMatches
-                + "; paneProject=" + (paneProjectMatches ? DiagnosticRead(() => ((dynamic)paneProject).Name) : redacted)
-                + "; paneProjectMatches=" + paneProjectMatches
-                + "; selection=" + selection
-                + "; startProcedure=" + (inspectedModuleIsAuthorized ? DiagnosticRead(() => DiagnosticProcedure(module, startLine)) : redacted)
-                + "; endProcedure=" + (inspectedModuleIsAuthorized ? DiagnosticRead(() => DiagnosticProcedure(module, endLine)) : redacted)
-                + "; reads=" + activeProjectRead + "/" + paneRead + "/" + moduleRead + "/" + projectRead + ".";
+                if (identity == null) identity = VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+                object activeProject = null, pane = null, module = null, paneProject = null;
+                string activeProjectRead = DiagnosticRead(() => { activeProject = references.Add((object)((dynamic)editorObject).ActiveVBProject); return activeProject == null ? "null" : "available"; });
+                string paneRead = DiagnosticRead(() => { pane = references.Add((object)((dynamic)editorObject).ActiveCodePane); return pane == null ? "null" : "available"; });
+                string moduleRead = DiagnosticRead(() => { module = references.Add((object)((dynamic)pane).CodeModule); return module == null ? "null" : "available"; });
+                string projectRead = DiagnosticRead(() => { dynamic component = references.Add((object)((dynamic)module).Parent); dynamic collection = references.Add((object)component.Collection); paneProject = references.Add((object)collection.Parent); return paneProject == null ? "null" : "available"; });
+                bool activeProjectMatches = DiagnosticMatches(identity, expectedProject, activeProject);
+                bool moduleMatches = DiagnosticMatches(identity, expectedModule, module);
+                bool paneProjectMatches = DiagnosticMatches(identity, expectedProject, paneProject);
+                bool inspectedModuleIsAuthorized = moduleMatches || paneProjectMatches;
+                const string redacted = "redacted(outside selected project)";
+                int startLine = 0, startColumn = 0, endLine = 0, endColumn = 0;
+                string selection = DiagnosticRead(() =>
+                {
+                    ((dynamic)pane).GetSelection(ref startLine, ref startColumn, ref endLine, ref endColumn);
+                    return startLine + ":" + startColumn + "-" + endLine + ":" + endColumn;
+                });
+                return " Expected: project=" + DiagnosticRead(() => ((dynamic)expectedProject).Name)
+                    + "; module=" + DiagnosticRead(() => ((dynamic)references.Add((object)((dynamic)expectedModule).Parent)).Name)
+                    + "; procedure=" + VbaTestRuntimeSource.PendingProcedure + "; runtimeVersion=" + VbaTestRuntimeSource.Version
+                    + "; mainWindowVisible=" + DiagnosticRead(() => ((dynamic)references.Add((object)((dynamic)editorObject).MainWindow)).Visible)
+                    + "; selection=" + expectedLine + ":1-" + expectedLine + ":1"
+                    + "; currentBodyLine=" + DiagnosticRead(() => ((dynamic)expectedModule).ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0])
+                    + "; paneWindow=" + DiagnosticRead(() => ((dynamic)references.Add((object)((dynamic)expectedPane).Window)).HWnd)
+                    + ". Actual: activeProject=" + (activeProjectMatches ? DiagnosticRead(() => ((dynamic)activeProject).Name) : redacted)
+                    + "; activeProjectMatches=" + activeProjectMatches
+                    + "; paneMatches=" + DiagnosticRead(() => identity(expectedPane, pane))
+                    + "; paneWindow=" + DiagnosticRead(() => ((dynamic)references.Add((object)((dynamic)pane).Window)).HWnd)
+                    + "; module=" + (inspectedModuleIsAuthorized ? DiagnosticRead(() => ((dynamic)references.Add((object)((dynamic)module).Parent)).Name) : redacted)
+                    + "; moduleMatches=" + moduleMatches
+                    + "; paneProject=" + (paneProjectMatches ? DiagnosticRead(() => ((dynamic)paneProject).Name) : redacted)
+                    + "; paneProjectMatches=" + paneProjectMatches
+                    + "; selection=" + selection
+                    + "; startProcedure=" + (inspectedModuleIsAuthorized ? DiagnosticRead(() => DiagnosticProcedure(module, startLine)) : redacted)
+                    + "; endProcedure=" + (inspectedModuleIsAuthorized ? DiagnosticRead(() => DiagnosticProcedure(module, endLine)) : redacted)
+                    + "; reads=" + activeProjectRead + "/" + paneRead + "/" + moduleRead + "/" + projectRead + ".";
+            }
         }
 
         /// <summary>Compares optional diagnostic objects without allowing identity failures to escape.</summary>
@@ -666,11 +740,40 @@ namespace VBAi
         {
 
             /// <summary>Captured editor/project/module/pane/control state required to revalidate one native attempt.</summary>
-            private sealed class Prepared
+            private sealed class Prepared : IPreparedResources
             {
 
                 /// <summary>COM identities captured before native dispatch.</summary>
                 internal object Editor, Project, Module, Pane, Control;
+
+                /// <summary>Tracks each getter acquisition independently of borrowed dispatch arguments.</summary>
+                internal VbaTestComReferences References;
+
+                /// <summary>Owning STA on which acquired interfaces may be released.</summary>
+                private readonly int ownerThread = Thread.CurrentThread.ManagedThreadId;
+
+                /// <summary>Prevents reuse or repeated disposal after release or uncertainty retention.</summary>
+                private bool settled;
+
+                /// <summary>Refuses stale preparation and access from a different thread.</summary>
+                internal void RequireActive()
+                {
+                    RequireOwner();
+                    if (settled) throw new ObjectDisposedException(nameof(Prepared));
+                }
+
+                /// <summary>Requires the original STA before touching the acquired interfaces.</summary>
+                private void RequireOwner()
+                {
+                    if (Thread.CurrentThread.ManagedThreadId != ownerThread)
+                        throw new InvalidOperationException("Native preparation resources require their owning thread.");
+                }
+
+                /// <summary>Releases preparation acquisitions after verified completion or preflight refusal.</summary>
+                public void Dispose() { RequireOwner(); if (settled) return; settled = true; References.Dispose(); }
+
+                /// <summary>Retains all acquisitions after uncertain native execution.</summary>
+                public void Retain() { RequireOwner(); if (settled) return; settled = true; References.Retain(); }
 
                 /// <summary>Expected support source, Run control caption, and bounded observations after Show and Focus.</summary>
                 internal string Source, Caption, AfterShow, AfterFocus;
@@ -691,13 +794,18 @@ namespace VBAi
             /// <summary>COM identity comparer used to revalidate editor objects.</summary>
             private readonly Func<object, object, bool> identity;
 
+            /// <summary>Balances getter acquisitions on the owning STA; managed fixtures may observe release.</summary>
+            private readonly Action<object> releaseAcquired;
+
             /// <summary>Creates a native probe with optional HWND and COM-identity adapters.</summary>
             /// <param name="windows">Native HWND reader/activator restricted to the current process and UI thread.</param>
             /// <param name="identity">COM identity comparer; defaults to the shared native identity helper.</param>
-            internal NativeProbe(VbaNativeTestWindowFocus.IWindows windows = null, Func<object, object, bool> identity = null)
+            /// <param name="releaseAcquired">Balances only getter acquisitions on the owning thread; null uses COM release.</param>
+            internal NativeProbe(VbaNativeTestWindowFocus.IWindows windows = null, Func<object, object, bool> identity = null, Action<object> releaseAcquired = null)
             {
                 this.windows = windows ?? new VbaNativeTestWindowFocus.NativeWindows();
                 this.identity = identity ?? VbeDebug.NativeProcedureValuesHost.SameComIdentity;
+                this.releaseAcquired = releaseAcquired;
             }
 
             /// <summary>Compares two objects using the configured COM identity rule.</summary>
@@ -710,11 +818,14 @@ namespace VBAi
             /// <param name="editor">VBE automation object whose main-window ownership is checked.</param>
             public void RequireOwner(object editor)
             {
-                if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("Native VBE execution requires an STA.");
-                var window = new IntPtr(Convert.ToInt64(((dynamic)editor).MainWindow.HWnd));
-                var observed = windows.Read(window);
-                if (window == IntPtr.Zero || observed.Process != windows.CurrentProcess || observed.Thread != windows.CurrentThread)
-                    throw new InvalidOperationException("The VBE window does not belong to this process and owning UI thread.");
+                using (var references = new VbaTestComReferences(releaseAcquired))
+                {
+                    if (Thread.CurrentThread.GetApartmentState() != ApartmentState.STA) throw new InvalidOperationException("Native VBE execution requires an STA.");
+                    var window = new IntPtr(Convert.ToInt64(((dynamic)references.Add((object)((dynamic)editor).MainWindow)).HWnd));
+                    var observed = windows.Read(window);
+                    if (window == IntPtr.Zero || observed.Process != windows.CurrentProcess || observed.Thread != windows.CurrentThread)
+                        throw new InvalidOperationException("The VBE window does not belong to this process and owning UI thread.");
+                }
             }
 
             /// <summary>Validates the generated wrapper, selects its exact code pane, and captures dispatch identities.</summary>
@@ -724,42 +835,48 @@ namespace VBAi
             /// <returns>Prepared identity snapshot used by subsequent revalidation and execution.</returns>
             public object Prepare(object editorObject, object projectObject, string source)
             {
-                RequireOwner(editorObject);
-                dynamic editor = editorObject, project = projectObject;
-                object component = null;
-                foreach (dynamic candidate in project.VBComponents)
-                    if (string.Equals((string)candidate.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase))
-                    { if (component != null) throw new InvalidOperationException("The support module is ambiguous."); component = candidate; }
-                if (component == null || (int)((dynamic)component).Type != 1) throw new InvalidOperationException("The standard support module is unavailable.");
-                dynamic module = ((dynamic)component).CodeModule;
-                if (ReadSource(module) != source) throw new InvalidOperationException("The support source changed before selection.");
-                int line = (int)module.ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0];
-                if (!Regex.IsMatch((string)module.Lines[line, 1], @"^\s*Public\s+Sub\s+" + Regex.Escape(VbaTestRuntimeSource.PendingProcedure)
-                    + @"\s*\(\s*\)\s*(?:'.*)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
-                    throw new InvalidOperationException("An explicit public parameterless " + VbaTestRuntimeSource.PendingProcedure + " wrapper is required.");
-                string afterShow = null;
-                object pane;
-                try { pane = PrepareNativePane(editorObject, (object)module, line, shown => afterShow = DescribeNativeWindows(editorObject, shown, (object)module), identity); }
-                catch (Exception error)
+                var references = new VbaTestComReferences(releaseAcquired);
+                try
                 {
-                    if (afterShow != null) throw new InvalidOperationException(error.Message + " Immediately after Show: " + afterShow, error);
-                    throw;
+                    RequireOwner(editorObject);
+                    dynamic editor = editorObject, project = projectObject;
+                    object component = null;
+                    foreach (dynamic candidate in references.Items((object)project.VBComponents))
+                        if (string.Equals((string)candidate.Name, VbaTestRuntimeSource.ModuleName, StringComparison.OrdinalIgnoreCase))
+                        { if (component != null) throw new InvalidOperationException("The support module is ambiguous."); component = candidate; }
+                    if (component == null || (int)((dynamic)component).Type != 1) throw new InvalidOperationException("The standard support module is unavailable.");
+                    dynamic module = references.Add((object)((dynamic)component).CodeModule);
+                    if (ReadSource(module) != source) throw new InvalidOperationException("The support source changed before selection.");
+                    int line = (int)module.ProcBodyLine[VbaTestRuntimeSource.PendingProcedure, 0];
+                    if (!Regex.IsMatch((string)module.Lines[line, 1], @"^\s*Public\s+Sub\s+" + Regex.Escape(VbaTestRuntimeSource.PendingProcedure)
+                        + @"\s*\(\s*\)\s*(?:'.*)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+                        throw new InvalidOperationException("An explicit public parameterless " + VbaTestRuntimeSource.PendingProcedure + " wrapper is required.");
+                    string afterShow = null;
+                    object pane;
+                    try { pane = references.Add(PrepareNativePane(editorObject, (object)module, line, shown => afterShow = DescribeNativeWindows(editorObject, shown, (object)module, identity, releaseAcquired: releaseAcquired), identity, releaseAcquired)); }
+                    catch (Exception error)
+                    {
+                        if (afterShow != null) throw new InvalidOperationException(error.Message + " Immediately after Show: " + afterShow, error);
+                        throw;
+                    }
+                    RequireOwner(editorObject);
+                    string afterFocus = DescribeNativeWindows(editorObject, pane, (object)module, identity, releaseAcquired: releaseAcquired);
+                    VbaNativeTestWindowFocus.Target nativeFocus;
+                    try { nativeFocus = EnsureNativePaneFocus(editorObject, projectObject, (object)module, pane, line, windows, identity, releaseAcquired); }
+                    catch (Exception error)
+                    {
+                        throw new InvalidOperationException(error.Message
+                            + DescribeNativeSelection(editorObject, projectObject, (object)module, pane, line, identity, releaseAcquired)
+                            + " Immediately after COM Focus: " + afterFocus
+                            + " After native focus recovery: " + DescribeNativeWindows(editorObject, pane, (object)module, identity, releaseAcquired: releaseAcquired), error);
+                    }
+                    RequireOwner(editorObject);
+                    dynamic bars = references.Add((object)editor.CommandBars);
+                    dynamic control = references.Add((object)bars.FindControl(1, 186));
+                    ValidateNativeRunControl((object)control);
+                    return new Prepared { References = references, Editor = editorObject, Project = projectObject, Module = module, Pane = pane, Control = control, Source = source, Caption = (string)control.Caption, Line = line, AfterShow = afterShow, AfterFocus = afterFocus, NativeFocus = nativeFocus, FocusRecoveryAttempted = nativeFocus != null };
                 }
-                RequireOwner(editorObject);
-                string afterFocus = DescribeNativeWindows(editorObject, pane, (object)module);
-                VbaNativeTestWindowFocus.Target nativeFocus;
-                try { nativeFocus = EnsureNativePaneFocus(editorObject, projectObject, (object)module, pane, line, windows, identity); }
-                catch (Exception error)
-                {
-                    throw new InvalidOperationException(error.Message
-                        + DescribeNativeSelection(editorObject, projectObject, (object)module, pane, line)
-                        + " Immediately after COM Focus: " + afterFocus
-                        + " After native focus recovery: " + DescribeNativeWindows(editorObject, pane, (object)module), error);
-                }
-                RequireOwner(editorObject);
-                dynamic control = editor.CommandBars.FindControl(1, 186);
-                ValidateNativeRunControl((object)control);
-                return new Prepared { Editor = editorObject, Project = projectObject, Module = module, Pane = pane, Control = control, Source = source, Caption = (string)control.Caption, Line = line, AfterShow = afterShow, AfterFocus = afterFocus, NativeFocus = nativeFocus, FocusRecoveryAttempted = nativeFocus != null };
+                catch { references.Dispose(); throw; }
             }
 
             /// <summary>Rechecks project, design mode, support source, native pane selection, focus, and Run control identity.</summary>
@@ -783,44 +900,48 @@ namespace VBAi
             /// <param name="allowFocusRecovery">Whether this pass may use its one permitted recovery when only HWND focus was lost.</param>
             private void Revalidate(object editorObject, object projectObject, object prepared, bool allowFocusRecovery)
             {
-                RequireOwner(editorObject);
+                using (var references = new VbaTestComReferences(releaseAcquired))
+                {
+                    RequireOwner(editorObject);
                 var plan = (Prepared)prepared;
+                    plan.RequireActive();
                 dynamic editor = editorObject, project = projectObject, control = plan.Control;
-                bool found = false;
-                foreach (object candidate in editor.VBProjects)
-                    if (identity(candidate, projectObject)) { found = true; break; }
-                if (!found || (int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
-                    throw new InvalidOperationException("The selected project, mode or support source changed before native dispatch.");
-                string initialFocusRefusal = null;
-                try
-                {
-                    try { ValidateNativePaneContext(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity); }
-                    catch (InvalidOperationException focusError)
+                    bool found = false;
+                    foreach (object candidate in references.Items((object)editor.VBProjects))
+                        if (identity(candidate, projectObject)) { found = true; break; }
+                    if (!found || (int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
+                        throw new InvalidOperationException("The selected project, mode or support source changed before native dispatch.");
+                    string initialFocusRefusal = null;
+                    try
                     {
-                        initialFocusRefusal = focusError.Message;
-                        if (!allowFocusRecovery || plan.FocusRecoveryAttempted) throw;
-                        object handle = ((dynamic)plan.Pane).Window.HWnd;
-                        if (handle == null || Convert.ToInt64(handle) != 0) throw;
-                        // Only lost window focus may be repaired before arming. Changed selection or authority must refuse.
-                        ValidateNativeFocusTarget(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity);
-                        ValidateNativePaneSelection(editorObject, plan.Module, plan.Pane, plan.Line, identity);
-                        if ((int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
-                            throw new InvalidOperationException("The selected mode or support source changed before native focus recovery.");
-                        plan.FocusRecoveryAttempted = true;
-                        plan.NativeFocus = EnsureNativePaneFocus(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, windows, identity);
-                        if ((int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
-                            throw new InvalidOperationException("The selected mode or support source changed during native focus recovery.");
+                        try { ValidateNativePaneContext(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity, releaseAcquired); }
+                        catch (InvalidOperationException focusError)
+                        {
+                            initialFocusRefusal = focusError.Message;
+                            if (!allowFocusRecovery || plan.FocusRecoveryAttempted) throw;
+                            object handle = ((dynamic)references.Add((object)((dynamic)plan.Pane).Window)).HWnd;
+                            if (handle == null || Convert.ToInt64(handle) != 0) throw;
+                            // Only lost window focus may be repaired before arming. Changed selection or authority must refuse.
+                            ValidateNativeFocusTarget(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity, releaseAcquired);
+                            ValidateNativePaneSelection(editorObject, plan.Module, plan.Pane, plan.Line, identity, releaseAcquired);
+                            if ((int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
+                                throw new InvalidOperationException("The selected mode or support source changed before native focus recovery.");
+                            plan.FocusRecoveryAttempted = true;
+                            plan.NativeFocus = EnsureNativePaneFocus(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, windows, identity, releaseAcquired);
+                            if ((int)project.Mode != 2 || ReadSource(plan.Module) != plan.Source)
+                                throw new InvalidOperationException("The selected mode or support source changed during native focus recovery.");
+                        }
+                        ValidateRecoveredNativeFocus(editorObject, plan.Pane, windows, plan.NativeFocus, releaseAcquired);
                     }
-                    ValidateRecoveredNativeFocus(editorObject, plan.Pane, windows, plan.NativeFocus);
+                    catch (Exception error)
+                    {
+                        throw new InvalidOperationException(error.Message
+                            + (initialFocusRefusal == null ? "" : " Initial focus refusal: " + initialFocusRefusal)
+                            + DescribeNativeSelection(editorObject, projectObject, plan.Module, plan.Pane, plan.Line, identity, releaseAcquired)
+                            + " Immediately after Show: " + plan.AfterShow + " Immediately after Focus: " + plan.AfterFocus, error);
+                    }
+                    ValidateNativeRunControl((object)control, plan.Caption);
                 }
-                catch (Exception error)
-                {
-                    throw new InvalidOperationException(error.Message
-                        + (initialFocusRefusal == null ? "" : " Initial focus refusal: " + initialFocusRefusal)
-                        + DescribeNativeSelection(editorObject, projectObject, plan.Module, plan.Pane, plan.Line)
-                        + " Immediately after Show: " + plan.AfterShow + " Immediately after Focus: " + plan.AfterFocus, error);
-                }
-                ValidateNativeRunControl((object)control, plan.Caption);
             }
 
             /// <summary>Executes the verified built-in Run Sub command exactly once after final revalidation.</summary>

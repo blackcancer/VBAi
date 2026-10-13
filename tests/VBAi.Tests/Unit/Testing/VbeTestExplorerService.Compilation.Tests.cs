@@ -11,6 +11,26 @@ namespace VBAi.Tests.Unit
     public sealed class VbeTestExplorerServiceCompilationTests
     {
         [STATestMethod]
+        public void CoverageCompilerBalancesItsTemporaryGettersWithoutReleasingTheBorrowedCopy()
+        {
+            using (var fixture = new Fixture())
+            {
+                var released = new List<object>(); fixture.Service.ReleaseAcquired = released.Add;
+                fixture.Control.State = false;
+                fixture.Service.CompileCoverageProject(fixture.Project);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Pane)).Count);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Pane.Window)).Count);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Control)).Count);
+                Assert.AreEqual(1, released.FindAll(value => ReferenceEquals(value, fixture.Project)).Count, "Only ActiveVBProject acquired during revalidation is released; the argument remains borrowed.");
+                var observed = fixture.Observe(); fixture.Timer.Tick();
+                Assert.IsTrue(observed.GetAwaiter().GetResult());
+                Assert.AreEqual(3, released.FindAll(value => ReferenceEquals(value, fixture.Project)).Count);
+                Assert.AreEqual(2, released.FindAll(value => ReferenceEquals(value, fixture.Control)).Count);
+                Assert.AreEqual(0, fixture.Control.Executions);
+            }
+        }
+
+        [STATestMethod]
         public void CompilationExecutesOnceThenWaitsForOwnerIdleAndDelayedDisabledState()
         {
             using (var fixture = new Fixture())

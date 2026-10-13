@@ -188,10 +188,9 @@ namespace VBAi
             }
             catch (Exception ex)
             {
-                WriteLog("OnConnection failed: " + ex.ToString());
-                crashReporter?.ReportUnexpected(ex);
-                Dispose();
-                throw;
+                AddInStartupFailure.Rethrow(ex,
+                    () => WriteLog("OnConnection failed: " + ex.ToString()),
+                    () => crashReporter?.ReportUnexpected(ex), Dispose);
             }
         }
 
@@ -275,23 +274,7 @@ namespace VBAi
         /// <param name="followOnly">Limite la résolution au volet actif en mode conception lorsqu’il est vrai.</param>
         /// <returns>Adaptateur du module actif, ou nul lorsqu’aucune cible admissible n’est active.</returns>
         private IEditorModule ActiveEditorModule(bool followOnly)
-        {
-            dynamic host = vbe;
-            if (followOnly && (host.ActiveWindow == null || (int)host.ActiveWindow.Type != 0)) return null;
-            dynamic pane = host.ActiveCodePane;
-            if (pane == null) return null;
-            object component = pane.CodeModule.Parent;
-            object project = ((dynamic)component).Collection.Parent;
-            if (followOnly)
-            {
-                int type = (int)((dynamic)component).Type;
-                if ((type != 1 && type != 2 && type != 3 && type != 100) ||
-                    (int)((dynamic)project).Mode != 2 || (int)((dynamic)project).Protection != 0 ||
-                    host.ActiveVBProject == null || !EditorVbeModule.SameIdentity(project, (object)host.ActiveVBProject) ||
-                    !EditorVbeModule.SameIdentity((object)host.ActiveWindow, (object)pane.Window)) return null;
-            }
-            return new EditorVbeModule(vbe, project, component);
-        }
+        { return EditorVbeModule.AcquireActive(vbe, followOnly); }
 
         /// <summary>Crée une session VBE reliée au résolveur de la fenêtre d’éditeur moderne.</summary>
         /// <returns>Nouvelle session configurée pour obtenir l’éditeur moderne à la demande.</returns>
@@ -342,6 +325,7 @@ namespace VBAi
         {
             try { await GetModernEditor(true).OpenModule(module); }
             catch (Exception error) { ReportMenuError(error); }
+            finally { if (modernEditor == null || !modernEditor.OwnsModule(module)) (module as EditorVbeModule)?.Dispose(); }
         }
 
         /// <summary>Retourne la fenêtre moderne existante ou la crée et l’affiche selon la demande.</summary>
@@ -368,8 +352,8 @@ namespace VBAi
         {
             try
             {
-                var module = ActiveEditorModule(false);
                 var editor = GetModernEditor(true);
+                var module = ActiveEditorModule(false);
                 if (module != null) await editor.OpenModule(module);
             }
             catch (Exception error) { ReportMenuError(error); }
@@ -579,6 +563,9 @@ namespace VBAi
         /// <param name="diagnostic">Optional bounded observer; diagnostic failure never changes cleanup propagation.</param>
         private void DisposeObserved(AddInShutdownDiagnostic diagnostic)
         {
+            if (disposingResources) { diagnostic?.Complete(); return; }
+            disposingResources = true;
+            var cleanup = new AddInShutdownCleanup(diagnostic);
             try
             {
                 string themeStage = "VbeNativeTheme.Disconnect";
@@ -598,63 +585,39 @@ namespace VBAi
                 catch (Exception error)
                 {
                     diagnostic?.CaughtFault(themeStage, error);
-                    WriteLog("Native VBE theme cleanup failed: " + error.ToString());
+                    cleanup.Step("WriteLog.ThemeFailure", () => WriteLog("Native VBE theme cleanup failed: " + error.ToString()));
                 }
-                if (editorNavigation != null) { diagnostic?.Enter("editorNavigation.Dispose"); editorNavigation.Dispose(); diagnostic?.Returned("editorNavigation.Dispose"); }
-                editorNavigation = null; diagnostic?.ManagedReferenceCleared("editorNavigation");
-                if (editorWorkspace != null) { diagnostic?.Enter("editorWorkspace.Dispose"); editorWorkspace.Dispose(); diagnostic?.Returned("editorWorkspace.Dispose"); }
-                editorWorkspace = null; diagnostic?.ManagedReferenceCleared("editorWorkspace");
-                if (modernEditor != null) { diagnostic?.Enter("modernEditor.Dispose"); modernEditor.Dispose(); diagnostic?.Returned("modernEditor.Dispose"); }
-                modernEditor = null; diagnostic?.ManagedReferenceCleared("modernEditor");
+                cleanup.Resource(ref editorNavigation, "editorNavigation", item => item.Dispose());
+                cleanup.Resource(ref editorWorkspace, "editorWorkspace", item => item.Dispose());
+                cleanup.Resource(ref modernEditor, "modernEditor", item => item.Dispose());
                 if (nativeTestControl != null && testExplorerWindow != null && !testExplorerWindow.IsDisposed && !testExplorerWindow.TopLevel)
-                {
-                    diagnostic?.Enter("nativeTestControl.Detach");
-                    nativeTestControl.Detach(testExplorerWindow);
-                    diagnostic?.Returned("nativeTestControl.Detach");
-                }
-                if (testExplorerWindow != null) { diagnostic?.Enter("testExplorerWindow.Dispose"); testExplorerWindow.Dispose(); diagnostic?.Returned("testExplorerWindow.Dispose"); }
-                testExplorerWindow = null; diagnostic?.ManagedReferenceCleared("testExplorerWindow");
-                try
-                {
-                    if (nativeTestWindow != null) { diagnostic?.Enter("nativeTestWindow.Close"); ((dynamic)nativeTestWindow).Close(); diagnostic?.Returned("nativeTestWindow.Close"); }
-                }
-                catch (COMException error) { diagnostic?.CaughtFault("nativeTestWindow.Close", error); }
-                nativeTestWindow = null; diagnostic?.ManagedReferenceCleared("nativeTestWindow");
+                    cleanup.Step("nativeTestControl.Detach", nativeTestControl.StopSiteTrackingForShutdown);
+                cleanup.Resource(ref testExplorerWindow, "testExplorerWindow", item => item.Dispose());
+                cleanup.Resource(ref nativeTestWindow, "nativeTestWindow", item => ((dynamic)item).Close(), "Close",
+                    error => error is COMException || error is InvalidComObjectException);
                 nativeTestControl = null; diagnostic?.ManagedReferenceCleared("nativeTestControl");
-                if (testExplorerService != null) { diagnostic?.Enter("testExplorerService.Dispose"); testExplorerService.Dispose(); diagnostic?.Returned("testExplorerService.Dispose"); }
-                testExplorerService = null; diagnostic?.ManagedReferenceCleared("testExplorerService");
-                diagnostic?.Enter("StopUpdateCheck");
-                StopUpdateCheck();
-                diagnostic?.Returned("StopUpdateCheck");
-                if (crashReporter != null) { diagnostic?.Enter("crashReporter.Dispose"); crashReporter.Dispose(); diagnostic?.Returned("crashReporter.Dispose"); }
-                crashReporter = null; diagnostic?.ManagedReferenceCleared("crashReporter");
-                if (menu != null) { diagnostic?.Enter("menu.Dispose"); menu.Dispose(); diagnostic?.Returned("menu.Dispose"); }
-                menu = null; diagnostic?.ManagedReferenceCleared("menu");
+                cleanup.Resource(ref testExplorerService, "testExplorerService", item => item.Dispose());
+                cleanup.Step("StopUpdateCheck", StopUpdateCheck);
+                cleanup.Resource(ref crashReporter, "crashReporter", item => item.Dispose());
+                cleanup.Resource(ref menu, "menu", item => item.Dispose());
                 if (nativeChatControl != null && chat != null && !chat.IsDisposed && docked)
-                {
-                    diagnostic?.Enter("nativeChatControl.Detach");
-                    nativeChatControl.Detach(chat);
-                    diagnostic?.Returned("nativeChatControl.Detach");
-                }
+                    cleanup.Step("nativeChatControl.Detach", nativeChatControl.StopSiteTrackingForShutdown);
                 docked = false;
-                if (chat != null) { diagnostic?.Enter("chat.Dispose"); chat.Dispose(); diagnostic?.Returned("chat.Dispose"); }
-                chat = null; diagnostic?.ManagedReferenceCleared("chat");
-                try
-                {
-                    if (nativeChatWindow != null) { diagnostic?.Enter("nativeChatWindow.Close"); ((dynamic)nativeChatWindow).Close(); diagnostic?.Returned("nativeChatWindow.Close"); }
-                }
-                catch { diagnostic?.CaughtFault("nativeChatWindow.Close", null); }
-                nativeChatWindow = null; diagnostic?.ManagedReferenceCleared("nativeChatWindow");
+                cleanup.Resource(ref chat, "chat", item => item.DisposeForHostShutdown(diagnostic?.Child("Dispose")));
+                cleanup.Resource(ref nativeChatWindow, "nativeChatWindow", item => ((dynamic)item).Close(), "Close", error => true);
                 nativeChatControl = null; diagnostic?.ManagedReferenceCleared("nativeChatControl");
                 addIn = null; diagnostic?.ManagedReferenceCleared("addIn");
-                if (server != null) { diagnostic?.Enter("server.Dispose"); server.Dispose(); diagnostic?.Returned("server.Dispose"); }
-                server = null; diagnostic?.ManagedReferenceCleared("server");
-                if (dispatcher != null) { diagnostic?.Enter("dispatcher.Dispose"); dispatcher.Dispose(); diagnostic?.Returned("dispatcher.Dispose"); }
-                dispatcher = null; diagnostic?.ManagedReferenceCleared("dispatcher");
+                cleanup.Resource(ref server, "server", item => item.Dispose());
+                cleanup.Resource(ref dispatcher, "dispatcher", item => item.Dispose());
                 vbe = null; diagnostic?.ManagedReferenceCleared("vbe");
+                cleanup.ThrowIfFailed();
                 diagnostic?.Complete();
             }
             catch (Exception error) { diagnostic?.Fault(error); throw; }
+            finally { disposingResources = false; }
         }
+
+        /// <summary>Prevents a native close callback from entering the same cleanup sequence recursively.</summary>
+        private bool disposingResources;
     }
 }

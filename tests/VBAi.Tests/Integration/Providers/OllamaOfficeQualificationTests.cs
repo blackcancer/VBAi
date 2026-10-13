@@ -24,7 +24,7 @@ namespace VBAi.Tests.Integration
         private void Run(string kind)
         {
             if (Environment.GetEnvironmentVariable("VBAi_RUN_OLLAMA_OFFICE_TESTS") != "1")
-                Assert.Inconclusive("Q028 Office assistant requires its explicit opt-in and frozen private-desktop campaign.");
+                Assert.Inconclusive("Q028 Office assistant requires its explicit opt-in and frozen desktop campaign.");
             string root = ExcelOwnedBootstrapPlan.RequireLocalAbsolutePath(Environment.GetEnvironmentVariable("VBAi_Q028_RESULTS"));
             Directory.CreateDirectory(root);
             string path = Path.Combine(root, kind + "-assistant.json");
@@ -48,6 +48,7 @@ namespace VBAi.Tests.Integration
             flush();
             OllamaOfficeHost host = null;
             OllamaOfficeUi ui = null;
+            bool observerUnsettled = false;
             ExceptionDispatchInfo failure = null;
             try
             {
@@ -79,68 +80,62 @@ namespace VBAi.Tests.Integration
                     row => Convert.ToString(host.Data("read_module", "Module", row["Name"])["Sha256"]));
                 report["SourceBeforeSha256"] = before["Sha256"]; report["MarkerSha256"] = EditorDocument.Hash(marker);
                 report["ToolProject"] = host.ToolProject;
-                var worker = new Thread(() =>
+                if (kind == "Word" && OllamaOfficeDesktop.MainEnabled)
                 {
-                    try
+                    observerUnsettled = true;
+                    var receipt = OllamaOfficeObserverProcess.Run(host, root, module, marker, profile, record,
+                        () => observerUnsettled = false);
+                    report["StreamedWhileBusy"] = receipt.StreamedWhileBusy;
+                    report["CancellationAcknowledged"] = receipt.CancellationAcknowledged;
+                    report["NextSendCompleted"] = receipt.NextSendCompleted;
+                    report["NativeMarkerVisible"] = receipt.NativeMarkerVisible;
+                    report["OriginalObserverExitVerified"] = true; flush();
+                    if (receipt.Error != null) throw new InvalidOperationException(receipt.Error);
+                }
+                else
+                {
+                    var worker = new Thread(() =>
                     {
-                        ui = new OllamaOfficeUi(host.ProcessId, record); ui.Discover();
-                        ui.DetectNativeLanguage();
-                        ui.Select("scopePicker", host.Label);
-                        ui.RequireScope(host.Label);
-                        ui.Click("modelSummary");
-                        ui.Select("providerPicker", LlmProvider.All.Single(item => item.IsOllama).ToString());
-                        ui.Wait(() => ui.Leaf("modelPicker").Current.IsEnabled, 30, "model catalogue ready");
-                        ui.Select("modelPicker", profile.Model);
-                        // Keep the genuine provider controls visible for terminal enabled-state
-                        // readback; the collapsed layout intentionally removes them from UIA.
-                        ui.Select("modePicker", UiText.Get("Chat"));
-                        ui.Select("approvalPicker", UiText.Get("Read-only"));
-                        ui.BindTranscript();
-                        ui.SendOnce("This is a synthetic interface test unrelated to VBA. Do not use tools. Output 1000 lines with exactly this format: '1. Object 1', then '2. Object 2', then '3. Object 3', continuing the same pattern. Begin immediately with the first line; no introductory remarks.");
-                        ui.Wait(() => ui.IsBusy && ui.VisibleTranscript().Any(OllamaOfficeStreamOracle.IsNumberedResponse),
-                            125, "visible streamed text while busy");
-                        report["StreamedWhileBusy"] = true; flush();
-                        ui.StopOnce(); ui.WaitIdle(30);
-                        ui.Wait(() => ui.VisibleTranscript().Any(text => text.Contains(UiText.Get("Response interrupted. Changes already applied can still be undone in the chat."))),
-                            10, "visible cancellation acknowledgement");
-                        report["CancellationAcknowledged"] = true; flush();
-                        ui.SendOnce("The previous response was intentionally stopped. This is a synthetic UI test unrelated to VBA. Do not use tools. Reply with exactly UI_READY_42 and nothing else.");
-                        ui.WaitIdle(125);
-                        ui.Wait(() => ui.VisibleTranscript().Any(OllamaOfficeStreamOracle.IsReadyResponse), 10, "visible completed next reply");
-                        report["NextSendCompleted"] = true; flush();
-                        string request = "This is a synthetic qualification. Inspect only the selected disposable project. Call read_module exactly once for Project=" + host.ToolProject +
-                            ", Module=" + module + ". What is the exact value of the string constant ObservedMarker? The value is only in the module. Do not modify or execute code. Return the value after reading it.";
-                        Assert.IsFalse(request.Contains(marker));
-                        ui.SendOnce(request); ui.WaitIdle(125);
-                        ui.Wait(() => ui.VisibleTranscript().Any(text => text.Contains(marker)), 15, "visible unprompted native marker");
-                        report["NativeMarkerVisible"] = true; flush();
-                    }
-                    catch (Exception error)
-                    {
-                        failure = ExceptionDispatchInfo.Capture(error);
-                        try { if (ui != null) record(new { Phase = "FailureTerminalObservation", AlreadyIdle = ui.ObserveAlreadyIdle() }); }
-                        catch (Exception observation) { record(new { Phase = "TerminalObservationFailed", Error = observation.ToString() }); }
-                    }
-                    finally
-                    {
-                        // A failed catalogue/oracle observation may still have a
-                        // settled (or never-sent) turn. Drop its UIA references on
-                        // their owning observer thread before the STA closes Word.
-                        if (ui != null && !ui.SentUnsettled)
+                        try
                         {
-                            try { ui.ReleaseSettledReferences(); }
-                            catch (Exception cleanup)
+                            ui = new OllamaOfficeUi(host.ProcessId, record);
+                            OllamaOfficeChatScenario.Run(ui, host.Label, host.ToolProject, module, marker, profile.Model,
+                                stage => { report[stage] = true; flush(); });
+                        }
+                        catch (Exception error)
+                        {
+                            failure = ExceptionDispatchInfo.Capture(error);
+                            try { if (ui != null) record(new { Phase = "FailureTerminalObservation", AlreadyIdle = ui.ObserveAlreadyIdle() }); }
+                            catch (Exception observation) { record(new { Phase = "TerminalObservationFailed", Error = observation.ToString() }); }
+                            try
                             {
-                                record(new { Phase = "ObserverCleanupFailed", Error = cleanup.ToString() });
-                                if (failure == null) failure = ExceptionDispatchInfo.Capture(cleanup);
+                                if (ui != null) record(new { Phase = "FailureFinalTranscript", SyntheticQualificationOnly = true,
+                                    Texts = ui.VisibleTranscript().Select(text => new { Characters = text.Length,
+                                        Sha256 = EditorDocument.Hash(text), Preview = text.Substring(0, Math.Min(512, text.Length)) }).ToArray() });
+                            }
+                            catch (Exception observation) { record(new { Phase = "FinalTranscriptObservationFailed", Error = observation.ToString() }); }
+                        }
+                        finally
+                        {
+                            // A failed catalogue/oracle observation may still have a
+                            // settled (or never-sent) turn. Drop its UIA references on
+                            // their owning observer thread before the STA closes Word.
+                            if (ui != null && !ui.SentUnsettled)
+                            {
+                                try { ui.ReleaseSettledReferences(); }
+                                catch (Exception cleanup)
+                                {
+                                    record(new { Phase = "ObserverCleanupFailed", Error = cleanup.ToString() });
+                                    if (failure == null) failure = ExceptionDispatchInfo.Capture(cleanup);
+                                }
                             }
                         }
-                    }
-                });
-                worker.SetApartmentState(ApartmentState.MTA); worker.Start();
-                // Pump the owning STA while the independent native UI observer runs. Do not dispatch
-                // another native command or teardown until its terminal receipt is available.
-                while (!worker.Join(20)) System.Windows.Forms.Application.DoEvents();
+                    });
+                    worker.SetApartmentState(ApartmentState.MTA); worker.Start();
+                    // Pump the owning STA while the independent native UI observer runs. Do not dispatch
+                    // another native command or teardown until its terminal receipt is available.
+                    while (!worker.Join(20)) System.Windows.Forms.Application.DoEvents();
+                }
                 failure?.Throw();
                 Assert.AreEqual(before["Sha256"], host.Data("read_module", "Module", module)["Sha256"]);
                 Assert.AreEqual(before["Code"], host.Data("read_module", "Module", module)["Code"]);
@@ -160,7 +155,7 @@ namespace VBAi.Tests.Integration
             }
             finally
             {
-                if ((ui != null && ui.SentUnsettled) || (host != null && (host.NativeDispatchUnsettled || host.IsRetained)))
+                if (observerUnsettled || (ui != null && ui.SentUnsettled) || (host != null && (host.NativeDispatchUnsettled || host.IsRetained)))
                 {
                     report["HostRetained"] = true;
                     report["State"] = "FAILED_OR_UNCERTAIN";

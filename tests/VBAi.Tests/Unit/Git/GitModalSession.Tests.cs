@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass, TestCategory("Unit")]
+    [ToolBoundaryTestClass, TestCategory("Unit")]
     public sealed class GitModalSessionTests
     {
         private static GitModalSession.Request Request(string action = "checkpoint_restore") =>

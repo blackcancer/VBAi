@@ -13,6 +13,11 @@ namespace VBAi.Tests.Unit
 
     public sealed partial class VbeDebugWindowsSystemTests
     {
+        /// <summary>Preserves the low 32 bits of a Windows handle or WM_GETOBJECT identifier without checked narrowing.</summary>
+        /// <param name="value">Native value, whose object identifiers can be zero-extended or sign-extended on x64.</param>
+        /// <returns>The same low 32 bits represented as the signed integer required by UI Automation.</returns>
+        internal static int NativeProtocolInt32(IntPtr value) => unchecked((int)value.ToInt64());
+
         [ComVisible(true)]
         public sealed class AutomationNode : IRawElementProviderSimple, IRawElementProviderFragmentRoot,
             ISelectionItemProvider, ISelectionProvider, IValueProvider, IToggleProvider,
@@ -53,7 +58,8 @@ namespace VBAi.Tests.Unit
             public AutomationNode With(params AutomationPattern[] patterns) { foreach (var pattern in patterns) Patterns.Add(pattern.Id); return this; }
             private AutomationNode Root { get { var root = this; while (root.Parent != null) root = root.Parent; return root; } }
             public ProviderOptions ProviderOptions => ProviderOptions.ServerSideProvider;
-            public IRawElementProviderSimple HostRawElementProvider => Parent == null ? AutomationInteropProvider.HostProviderFromHandle(Window) : null;
+            public IRawElementProviderSimple HostRawElementProvider => Parent == null && Window != IntPtr.Zero
+                ? AutomationInteropProvider.HostProviderFromHandle(Window) : null;
             public object GetPatternProvider(int patternId) { OnPatternRead?.Invoke(patternId); return Patterns.Contains(patternId) ? this : null; }
             public object GetPropertyValue(int propertyId)
             {
@@ -65,7 +71,7 @@ namespace VBAi.Tests.Unit
                 if (propertyId == AutomationElementIdentifiers.IsPasswordProperty.Id) return Password;
                 if (propertyId == AutomationElementIdentifiers.IsControlElementProperty.Id || propertyId == AutomationElementIdentifiers.IsContentElementProperty.Id) return true;
                 if (propertyId == AutomationElementIdentifiers.IsKeyboardFocusableProperty.Id) return true;
-                if (propertyId == AutomationElementIdentifiers.NativeWindowHandleProperty.Id) return NativeHandle ?? (Parent == null ? Window.ToInt32() : 0);
+                if (propertyId == AutomationElementIdentifiers.NativeWindowHandleProperty.Id) return NativeHandle ?? (Parent == null ? NativeProtocolInt32(Window) : 0);
                 if (propertyId == AutomationElementIdentifiers.ProcessIdProperty.Id) return ProcessId ?? System.Diagnostics.Process.GetCurrentProcess().Id;
                 return null;
             }
@@ -142,7 +148,7 @@ namespace VBAi.Tests.Unit
             public IRawElementProviderSimple[] GetChildren() { return new IRawElementProviderSimple[0]; }
         }
 
-        private sealed class AutomationHost : IDisposable
+        internal sealed class AutomationHost : IDisposable
         {
             [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "CreateWindowExW")]
             private static extern IntPtr CreateOwnedDialog(uint extended, string kind, string text, uint style,
@@ -155,6 +161,18 @@ namespace VBAi.Tests.Unit
             private ProviderDialog dialog;
             private Control dispatcher;
             private Exception startupError;
+            private Exception teardownError;
+            private int disposeEntered;
+            // Read from the waiting test thread only to describe the original deadline.
+            private string teardownStage = "not requested";
+            private int attemptedProviderDisconnects;
+            private int completedProviderDisconnects;
+            internal int DisconnectedProviderCount { get; private set; }
+            internal bool OwnerThreadExited => !thread.IsAlive;
+            [DllImport("UIAutomationCore.dll", PreserveSig = true)]
+            private static extern int UiaDisconnectProvider([MarshalAs(UnmanagedType.Interface)] IRawElementProviderSimple provider);
+            [DllImport("UIAutomationCore.dll", EntryPoint = "UiaReturnRawElementProvider")]
+            private static extern IntPtr ReleaseWindowProviderMap(IntPtr window, IntPtr wParam, IntPtr lParam, IntPtr provider);
             public readonly AutomationNode Root;
             public IntPtr Handle;
             public AutomationHost(AutomationNode root, bool optionsDialog = false, Action<AutomationHost> configure = null, bool noActivate = false)
@@ -179,7 +197,7 @@ namespace VBAi.Tests.Unit
                         }
                         else
                         {
-                            form = new ProviderForm { Provider = root, Text = "VBAi isolated UIA fixture", ShowInTaskbar = false };
+                            form = new ProviderForm { Provider = root, Text = "VBAi isolated UIA fixture", ShowInTaskbar = false, NoActivate = noActivate };
                             form.Shown += (sender, args) => { Handle = form.Handle; root.Window = Handle; configure?.Invoke(this); ready.Set(); };
                             System.Windows.Forms.Application.Run(form);
                         }
@@ -193,13 +211,94 @@ namespace VBAi.Tests.Unit
             }
             public void Dispose()
             {
-                if (dialog != null)
-                    dispatcher.BeginInvoke(new Action(() => { dialog.Release(); DestroyOwnedDialog(Handle); dispatcher.Dispose(); System.Windows.Forms.Application.ExitThread(); }));
-                else form.BeginInvoke(new Action(form.Close));
-                thread.Join(TimeSpan.FromSeconds(5)); ready.Dispose();
+                if (Interlocked.Exchange(ref disposeEntered, 1) != 0) return;
+                var teardownClock = System.Diagnostics.Stopwatch.StartNew();
+                Volatile.Write(ref teardownStage, "owner dispatch pending");
+                (dispatcher ?? (Control)form).BeginInvoke(new Action(() =>
+                {
+                    // Disconnect outside synchronous native-message handling. Reentrant WM_GETOBJECT
+                    // must not publish the same provider while UI Automation releases it.
+                    if (dialog != null) dialog.Disconnecting = true;
+                    else form.Disconnecting = true;
+                    try
+                    {
+                        // Destroy the owned HWND before disconnecting its providers, as required
+                        // by the UI Automation provider lifecycle. No provider is republished.
+                        Volatile.Write(ref teardownStage, "window closure");
+                        if (dialog != null)
+                        {
+                            dialog.Release();
+                            if (!DestroyOwnedDialog(Handle))
+                                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+                        }
+                        else form.Close();
+                    }
+                    catch (Exception error) { teardownError = error; }
+                    finally
+                    {
+                        int? simulatedNativeHandle = Root.NativeHandle;
+                        try
+                        {
+                            // Negative scenarios hide the HWND from the application under test.
+                            // During teardown only, UIA needs the actual owned root identity to
+                            // resolve its runtime ID and disconnect the existing provider.
+                            Root.NativeHandle = null;
+                            Volatile.Write(ref teardownStage, "window provider-map release");
+                            ReleaseWindowProviderMap(Handle, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                            Volatile.Write(ref teardownStage, "provider disconnection");
+                            var pending = new Stack<AutomationNode>();
+                            var visited = new HashSet<AutomationNode>();
+                            pending.Push(Root);
+                            while (pending.Count != 0)
+                            {
+                                var node = pending.Pop();
+                                if (!visited.Add(node)) continue;
+                                foreach (var child in node.Children) pending.Push(child);
+                                Interlocked.Increment(ref attemptedProviderDisconnects);
+                                int result = UiaDisconnectProvider(node);
+                                if (result < 0)
+                                    throw new COMException("UIA disconnect failed for '" + node.Name +
+                                        "', native identity " + node.NativeHandle + ", root " + (node.Parent == null) + ".", result);
+                                Interlocked.Increment(ref completedProviderDisconnects);
+                                DisconnectedProviderCount++;
+                            }
+                        }
+                        catch (Exception error)
+                        { teardownError = teardownError == null ? error : new AggregateException(teardownError, error); }
+                        finally
+                        {
+                            Volatile.Write(ref teardownStage, "dispatcher disposal and owner exit");
+                            Root.NativeHandle = simulatedNativeHandle;
+                            Root.Window = IntPtr.Zero;
+                            dispatcher?.Dispose();
+                            System.Windows.Forms.Application.ExitThread();
+                        }
+                    }
+                }));
+                bool exitedInTime = thread.Join(TimeSpan.FromSeconds(5));
+                string deadlineObservation = !exitedInTime
+                    ? " Stage: " + Volatile.Read(ref teardownStage) +
+                        "; attempted provider disconnects: " + Volatile.Read(ref attemptedProviderDisconnects) +
+                        "; completed provider disconnects: " + Volatile.Read(ref completedProviderDisconnects) +
+                        "; observed milliseconds: " + teardownClock.ElapsedMilliseconds + "."
+                    : "";
+                // Preserve the failed deadline, but retain the same thread until terminal cleanup.
+                // A next fixture must not start alongside an unobserved owner from this one.
+                if (!exitedInTime) thread.Join();
+                ready.Dispose();
+                if (!exitedInTime) throw new TimeoutException("Owned UIA provider did not exit within its original deadline." + deadlineObservation, teardownError);
+                if (teardownError != null) throw new InvalidOperationException("Owned UIA provider teardown failed.", teardownError);
             }
             /// <summary>Exécute une action sur le thread du vrai dialogue détenu par la fixture.</summary>
-            public void Invoke(Action<IntPtr> action) { (dispatcher ?? (Control)form).Invoke(new Action(() => action(Handle))); }
+            public void Invoke(Action<IntPtr> action)
+            {
+                (dispatcher ?? (Control)form).Invoke(new Action(() =>
+                {
+                    action(Handle);
+                    // A native style change can recreate the WinForms HWND on this owner thread.
+                    if (form != null) { Handle = form.Handle; Root.Window = Handle; }
+                }));
+            }
             /// <summary>Observe les notifications du vrai HWND parent détenu par ce provider.</summary>
             public Action<Message> NativeMessage { set { if (dialog != null) dialog.NativeMessage = value; else form.NativeMessage = value; } }
         }
@@ -208,13 +307,14 @@ namespace VBAi.Tests.Unit
         private sealed class ProviderDialog : NativeWindow
         {
             private readonly AutomationNode provider;
+            internal bool Disconnecting;
             internal Action<Message> NativeMessage;
             internal ProviderDialog(AutomationNode node, IntPtr window) { provider = node; AssignHandle(window); }
             internal void Release() { if (Handle != IntPtr.Zero) ReleaseHandle(); }
             protected override void WndProc(ref Message message)
             {
                 NativeMessage?.Invoke(message);
-                if (message.Msg == 0x003D && message.LParam.ToInt32() == AutomationInteropProvider.RootObjectId)
+                if (!Disconnecting && message.Msg == 0x003D && NativeProtocolInt32(message.LParam) == AutomationInteropProvider.RootObjectId)
                 {
                     provider.Window = Handle;
                     message.Result = AutomationInteropProvider.ReturnRawElementProvider(Handle, message.WParam, message.LParam, provider);
@@ -227,12 +327,15 @@ namespace VBAi.Tests.Unit
         private sealed class ProviderForm : Form
         {
             public AutomationNode Provider;
+            internal bool Disconnecting;
+            internal bool NoActivate;
+            protected override bool ShowWithoutActivation => NoActivate;
             /// <summary>Observe uniquement les notifications du parent natif détenu pour simuler les effets documentés de son propriétaire.</summary>
             public Action<Message> NativeMessage;
             protected override void WndProc(ref Message message)
             {
                 NativeMessage?.Invoke(message);
-                if (message.Msg == 0x003D && message.LParam.ToInt32() == AutomationInteropProvider.RootObjectId)
+                if (!Disconnecting && message.Msg == 0x003D && NativeProtocolInt32(message.LParam) == AutomationInteropProvider.RootObjectId)
                 {
                     Provider.Window = Handle;
                     message.Result = AutomationInteropProvider.ReturnRawElementProvider(Handle, message.WParam, message.LParam, Provider);

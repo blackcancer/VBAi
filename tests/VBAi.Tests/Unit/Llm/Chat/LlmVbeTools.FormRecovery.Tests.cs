@@ -3,7 +3,7 @@ using System;
 
 namespace VBAi.Tests.Unit
 {
-    [TestClass]
+    [ToolBoundaryTestClass]
     [TestCategory("Unit")]
     public sealed class LlmVbeToolsFormRecoveryTests
     {
